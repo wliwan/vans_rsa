@@ -8,10 +8,10 @@
   },
   "naiveThemeOverrides": {
     "common": {
-      "primaryColor": "#F4511E",
-      "primaryColorHover": "#F4511E",
-      "primaryColorPressed": "#2B4C59FF",
-      "primaryColorSuppl": "#F4511E",
+      "primaryColor": "#0185F5",
+      "primaryColorHover": "#339DF7",
+      "primaryColorPressed": "#006AC4",
+      "primaryColorSuppl": "#339DF7",
 
       "infoColor": "#2080F0FF",
       "infoColorHover": "#4098FCFF",
@@ -19,9 +19,9 @@
       "infoColorSuppl": "#4098FCFF",
 
       "successColor": "#18A058FF",
-      "successColorHover": "#F4511E",
+      "successColorHover": "#339DF7",
       "successColorPressed": "#0C7A43FF",
-      "successColorSuppl": "#F4511E",
+      "successColorSuppl": "#339DF7",
 
       "warningColor": "#F0A020FF",
       "warningColorHover": "#FCB040FF",

@@ -1,6 +1,6 @@
 {
   "lang": "English",
-  "app_name": "Vue FastAPI Admin",
+  "app_name": "Vance Road Scanner Assistant",
   "header": {
     "label_profile": "Profile",
     "label_logout": "Logout",
@@ -22,8 +22,13 @@
       "label_number_of_items": "Number of items",
       "label_upcoming": "Upcoming",
       "label_information": "Information",
-      "label_project": "Project",
-      "label_more": "More"
+      "label_project": "Feature Pages",
+      "label_more": "More",
+      "label_edit": "Edit",
+      "label_done": "Done",
+      "label_columns": "Columns",
+      "label_sub_pages": "sub-pages",
+      "text_no_pages": "No available pages"
     },
     "profile": {
       "label_profile": "Profile",

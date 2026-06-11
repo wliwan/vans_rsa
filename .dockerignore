@@ -1,1 +1,54 @@
+# ── 前端 ──
 web/node_modules
+web/dist
+web/.env
+web/.env.*
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── IDE / 编辑器 ──
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── Git ──
+.git/
+.gitattributes
+.gitignore
+
+# ── 缓存 / 临时文件 ──
+cache/
+*.log
+
+# ── 数据库（构建时不打包，运行时通过卷挂载） ──
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-shm
+db.sqlite3-wal
+
+# ── 系统文件 ──
+.DS_Store
+._.DS_Store
+Thumbs.db
+
+# ── Docker 自身 ──
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# ── 其他 ──
+*.md
+LICENSE
+test.json
+.env
+.env.example

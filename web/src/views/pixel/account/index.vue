@@ -235,7 +235,7 @@ function onClose() {
             v-model:value="modalForm.user_ids"
             multiple
             filterable
-            placeholder="请选择可访问的VFA用户"
+            placeholder="请选择可访问的VRSA用户"
             :options="userOptions"
           />
         </NFormItem>

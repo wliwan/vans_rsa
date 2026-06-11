@@ -1,6 +1,6 @@
 {
   "lang": "中文",
-  "app_name": "Vue FastAPI Admin",
+  "app_name": "Vance Road Scanner Assistant",
   "header": {
     "label_profile": "个人信息",
     "label_logout": "退出登录",
@@ -22,8 +22,13 @@
       "label_number_of_items": "项目数",
       "label_upcoming": "待办",
       "label_information": "消息",
-      "label_project": "项目",
-      "label_more": "更多"
+      "label_project": "功能页面",
+      "label_more": "更多",
+      "label_edit": "编辑",
+      "label_done": "完成",
+      "label_columns": "列数",
+      "label_sub_pages": "个子页面",
+      "text_no_pages": "暂无可用功能页面"
     },
     "profile": {
       "label_profile": "个人中心",
