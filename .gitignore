@@ -7,6 +7,7 @@ __pycache__/
 .pytest_cache/
 migrations/
 cache/
+uploads/
 
 db.sqlite3
 db.sqlite3-journal
