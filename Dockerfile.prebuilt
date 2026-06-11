@@ -1,0 +1,42 @@
+# ══════════════════════════════════════════════
+# 预构建模式 Dockerfile
+# 前提: 已本地执行 bash build-web.sh，web/dist/ 存在
+# 用法: docker build -f Dockerfile.prebuilt -t vue-fastapi-admin .
+# ══════════════════════════════════════════════
+FROM python:3.11-slim-bullseye
+
+WORKDIR /opt/vue-fastapi-admin
+
+# ── 系统依赖 ──
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=core-apt \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked,id=core-apt \
+    sed -i "s@http://.*.debian.org@http://mirrors.ustc.edu.cn@g" /etc/apt/sources.list \
+    && rm -f /etc/apt/apt.conf.d/docker-clean \
+    && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && echo "Asia/Shanghai" > /etc/timezone \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends gcc python3-dev bash nginx vim curl procps net-tools
+
+# ── Python 依赖 ──
+COPY requirements.txt .
+RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# ── 应用代码 ──
+COPY /app ./app
+COPY /migrations ./migrations
+COPY /uploads ./uploads
+COPY run.py .
+COPY /deploy/entrypoint.sh .
+
+# ── 前端静态文件（宿主机预构建） ──
+COPY /web/dist ./web/dist
+
+# ── Nginx ──
+COPY /deploy/web.conf /etc/nginx/sites-available/web.conf
+RUN rm -f /etc/nginx/sites-enabled/default \
+    && ln -s /etc/nginx/sites-available/web.conf /etc/nginx/sites-enabled/
+
+ENV LANG=zh_CN.UTF-8
+EXPOSE 80
+
+ENTRYPOINT [ "sh", "entrypoint.sh" ]

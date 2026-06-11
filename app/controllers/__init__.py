@@ -1,0 +1,9 @@
+from .ai_proxy import ai_proxy_controller as ai_proxy_controller
+from .defect import defect_controller as defect_controller
+from .track import track_controller as track_controller
+from .vehicle import vehicle_controller as vehicle_controller
+from .pixel_account import pixel_account_controller as pixel_account_controller
+from .region import region_controller as region_controller
+from .role import role_controller as role_controller
+from .skill import skill_controller as skill_controller
+from .user import user_controller as user_controller

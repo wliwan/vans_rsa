@@ -1,0 +1,111 @@
+{
+  "lang": "English",
+  "app_name": "Vue FastAPI Admin",
+  "header": {
+    "label_profile": "Profile",
+    "label_logout": "Logout",
+    "label_logout_dialog_title": "Hint",
+    "text_logout_confirm": "Logout confirm",
+    "text_logout_success": "Logout success"
+  },
+  "views": {
+    "login": {
+      "text_login": "Login",
+      "message_input_username_password": "Please enter username and password",
+      "message_verifying": "Verifying...",
+      "message_login_success": "Login successful"
+    },
+    "workbench": {
+      "label_workbench": "Workbench",
+      "text_hello": "hello, {username}",
+      "text_welcome": "Today is another day full of energy!",
+      "label_number_of_items": "Number of items",
+      "label_upcoming": "Upcoming",
+      "label_information": "Information",
+      "label_project": "Project",
+      "label_more": "More"
+    },
+    "profile": {
+      "label_profile": "Profile",
+      "label_modify_information": "Modify your information",
+      "label_change_password": "Change password",
+      "label_avatar": "Avatar",
+      "label_username": "Username",
+      "label_email": "Email",
+      "label_old_password": "Old password",
+      "label_new_password": "New password",
+      "label_confirm_password": "Password confirmation",
+      "placeholder_username": "Please fill in your name",
+      "placeholder_email": "Please fill in your email address",
+      "placeholder_old_password": "Please enter the old password",
+      "placeholder_new_password": "Please enter a new password",
+      "placeholder_confirm_password": "Please enter the confirm password",
+      "message_username_required": "Please enter username",
+      "message_old_password_required": "Please enter the old password",
+      "message_new_password_required": "Please enter a new password",
+      "message_password_confirmation_required": "Please enter confirm password",
+      "message_password_confirmation_diff": "Two password inputs are inconsistent"
+    },
+    "errors": {
+      "label_error": "Error",
+      "text_back_to_home": "Back to home"
+    },
+    "tool": {
+      "vehicle": {
+        "title": "Vehicle Status Inspection",
+        "select_account": "Select Account",
+        "select_car_type": "Select Car Type",
+        "select_car": "Select Vehicle",
+        "btn_check": "Inspect",
+        "device_online": "Device Online",
+        "device_offline": "Device Offline",
+        "label_statistics": "Device Statistics",
+        "label_device_info": "Device Info",
+        "label_device_id": "Device ID",
+        "label_imei": "IMEI",
+        "label_iccid": "ICCID",
+        "label_software": "Software Version",
+        "label_hardware": "Hardware Version",
+        "label_ip": "IP Address",
+        "label_city": "City",
+        "label_location": "Location",
+        "label_speed": "Speed",
+        "label_angle": "Bearing",
+        "label_car_state": "Vehicle State",
+        "label_last_report": "Last Report",
+        "label_protocol": "Protocol Version",
+        "stat_alg_pic": "Algorithm Images",
+        "stat_alg_result": "Algorithm Results",
+        "stat_distance_pic": "Distance Photos",
+        "stat_position": "Position Data",
+        "metric_processing": "Processing",
+        "metric_uploaded": "Uploaded",
+        "metric_pending": "Pending",
+        "no_data": "No Data",
+        "select_account_first": "Please select an account first",
+        "select_car_first": "Please select a vehicle first",
+        "checking": "Checking...",
+        "btn_refresh": "Refresh",
+        "btn_query_flow": "Query Flow",
+        "label_flow": "Data Usage",
+        "label_flow_date": "Select Date",
+        "flow_ok": "Query OK",
+        "flow_fail": "Query Failed",
+        "flow_status_code": "Status Code",
+        "refreshing": "Refreshing...",
+        "label_send": "Upload",
+        "label_receive": "Download",
+        "label_total": "Total",
+        "label_flow_detail": "IP Details"
+      }
+    }
+  },
+  "common": {
+    "text": {
+      "update_success": "Update success"
+    },
+    "buttons": {
+      "update": "Update"
+    }
+  }
+}
