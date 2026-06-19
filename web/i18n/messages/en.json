@@ -1,6 +1,6 @@
 {
   "lang": "English",
-  "app_name": "Vance Road Scanner Assistant",
+  "app_name": "VansRSA",
   "header": {
     "label_profile": "Profile",
     "label_logout": "Logout",
@@ -102,6 +102,445 @@
         "label_receive": "Download",
         "label_total": "Total",
         "label_flow_detail": "IP Details"
+      }
+    },
+    "network": {
+      "region": {
+        "title": "Global Country & Region Management",
+        "breadcrumb": {
+          "root": "Root"
+        },
+        "levelLabel": {
+          "country": "Country",
+          "state": "State",
+          "city": "City"
+        },
+        "typeOptions": [
+          {
+            "label": "Country",
+            "value": "COUNTRY"
+          },
+          {
+            "label": "State",
+            "value": "STATE"
+          },
+          {
+            "label": "City",
+            "value": "CITY"
+          }
+        ],
+        "exportLevelOptions": {
+          "all": "All (incl. countries)",
+          "stateAndCity": "States + Cities",
+          "stateOnly": "States Only"
+        },
+        "searchPlaceholder": "Search {level} name or code...",
+        "list": {
+          "hasChildren": "Has children",
+          "loading": "Loading...",
+          "noData": "No data",
+          "delete": "Delete",
+          "confirmDelete": "Delete 「{name}」?",
+          "confirmClear": "Clear all data? This cannot be undone.",
+          "confirmDeleteWithChildren": "Delete \"{name}\" and all its children?",
+          "count": "{count} items",
+          "currentLevel": "Current Level: {level}"
+        },
+        "detail": {
+          "title": "Detail — {name}",
+          "export": "Export",
+          "fields": {
+            "name": "Name",
+            "localName": "Local Name",
+            "code": "Code",
+            "isoAlpha2": "ISO Alpha-2",
+            "isoAlpha3": "ISO Alpha-3",
+            "isoNumeric": "ISO Numeric",
+            "type": "Type",
+            "capital": "Capital",
+            "population": "Population",
+            "area": "Area",
+            "latitude": "Latitude",
+            "longitude": "Longitude",
+            "timezone": "Timezone"
+          },
+          "exportPlaceholder": "Select export level"
+        },
+        "buttons": {
+          "create": "New",
+          "edit": "Edit",
+          "import": "Import",
+          "clear": "Clear",
+          "fillGeonames": "Fill Chinese Names",
+          "setProxy": "Set Proxy",
+          "cancelProxy": "Cancel Proxy",
+          "save": "Save",
+          "cancel": "Cancel",
+          "showDetail": "Details",
+          "hideDetail": "Hide",
+          "addChild": "Add Child",
+          "clearAll": "Clear All",
+          "importIso3166": "Import ISO 3166"
+        },
+        "proxyPlaceholder": "Enter proxy address...",
+        "checking": "Checking...",
+        "formRules": {
+          "nameRequired": "Please enter name"
+        },
+        "formLabels": {
+          "name": "Name",
+          "localName": "Local Name",
+          "code": "Code",
+          "isoAlpha2": "ISO Alpha-2",
+          "isoAlpha3": "ISO Alpha-3",
+          "isoNumeric": "ISO Numeric",
+          "type": "Type",
+          "parentId": "Parent ID",
+          "capital": "Capital",
+          "population": "Population",
+          "area": "Area (km²)",
+          "latitude": "Latitude",
+          "longitude": "Longitude",
+          "timezone": "Timezone"
+        },
+        "formPlaceholders": {
+          "name": "e.g. China",
+          "localName": "e.g. 中国",
+          "code": "e.g. CN",
+          "isoAlpha2": "CN",
+          "isoAlpha3": "CHN",
+          "isoNumeric": "156",
+          "capital": "e.g. Beijing",
+          "timezone": "Asia/Shanghai"
+        },
+        "modalTitle": "Region Info",
+        "messages": {
+          "createSuccess": "Created successfully",
+          "updateSuccess": "Updated successfully",
+          "saveFail": "Save failed",
+          "deleteSuccess": "Deleted successfully",
+          "deleteFail": "Delete failed",
+          "importSuccess": "Import completed: {detail}",
+          "importFail": "Import failed",
+          "importNoData": "No new data",
+          "clearSuccess": "Cleared {count} records",
+          "clearFail": "Clear failed",
+          "geonamesCacheSuccess": "Filled {count} regions with Chinese names from cache",
+          "geonamesNoData": "No data to fill, please import country data first",
+          "geonamesDownloadFail": "Download failed, please check network and retry",
+          "exportFail": "Export failed",
+          "exportSuccess": "Export succeeded",
+          "geonamesFillComplete": "Chinese name population complete",
+          "geonamesRetryHint": "Download failed, retry from global progress panel",
+          "geonamesTaskName": "Fill Region Chinese Names",
+          "geonamesTimeout": "Fill timeout",
+          "geonamesTimeoutDetail": "Fill operation exceeded 30 minutes, cancelled automatically"
+        },
+        "taskName": "Fill Region Chinese Names",
+        "detailLabels": {
+          "area": "Area",
+          "capital": "Capital",
+          "code": "Code",
+          "isoAlpha2": "ISO Alpha-2",
+          "isoAlpha3": "ISO Alpha-3",
+          "isoNumeric": "ISO Numeric",
+          "latitude": "Latitude",
+          "localName": "Local Name",
+          "longitude": "Longitude",
+          "name": "Name",
+          "population": "Population",
+          "timezone": "Timezone",
+          "type": "Type"
+        }
+      },
+      "regionBoundary": {
+        "title": "Region Boundary File Management",
+        "breadcrumb": {
+          "root": "Root"
+        },
+        "levelLabel": {
+          "country": "Country",
+          "state": "State",
+          "city": "City"
+        },
+        "panel": {
+          "currentLevel": "Current Level: {level}",
+          "boundaryFiles": "Boundary Files — {name}",
+          "selectRegion": "Select a region",
+          "selectHint": "← Select a region to view and download boundary files",
+          "noFiles": "No boundary files. Download from GADM or upload",
+          "downloadStatus": "Download Status:",
+          "downloaded": "Downloaded",
+          "notDownloaded": "Not Downloaded",
+          "fileCount": "{count} files total"
+        },
+        "searchPlaceholder": "Search {level} name or code...",
+        "list": {
+          "loading": "Loading...",
+          "noData": "No data, please import first"
+        },
+        "fileColumns": {
+          "fileName": "File Name",
+          "fileType": "Type",
+          "fileSize": "Size",
+          "status": "Status",
+          "time": "Time",
+          "actions": "Actions"
+        },
+        "statusMap": {
+          "SUCCESS": "Downloaded",
+          "DOWNLOADING": "Downloading",
+          "FAILED": "Failed",
+          "PENDING": "Pending"
+        },
+        "buttons": {
+          "gadmDownload": "Download from GADM",
+          "upload": "Upload File",
+          "clear": "Clear",
+          "export": "Export",
+          "delete": "Delete",
+          "selectFile": "Select File"
+        },
+        "confirmClear": "Clear all boundary files for 「{name}」?",
+        "uploadModal": {
+          "title": "Upload Boundary File",
+          "supportedFormats": "Supports GeoJSON, KML, SHP formats"
+        },
+        "messages": {
+          "downloadSuccess": "Boundary file downloaded successfully",
+          "downloadFailTip": "Download failed, retry from bottom-right panel",
+          "uploadSuccess": "Upload successful",
+          "deleteSuccess": "Deleted successfully",
+          "deleteFail": "Delete failed",
+          "clearSuccess": "Cleared {count} files",
+          "clearFail": "Clear failed",
+          "exportFail": "Export failed"
+        },
+        "task": {
+          "downloadName": "Boundary Download: {name}",
+          "downloading": "Downloading...",
+          "complete": "Boundary download complete",
+          "fail": "Boundary download failed"
+        }
+      },
+      "roadNetwork": {
+        "title": "Road Network File Management",
+        "breadcrumb": {
+          "root": "Root"
+        },
+        "levelLabel": {
+          "country": "Country",
+          "state": "State",
+          "city": "City"
+        },
+        "panel": {
+          "currentLevel": "Current Level: {level}",
+          "networkFiles": "Road Network Files — {name}",
+          "selectRegion": "Select a region",
+          "selectHint": "← Select a region to view and download road network files",
+          "noFiles": "No road network files. Download from OSM or upload",
+          "downloadStatus": "Download Status:",
+          "downloaded": "Downloaded",
+          "notDownloaded": "Not Downloaded",
+          "fileCount": "{count} files total"
+        },
+        "searchPlaceholder": "Search {level} name or code...",
+        "list": {
+          "loading": "Loading...",
+          "noData": "No data, please import first"
+        },
+        "fileColumns": {
+          "fileName": "File Name",
+          "fileType": "Format",
+          "fileSize": "Size",
+          "nodeCount": "Nodes",
+          "edgeCount": "Edges",
+          "mode": "Mode",
+          "status": "Status",
+          "time": "Time",
+          "actions": "Actions"
+        },
+        "statusMap": {
+          "SUCCESS": "Downloaded",
+          "DOWNLOADING": "Downloading",
+          "FAILED": "Failed",
+          "PENDING": "Pending"
+        },
+        "downloadModes": {
+          "byName": "Download by Name",
+          "byBoundary": "Download by Boundary"
+        },
+        "buttons": {
+          "osmDownload": "Download from OSM",
+          "upload": "Upload File",
+          "clear": "Clear",
+          "export": "Export",
+          "delete": "Delete",
+          "selectFile": "Select File"
+        },
+        "confirmClear": "Clear all road network files for 「{name}」?",
+        "uploadModal": {
+          "title": "Upload Road Network File",
+          "supportedFormats": "Supports GraphML, OSM, GPKG, SHP formats"
+        },
+        "messages": {
+          "downloadSuccess": "Road network downloaded successfully",
+          "downloadFail": "Download failed: {error}",
+          "uploadSuccess": "Upload successful",
+          "deleteSuccess": "Deleted successfully",
+          "deleteFail": "Delete failed",
+          "clearSuccess": "Cleared {count} files",
+          "clearFail": "Clear failed",
+          "exportFail": "Export failed"
+        },
+        "task": {
+          "downloadName": "Road Network Download: {name}",
+          "downloading": "Downloading...",
+          "complete": "Road network download complete",
+          "fail": "Road network download failed",
+          "unknownError": "Unknown error"
+        }
+      },
+      "roadNetworkWorkbench": {
+        "title": "Road Network Workbench",
+        "basemap": "Basemap",
+        "clearCache": "Clear Tile Cache",
+        "fullscreen": "Fullscreen",
+        "selectors": {
+          "country": "Select Country →",
+          "region": "Select Region →",
+          "network": "Select Road Network →"
+        },
+        "stats": {
+          "title": "Road Network Statistics",
+          "nodes": "nodes",
+          "edges": "edges",
+          "junctions": "junctions",
+          "nodeCount": "nodes",
+          "edgeCount": "edges",
+          "junctionCount": "junctions",
+          "nodesShort": "nodes",
+          "unitItem": "segments",
+          "totalLength": "Total Length",
+          "density": "Density",
+          "fileSize": "File",
+          "srid": "CRS",
+          "center": "Center",
+          "zoom": "Zoom",
+          "km": "km",
+          "kmPerKm2": "km/km²"
+        },
+        "statsDetail": {
+          "title": "Statistics Details",
+          "label": "Metric",
+          "value": "Value",
+          "totalLength": "Total Length",
+          "totalLengthM": "Total Length (m)",
+          "nodeCount": "Node Count",
+          "edgeCount": "Edge Count",
+          "junctionCount": "Junction Count",
+          "density": "Network Density"
+        },
+        "legend": {
+          "title": "Legend"
+        },
+        "coords": {
+          "zoom": "Zoom"
+        },
+        "mapEmpty": "Select country and road network file to display map",
+        "tabs": {
+          "filter": {
+            "label": "Level Filter",
+            "selectTemplate": "Select Template",
+            "cancel": "Cancel",
+            "saveTemplate": "Save Template",
+            "delete": "Delete",
+            "templateName": "Template Name",
+            "confirmSave": "Confirm Save",
+            "preset": "Preset",
+            "selectHint": "Check road levels to display (uncheck hides instantly)",
+            "saveAndFilter": "Filter & Save"
+          },
+          "segment": {
+            "label": "Road Segmentation",
+            "lengthLabel": "Segment Length (m):",
+            "segmentAndSave": "Segment & Save"
+          },
+          "stats": {
+            "label": "Statistics Details"
+          },
+          "fields": {
+            "label": "Field Parameters",
+            "colActions": "Actions",
+            "selectTargetField": "Select Target Field",
+            "batchSanitize": "Take first array value (sanitize)",
+            "batchSet": "Set unified value (set)",
+            "selectAIProxy": "Select AI Proxy",
+            "selectSkill": "Select Skill (optional)",
+            "aiPromptPlaceholder": "Describe processing requirement, e.g.: filter edges where highway is motorway / convert maxspeed to number / group by name and deduplicate...",
+            "search": "Search field values...",
+            "query": "Query",
+            "batchOp": "Batch Operation",
+            "aiProcess": "AI Process",
+            "exportJson": "Export JSON",
+            "importJson": "Import JSON",
+            "paginationPrefix": "{total} records total",
+            "edit": "Edit",
+            "editField": "Edit Field",
+            "selectField": "Select Field",
+            "newValue": "New Value",
+            "cancel": "Cancel",
+            "save": "Save",
+            "batchOpTitle": "Batch Operation",
+            "selectTarget": "Select Target Field",
+            "sanitize": "Take first array value (sanitize)",
+            "setValue": "Set unified value (set)",
+            "unifiedValue": "Unified Value",
+            "execute": "Execute",
+            "aiTitle": "AI Field Processing",
+            "aiProxy": "Select AI Proxy",
+            "skill": "Select Skill (optional)",
+            "aiPrompt": "Describe processing requirement, e.g.: filter edges where highway is motorway / convert maxspeed to number / group by name and deduplicate...",
+            "aiExecute": "Execute"
+          }
+        },
+        "messages": {
+          "filterSuccess": "Filtering complete and saved",
+          "filterFail": "Filtering failed",
+          "segmentSuccess": "Segmentation complete and saved",
+          "segmentFail": "Segmentation failed",
+          "selectHighwayFirst": "Please select road levels",
+          "enterSegmentLength": "Please enter segment length",
+          "selectNetworkFirst": "Please select a road network file first",
+          "cacheCleared": "Tile cache cleared and reloaded",
+          "clearCacheFail": "Clear failed",
+          "exportSuccess": "Export successful",
+          "exportFail": "Export failed",
+          "importSuccess": "Import complete, new road network saved",
+          "importFail": "Import failed: {error}",
+          "jsonFormatError": "JSON format error: edges array required",
+          "aiSelectFirst": "Please select AI proxy and Skill or enter a processing requirement",
+          "aiSuccess": "AI processing successful",
+          "aiFail": "AI processing failed",
+          "checkNetwork": "Checking...",
+          "analyzeFail": "Analysis failed",
+          "templateLoaded": "Template loaded: {name}",
+          "enterTemplateName": "Please enter template name",
+          "templateSaved": "Template saved",
+          "saveFail": "Save failed",
+          "selectTemplateFirst": "Please select a template first",
+          "presetTemplateCannotDelete": "Preset templates cannot be deleted",
+          "templateDeleted": "Template deleted",
+          "deleteFail": "Delete failed",
+          "selectTargetField": "Please select target field",
+          "batchOpSuccess": "Batch operation succeeded, affected {count} records",
+          "batchOpFail": "Batch operation failed",
+          "aiProcessTask": "AI Processing Road Network",
+          "aiProcessDone": "AI processing complete, updated {count} records",
+          "aiNoValidData": "No valid data to update",
+          "aiProcessFail": "AI processing failed",
+          "unknownError": "Unknown error"
+        }
       }
     }
   },

@@ -1,5 +1,5 @@
 """全球国家及行政区 API"""
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Body, Query
 
 from app.controllers.region import region_controller
 from app.schemas.base import Success, SuccessExtra
@@ -87,3 +87,25 @@ async def export_data(req: RegionExportRequest):
 async def batch_update(req: RegionBatchUpdate):
     result = await region_controller.batch_update([u.model_dump(exclude_unset=True) for u in req.updates])
     return Success(data=result)
+
+
+@router.post("/fill-geonames", summary="填充行政区中文名")
+async def fill_geonames(
+    force_download: bool = Body(False, embed=True),
+    proxy: str | None = Body(None, embed=True),
+):
+    """从 GeoNames 下载中文名并填充 STATE/CITY 的 local_name
+
+    body: {force_download: bool, proxy: "http://127.0.0.1:7890"}
+    首次下载约 700MB（3-10 分钟），后续使用离线缓存秒级完成。
+    """
+    result = await region_controller.fill_geonames(
+        force_download=force_download, proxy=proxy
+    )
+    return Success(data=result)
+
+
+@router.get("/fill-geonames/progress", summary="下载进度查询")
+async def geonames_progress():
+    """查询 GeoNames 下载/填充进度"""
+    return Success(data=region_controller.get_geonames_progress())

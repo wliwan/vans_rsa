@@ -72,3 +72,39 @@ body {
     }
   }
 }
+
+/* ========== 移动端全局适配 ========== */
+@media (max-width: 767px) {
+  /* NModal 移动端全屏 */
+  .n-modal .n-card {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    min-height: 100vh;
+    max-height: 100vh;
+  }
+
+  /* NDataTable 启用横向滚动 */
+  .n-data-table {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 减少通用页面内边距 */
+  .common-page {
+    padding: 8px !important;
+  }
+
+  /* 小屏上 QueryBar label 缩短 */
+  .query-bar-item label {
+    width: 50px !important;
+    font-size: 13px;
+  }
+}
+
+/* 平板适配 */
+@media (min-width: 768px) and (max-width: 991px) {
+  .n-modal .n-card {
+    max-width: 90vw !important;
+  }
+}

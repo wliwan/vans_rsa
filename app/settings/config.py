@@ -28,7 +28,7 @@ class Settings(BaseSettings):
             # SQLite configuration
             "sqlite": {
                 "engine": "tortoise.backends.sqlite",
-                "credentials": {"file_path": f"{BASE_DIR}/db.sqlite3"},  # Path to SQLite database file
+                "credentials": {"file_path": f"{BASE_DIR}/data/db.sqlite3"},  # Path to SQLite database file
             },
             # MySQL/MariaDB configuration
             # Install with: tortoise-orm[asyncmy]

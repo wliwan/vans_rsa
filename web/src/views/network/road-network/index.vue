@@ -1,30 +1,47 @@
 <script setup>
 import { computed, h, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   NButton, NCard, NDataTable, NInput, NModal, NPopconfirm,
-  NSelect, NSpace, NSpin, NTag, NTree, NUpload,
+  NSelect, NSpace, NSpin, NTag, NUpload,
+  NBreadcrumb, NBreadcrumbItem,
   useMessage,
 } from 'naive-ui'
 import CommonPage from '@/components/page/CommonPage.vue'
 import TheIcon from '@/components/icon/TheIcon.vue'
+import { useTaskProgressStore } from '@/store/modules/taskProgress'
 import { getToken } from '@/utils'
 import api from '@/api'
 
 defineOptions({ name: '路网文件管理' })
 
+const { t } = useI18n()
+const _t = (key) => t(`views.network.roadNetwork.${key}`)
+
 const message = useMessage()
 
-const treeData = ref([])
-const selectedKeys = ref([])
-const selectedNode = ref(null)
-const treeLoading = ref(false)
-const treePattern = ref('')
+// ── 级联列表 ──
+const breadcrumb = ref([])
+const currentList = ref([])
+const currentLoading = ref(false)
+const currentSearch = ref('')
 
+const selectedNode = computed(() =>
+  breadcrumb.value.length > 0 ? breadcrumb.value[breadcrumb.value.length - 1] : null
+)
+
+const currentLevelLabel = computed(() => {
+  if (breadcrumb.value.length === 0) return _t('levelLabel.country')
+  if (breadcrumb.value.length === 1) return _t('levelLabel.state')
+  return _t('levelLabel.city')
+})
+
+// ── 路网文件 ──
 const networkStatus = ref({ has_network: false, count: 0, files: [] })
 const networkLoading = ref(false)
 const downloadLoading = ref(false)
 const showUploadModal = ref(false)
-const downloadMode = ref('name')  // boundary | name
+const downloadMode = ref('name')
 
 const uploadUrl = computed(() =>
   `${import.meta.env.VITE_BASE_API}/region/road-network/upload?region_id=${selectedNode.value?.id || ''}`
@@ -33,32 +50,64 @@ const uploadHeaders = computed(() => ({
   Authorization: `Bearer ${getToken() || ''}`,
 }))
 
-onMounted(() => loadTree())
+const typeColorMap = { COUNTRY: '#2080f0', STATE: '#18a058', CITY: '#f0a020' }
 
-async function loadTree() {
-  treeLoading.value = true
+onMounted(resetToRoot)
+
+function resetToRoot() {
+  breadcrumb.value = []
+  networkStatus.value = { has_network: false, count: 0, files: [] }
+  loadCurrentLevel()
+}
+
+// ── 加载当前层级 ──
+async function loadCurrentLevel() {
+  currentLoading.value = true
+  currentSearch.value = ''
   try {
-    const res = await api.getRegionTree()
-    treeData.value = res.data || []
+    if (breadcrumb.value.length === 0) {
+      const res = await api.getRegionList({ region_type: 'COUNTRY', page_size: 500, is_active: true })
+      currentList.value = (res.data || []).map(item => ({ ...item, has_children: true }))
+    } else {
+      const parentId = breadcrumb.value[breadcrumb.value.length - 1].id
+      const res = await api.getRegionChildren(parentId)
+      currentList.value = res.data || []
+    }
   } catch (e) {
-    message.error('加载树失败')
+    currentList.value = []
   } finally {
-    treeLoading.value = false
+    currentLoading.value = false
   }
 }
 
-function onNodeSelect(keys, option) {
-  if (keys.length === 0) {
-    selectedNode.value = null
+const filteredList = computed(() => {
+  if (!currentSearch.value) return currentList.value
+  const s = currentSearch.value.toLowerCase()
+  return currentList.value.filter(item =>
+    (item.name || '').toLowerCase().includes(s) ||
+    (item.local_name || '').toLowerCase().includes(s) ||
+    (item.code || '').toLowerCase().includes(s)
+  )
+})
+
+// ── 点击行 → 进入子层级并加载路网状态 ──
+function onClickRow(row) {
+  breadcrumb.value.push({ id: row.id, name: row.name, localName: row.local_name || '', type: row.region_type || '' })
+  loadCurrentLevel()
+  loadNetworkStatus(row.id)
+}
+
+function backToLevel(index) {
+  breadcrumb.value = breadcrumb.value.slice(0, index)
+  if (breadcrumb.value.length > 0) {
+    loadNetworkStatus(breadcrumb.value[breadcrumb.value.length - 1].id)
+  } else {
     networkStatus.value = { has_network: false, count: 0, files: [] }
-    return
   }
-  const node = Array.isArray(option) ? option[0] : option
-  selectedKeys.value = keys
-  selectedNode.value = node
-  loadNetworkStatus(node.id)
+  loadCurrentLevel()
 }
 
+// ── 路网操作 ──
 async function loadNetworkStatus(regionId) {
   networkLoading.value = true
   try {
@@ -74,16 +123,37 @@ async function loadNetworkStatus(regionId) {
 async function onDownload() {
   if (!selectedNode.value) return
   downloadLoading.value = true
+
+  const taskStore = useTaskProgressStore()
+  const nodeName = selectedNode.value.localName
+    ? `${selectedNode.value.name}（${selectedNode.value.localName}）`
+    : selectedNode.value.name
+  const taskId = taskStore.startTask(_t('task.downloadName', { name: nodeName }))
+
+  // 模拟进度（后端同步返回，无法获取真实百分比）
+  let simProgress = 10
+  const simTimer = setInterval(() => {
+    if (simProgress < 85) {
+      simProgress += 5
+      taskStore.updateProgress(taskId, { progress: simProgress, message: _t('task.downloading') })
+    }
+  }, 800)
+
   try {
     await api.downloadRoadNetwork({
       region_id: selectedNode.value.id,
       mode: downloadMode.value,
-      file_type: 'GRAPHML',
+      file_type: 'GPKG',
     })
-    message.success('路网下载成功')
+    clearInterval(simTimer)
+    taskStore.finishTask(taskId, _t('task.complete'))
+    message.success(_t('messages.downloadSuccess'))
     loadNetworkStatus(selectedNode.value.id)
   } catch (e) {
-    message.error('下载失败: ' + (e?.response?.data?.msg || e?.message || '未知错误'))
+    clearInterval(simTimer)
+    const errMsg = e?.response?.data?.msg || e?.message || _t('task.unknownError')
+    taskStore.failTask(taskId, { message: _t('task.fail'), detail: errMsg })
+    message.error(_t('messages.downloadFail', { error: errMsg }))
   } finally {
     downloadLoading.value = false
   }
@@ -91,7 +161,7 @@ async function onDownload() {
 
 function onUploadFinish({ file }) {
   if (file.status === 'finished') {
-    message.success('上传成功')
+    message.success(_t('messages.uploadSuccess'))
     showUploadModal.value = false
     loadNetworkStatus(selectedNode.value?.id)
   }
@@ -100,22 +170,18 @@ function onUploadFinish({ file }) {
 async function onDeleteFile(row) {
   try {
     await api.deleteRoadNetwork({ network_id: row.id })
-    message.success('删除成功')
+    message.success(_t('messages.deleteSuccess'))
     loadNetworkStatus(selectedNode.value?.id)
-  } catch (e) {
-    message.error('删除失败')
-  }
+  } catch (e) { message.error(_t('messages.deleteFail')) }
 }
 
 async function onClearAll() {
   if (!selectedNode.value) return
   try {
     const res = await api.clearRoadNetworks({ region_id: selectedNode.value.id })
-    message.success(`已清除 ${res.data?.deleted || 0} 个文件`)
+    message.success(_t('messages.clearSuccess', { count: res.data?.deleted || 0 }))
     loadNetworkStatus(selectedNode.value.id)
-  } catch (e) {
-    message.error('清除失败')
-  }
+  } catch (e) { message.error(_t('messages.clearFail')) }
 }
 
 function onExportFile(row) {
@@ -123,10 +189,10 @@ function onExportFile(row) {
     const url = URL.createObjectURL(res.data)
     const a = document.createElement('a')
     a.href = url
-    a.download = row.file_name || 'network.graphml'
+    a.download = row.file_name || 'network.gpkg'
     a.click()
     URL.revokeObjectURL(url)
-  }).catch(() => message.error('导出失败'))
+  }).catch(() => message.error(_t('messages.exportFail')))
 }
 
 function formatSize(bytes) {
@@ -136,203 +202,207 @@ function formatSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
-function formatCount(n) {
-  return n != null ? n.toLocaleString() : '-'
-}
+function formatCount(n) { return n != null ? n.toLocaleString() : '-' }
 
-const downloadModeOptions = [
-  { label: '按地名下载', value: 'name' },
-  { label: '按边界文件下载', value: 'boundary' },
-]
+const downloadModeOptions = computed(() => [
+  { label: _t('downloadModes.byName'), value: 'name' },
+  { label: _t('downloadModes.byBoundary'), value: 'boundary' },
+])
 
-const statusMap = {
-  SUCCESS: { type: 'success', label: '已下载' },
-  DOWNLOADING: { type: 'warning', label: '下载中' },
-  FAILED: { type: 'error', label: '失败' },
-  PENDING: { type: 'default', label: '待下载' },
-}
-
-const fileColumns = [
-  { title: '文件名', key: 'file_name', ellipsis: { tooltip: true }, width: 160 },
-  { title: '格式', key: 'file_type', width: 70 },
-  { title: '大小', key: 'file_size', width: 70, render: (row) => formatSize(row.file_size) },
-  { title: '节点数', key: 'node_count', width: 70, render: (row) => formatCount(row.node_count) },
-  { title: '边数', key: 'edge_count', width: 70, render: (row) => formatCount(row.edge_count) },
-  {
-    title: '模式', key: 'download_mode', width: 60,
-    render(row) { return h(NTag, { size: 'tiny', type: 'info' }, { default: () => row.download_mode || '-' }) },
-  },
-  {
-    title: '状态', key: 'download_status', width: 70,
-    render(row) {
-      const s = statusMap[row.download_status] || { type: 'default', label: row.download_status }
-      return h(NTag, { type: s.type, size: 'small' }, { default: () => s.label })
+const fileColumns = computed(() => {
+  const statusLabels = {
+    SUCCESS: _t('statusMap.SUCCESS'),
+    DOWNLOADING: _t('statusMap.DOWNLOADING'),
+    FAILED: _t('statusMap.FAILED'),
+    PENDING: _t('statusMap.PENDING'),
+  }
+  const statusTypeMap = { SUCCESS: 'success', DOWNLOADING: 'warning', FAILED: 'error', PENDING: 'default' }
+  return [
+    { title: _t('fileColumns.fileName'), key: 'file_name', ellipsis: { tooltip: true }, width: 160 },
+    { title: _t('fileColumns.fileType'), key: 'file_type', width: 70 },
+    { title: _t('fileColumns.fileSize'), key: 'file_size', width: 70, render: (row) => formatSize(row.file_size) },
+    { title: _t('fileColumns.nodeCount'), key: 'node_count', width: 70, render: (row) => formatCount(row.node_count) },
+    { title: _t('fileColumns.edgeCount'), key: 'edge_count', width: 70, render: (row) => formatCount(row.edge_count) },
+    { title: _t('fileColumns.mode'), key: 'download_mode', width: 60,
+      render(row) { return h(NTag, { size: 'tiny', type: 'info' }, { default: () => row.download_mode || '-' }) },
     },
-  },
-  { title: '时间', key: 'created_at', width: 140, render: (row) => (row.created_at || '').replace('T', ' ') },
-  {
-    title: '操作', key: 'actions', width: 100,
-    render(row) {
-      return h(NSpace, { size: 2 }, {
-        default: () => [
-          row.download_status === 'SUCCESS' && h(NButton, {
-            size: 'tiny', quaternary: true, type: 'primary',
-            onClick: () => onExportFile(row),
-          }, { default: () => '导出' }),
-          h(NPopconfirm, { onPositiveClick: () => onDeleteFile(row) }, {
-            trigger: () => h(NButton, { size: 'tiny', quaternary: true, type: 'error' }, { default: () => '删除' }),
-          }),
-        ],
-      })
+    { title: _t('fileColumns.status'), key: 'download_status', width: 70,
+      render(row) {
+        const label = statusLabels[row.download_status] || row.download_status
+        const type = statusTypeMap[row.download_status] || 'default'
+        return h(NTag, { type, size: 'small' }, { default: () => label })
+      },
     },
-  },
-]
+    { title: _t('fileColumns.time'), key: 'created_at', width: 140, render: (row) => (row.created_at || '').replace('T', ' ') },
+    {
+      title: _t('fileColumns.actions'), key: 'actions', width: 100,
+      render(row) {
+        return h(NSpace, { size: 2 }, {
+          default: () => [
+            row.download_status === 'SUCCESS' && h(NButton, {
+              size: 'tiny', quaternary: true, type: 'primary',
+              onClick: () => onExportFile(row),
+            }, { default: () => _t('buttons.export') }),
+            h(NPopconfirm, { onPositiveClick: () => onDeleteFile(row) }, {
+              trigger: () => h(NButton, { size: 'tiny', quaternary: true, type: 'error' }, { default: () => _t('buttons.delete') }),
+            }),
+          ],
+        })
+      },
+    },
+  ]
+})
 </script>
 
 <template>
-  <CommonPage title="路网文件管理">
-    <div class="region-layout">
-      <NCard size="small" class="left-panel" :bordered="true">
-        <template #header>
-          <span style="font-weight: 600">区域树</span>
-        </template>
-        <div style="padding: 0 0 8px 0">
-          <NInput v-model:value="treePattern" placeholder="搜索区域名称..." clearable size="small" />
-        </div>
-        <NSpin :show="treeLoading">
-          <NTree
-            v-if="treeData.length"
-            :data="treeData"
-            :selected-keys="selectedKeys"
-            :pattern="treePattern"
-            :filter="(pattern, node) => !pattern || String(node.label||'').toLowerCase().includes(String(pattern).toLowerCase())"
-            virtual-scroll
-            key-field="id"
-            label-field="label"
-            children-field="children"
-            block-line
-            selectable
-            @update:selected-keys="(keys, opt) => onNodeSelect(keys, opt)"
-          />
-          <div v-else style="text-align: center; color: #999; padding: 40px 0">
-            暂无数据，请先导入
+  <CommonPage :title="_t('title')">
+    <div class="toolbar-row">
+      <NBreadcrumb>
+        <NBreadcrumbItem><span class="breadcrumb-link" @click="backToLevel(0)">{{ _t('breadcrumb.root') }}</span></NBreadcrumbItem>
+        <NBreadcrumbItem v-for="(item, idx) in breadcrumb" :key="item.id">
+          <span v-if="idx < breadcrumb.length - 1" class="breadcrumb-link" @click="backToLevel(idx + 1)">{{ item.localName ? item.name + '（' + item.localName + '）' : item.name }}</span>
+          <span v-else style="font-weight: 600">{{ item.localName ? item.name + '（' + item.localName + '）' : item.name }}</span>
+        </NBreadcrumbItem>
+      </NBreadcrumb>
+    </div>
+
+    <div class="main-layout">
+      <NCard size="small" :bordered="true" class="left-panel">
+        <template #header><span class="panel-title">{{ _t('panel.currentLevel', { level: currentLevelLabel }) }}</span></template>
+        <NInput v-model:value="currentSearch" :placeholder="_t('searchPlaceholder', { level: currentLevelLabel })" clearable size="small" style="margin-bottom: 8px" />
+        <NSpin :show="currentLoading" style="flex: 1; min-height: 0">
+          <div v-if="filteredList.length" class="region-list">
+            <div v-for="row in filteredList" :key="row.id" class="region-row" @click="onClickRow(row)">
+              <span class="row-code">{{ row.code || '-' }}</span>
+              <div class="row-names">
+                <span class="row-name">{{ row.name }}</span>
+                <span v-if="row.local_name" class="row-local-name">{{ row.local_name }}</span>
+              </div>
+              <NTag :style="{ background: typeColorMap[row.region_type] + '20', color: typeColorMap[row.region_type], border: 'none' }" size="small">{{ row.region_type }}</NTag>
+            </div>
           </div>
+          <div v-else class="empty-state">{{ currentLoading ? _t('list.loading') : _t('list.noData') }}</div>
         </NSpin>
       </NCard>
 
-      <NCard size="small" class="right-panel" :bordered="true">
+      <NCard size="small" :bordered="true" class="right-panel">
         <template #header>
-          <span style="font-weight: 600">
-            {{ selectedNode ? `路网文件 — ${selectedNode.label}` : '请从左侧选择区域' }}
-          </span>
-          <span v-if="selectedNode" style="float: right">
-            <NSelect
-              v-model:value="downloadMode"
-              :options="downloadModeOptions"
-              size="small"
-              style="width: 130px; margin-right: 4px"
-              filterable
-            />
-            <NButton
-              size="small" type="primary" :loading="downloadLoading"
-              @click="onDownload" style="margin-right: 4px"
-            >
-              下载路网
-            </NButton>
-            <NButton size="small" type="primary" @click="showUploadModal = true" style="margin-right: 4px">
-              上传
-            </NButton>
-            <NPopconfirm @positive-click="onClearAll" v-if="networkStatus.count > 0">
-              <template #trigger>
-                <NButton size="small" type="error" secondary>清除</NButton>
-              </template>
-              确认清除「{{ selectedNode.label }}」的所有路网文件？
-            </NPopconfirm>
-          </span>
+          <div class="panel-header-row">
+            <span class="panel-title">{{ selectedNode ? _t('panel.networkFiles', { name: selectedNode.localName ? selectedNode.name + '（' + selectedNode.localName + '）' : selectedNode.name }) : _t('panel.selectRegion') }}</span>
+            <div v-if="selectedNode" class="panel-actions">
+              <NSelect v-model:value="downloadMode" :options="downloadModeOptions" size="small" class="action-dl-select" />
+              <NButton size="small" type="primary" :loading="downloadLoading" @click="onDownload">{{ _t('buttons.osmDownload') }}</NButton>
+              <NButton size="small" type="primary" @click="showUploadModal = true">{{ _t('buttons.upload') }}</NButton>
+              <NPopconfirm @positive-click="onClearAll" v-if="networkStatus.count > 0">
+                <template #trigger><NButton size="small" type="error" secondary>{{ _t('buttons.clear') }}</NButton></template>
+                {{ _t('confirmClear', { name: selectedNode.localName ? selectedNode.name + '（' + selectedNode.localName + '）' : selectedNode.name }) }}
+              </NPopconfirm>
+            </div>
+          </div>
         </template>
 
-        <div v-if="!selectedNode" style="text-align: center; color: #999; padding: 60px 0">
-          选择左侧区域查看和下载路网文件
-        </div>
+        <div v-if="!selectedNode" class="empty-state">{{ _t('panel.selectHint') }}</div>
 
         <NSpin v-else :show="networkLoading">
           <div style="margin-bottom: 16px">
             <NSpace align="center">
-              <span>下载状态：</span>
-              <NTag :type="networkStatus.has_network ? 'success' : 'warning'" size="small">
-                {{ networkStatus.has_network ? '已下载' : '未下载' }}
-              </NTag>
-              <span v-if="networkStatus.count > 0" style="color: #999">
-                共 {{ networkStatus.count }} 个文件
-              </span>
+              <span>{{ _t('panel.downloadStatus') }}</span>
+              <NTag :type="networkStatus.has_network ? 'success' : 'warning'" size="small">{{ networkStatus.has_network ? _t('panel.downloaded') : _t('panel.notDownloaded') }}</NTag>
+              <span v-if="networkStatus.count > 0" style="color: #999">{{ _t('panel.fileCount', { count: networkStatus.count }) }}</span>
             </NSpace>
           </div>
-
-          <NDataTable
-            v-if="networkStatus.files.length"
-            :columns="fileColumns"
-            :data="networkStatus.files"
-            :row-key="(row) => row.id"
-            size="small"
-            :bordered="true"
-            stripe
-            max-height="400"
-          />
-
-          <div v-else style="text-align: center; color: #999; padding: 40px 0">
-            暂无路网文件，请下载或上传
-          </div>
+          <NDataTable v-if="networkStatus.files.length" :columns="fileColumns" :data="networkStatus.files" :row-key="(row) => row.id" size="small" :bordered="true" stripe max-height="400" />
+          <div v-else class="empty-state">{{ _t('panel.noFiles') }}</div>
         </NSpin>
       </NCard>
     </div>
 
-    <NModal v-model:show="showUploadModal" title="上传路网文件" preset="card" style="width: 480px">
-      <NUpload
-        :action="uploadUrl"
-        :headers="uploadHeaders"
-        accept=".graphml,.osm,.gpkg,.xml"
-        :max="1"
-        @finish="onUploadFinish"
-      >
-        <NButton>选择文件</NButton>
+    <NModal v-model:show="showUploadModal" :title="_t('uploadModal.title')" preset="card" style="width: 480px">
+      <NUpload :action="uploadUrl" :headers="uploadHeaders" accept=".graphml,.osm,.gpkg,.shp" :max="1" @finish="onUploadFinish">
+        <NButton>{{ _t('buttons.selectFile') }}</NButton>
       </NUpload>
-      <div style="margin-top: 8px; color: #999; font-size: 13px">
-        支持 GraphML、OSM、GeoPackage 格式
-      </div>
+      <div style="margin-top: 8px; color: #999; font-size: 13px">{{ _t('uploadModal.supportedFormats') }}</div>
     </NModal>
   </CommonPage>
 </template>
 
 <style scoped>
-.region-layout {
-  display: flex;
-  height: calc(100vh - 180px);
-  overflow: hidden;
-  gap: 8px;
-}
-.left-panel {
-  width: 320px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.right-panel {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.left-panel :deep(.n-card__content),
-.right-panel :deep(.n-card__content) {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-}
-.left-panel :deep(.n-tree-node-content__text) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.toolbar-row { display: flex; align-items: center; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
+.breadcrumb-link { cursor: pointer; color: #2080f0; }
+.breadcrumb-link:hover { text-decoration: underline; }
+.main-layout { display: flex; height: calc(100vh - 210px); overflow: hidden; gap: 8px; }
+
+.left-panel { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
+.right-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+.left-panel :deep(.n-card__content), .right-panel :deep(.n-card__content) { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+
+.region-list { flex: 1; min-height: 0; }
+.region-row { display: flex; align-items: flex-start; padding: 5px 8px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.15s; gap: 6px; }
+.region-row:hover { background: #f5f7fa; }
+.row-code { font-size: 11px; color: #999; flex-shrink: 0; font-family: monospace; margin-top: 1px; }
+.row-names { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.row-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-local-name { font-size: 11px; color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.empty-state { text-align: center; color: #999; padding: 40px 0; font-size: 14px; }
+
+.left-panel :deep(.n-card__content)::-webkit-scrollbar,
+.right-panel :deep(.n-card__content)::-webkit-scrollbar { width: 5px; }
+.left-panel :deep(.n-card__content)::-webkit-scrollbar-thumb,
+.right-panel :deep(.n-card__content)::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+/* 右面板 header 行 */
+.panel-header-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.panel-title { font-weight: 600; flex-shrink: 0; }
+.panel-actions { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+.action-dl-select { width: 120px; }
+
+/* ── 移动端适配（≤768px）── */
+@media (max-width: 768px) {
+  .toolbar-row { margin-bottom: 4px; }
+
+  /* 双面板 → 垂直堆叠 */
+  .main-layout {
+    flex-direction: column;
+    height: auto;
+    height: calc(100dvh - 160px);
+    min-height: 400px;
+    gap: 6px;
+  }
+
+  .left-panel {
+    width: 100%;
+    flex-shrink: 1;
+    max-height: 35vh;
+    min-height: 140px;
+  }
+
+  .right-panel {
+    flex: 1;
+    min-height: 150px;
+  }
+
+  /* header 按钮全宽换行 */
+  .panel-header-row {
+    gap: 4px;
+  }
+  .panel-actions {
+    width: 100%;
+    margin-left: 0;
+    gap: 4px;
+  }
+  .panel-actions > * {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .action-dl-select {
+    width: 100% !important;
+    min-width: 100px;
+  }
+
+  /* 紧凑行间距 */
+  .region-row { padding: 6px 8px; }
+  .row-code { font-size: 10px; }
+  .row-name { font-size: 12px; }
 }
 </style>

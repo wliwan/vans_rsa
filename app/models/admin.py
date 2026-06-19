@@ -206,6 +206,7 @@ class RoadNetwork(BaseModel, TimestampMixin):
     download_mode = fields.CharField(max_length=50, null=True, description="下载模式: boundary / name")
     download_status = fields.CharEnumField(RoadNetworkStatus, default=RoadNetworkStatus.PENDING, description="下载状态", index=True)
     error_message = fields.CharField(max_length=500, null=True, description="错误信息")
+    stats_json = fields.TextField(null=True, description="分析统计缓存(JSON): info + highway_types + bbox")
     is_active = fields.BooleanField(default=True, description="是否启用")
 
     class Meta:
@@ -223,9 +224,9 @@ class Skill(BaseModel, TimestampMixin):
 
 class AIProxy(BaseModel, TimestampMixin):
     name = fields.CharField(max_length=100, unique=True, description="代理名称", index=True)
-    url = fields.CharField(max_length=500, description="接口地址")
-    token = fields.CharField(max_length=500, description="认证令牌")
-    model = fields.CharField(max_length=200, default="", description="模型名称")
+    url = fields.CharField(max_length=500, null=True, description="接口地址")
+    token = fields.CharField(max_length=500, null=True, description="认证令牌")
+    model = fields.CharField(max_length=200, null=True, description="模型名称")
     users = fields.ManyToManyField("models.User", related_name="ai_proxies", description="可访问的用户")
 
     class Meta:
@@ -267,6 +268,22 @@ class AnalysisSheet(BaseModel, TimestampMixin):
         table = "analysis_sheet"
 
 
+class Document(BaseModel, TimestampMixin):
+    workspace = fields.ForeignKeyField("models.Workspace", related_name="documents", description="所属工作区", index=True)
+    name = fields.CharField(max_length=200, description="文件名", index=True)
+    file_path = fields.CharField(max_length=500, description="存储路径")
+    file_size = fields.BigIntField(default=0, description="文件大小(字节)")
+    char_count = fields.IntField(default=0, description="字符数量")
+    source_type = fields.CharField(max_length=20, description="来源类型: original / analysis")
+    source_document = fields.ForeignKeyField("models.Document", null=True, related_name="analysis_documents", description="来源原始文档", index=True)
+    ai_proxy_id = fields.IntField(null=True, description="使用的AI代理ID")
+    skill_id = fields.IntField(null=True, description="使用的Skill ID")
+    prompt = fields.TextField(null=True, description="分析提示词")
+
+    class Meta:
+        table = "document"
+
+
 class Report(BaseModel, TimestampMixin):
     workspace = fields.ForeignKeyField("models.Workspace", related_name="reports", description="所属工作区", index=True)
     name = fields.CharField(max_length=200, description="报告名称", index=True)
@@ -279,3 +296,43 @@ class Report(BaseModel, TimestampMixin):
 
     class Meta:
         table = "report"
+
+
+class SystemConfig(BaseModel, TimestampMixin):
+    key = fields.CharField(max_length=100, unique=True, description="配置键", index=True)
+    value = fields.TextField(description="配置值(JSON)")
+    description = fields.CharField(max_length=200, null=True, description="配置说明")
+
+    class Meta:
+        table = "system_config"
+
+
+class FilterTemplate(BaseModel, TimestampMixin):
+    name = fields.CharField(max_length=50, unique=True, description="模板名称", index=True)
+    selected_types = fields.JSONField(default=list, description="选中的道路等级列表")
+    is_preset = fields.BooleanField(default=False, description="是否系统预设模板")
+
+    class Meta:
+        table = "filter_template"
+
+
+class RoadMaterial(BaseModel, TimestampMixin):
+    """路网素材 - 图片素材管理"""
+    name = fields.CharField(max_length=200, description="图片名称", index=True)
+    description = fields.TextField(null=True, description="元数据(文本)")
+    region = fields.ForeignKeyField("models.Region", related_name="materials", description="所属区域", index=True)
+    file_name = fields.CharField(max_length=300, description="原始文件名")
+    file_path = fields.CharField(max_length=500, description="存储路径")
+    file_size = fields.BigIntField(default=0, description="文件大小(字节)")
+    width = fields.IntField(null=True, description="图片宽度(px)")
+    height = fields.IntField(null=True, description="图片高度(px)")
+    color_mode = fields.CharField(max_length=20, null=True, description="色彩模式(RGB/RGBA/CMYK等)")
+    bit_depth = fields.IntField(null=True, description="位深度")
+    dpi = fields.FloatField(null=True, description="DPI/PPI")
+    format_type = fields.CharField(max_length=10, null=True, description="格式类型(JPEG/PNG/TIFF等)")
+    exif_data = fields.JSONField(null=True, description="EXIF元数据")
+    source = fields.CharField(max_length=50, default="upload", description="图片来源(upload/import/ai_generated/cv_processed)")
+    short_url_token = fields.CharField(max_length=64, unique=True, description="短链接令牌", index=True)
+
+    class Meta:
+        table = "road_material"

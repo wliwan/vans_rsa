@@ -1,4 +1,5 @@
 import logging
+import os
 
 from fastapi import APIRouter, Query
 
@@ -61,3 +62,39 @@ async def delete_menu(
         return Fail(msg="Cannot delete a menu with child menus")
     await menu_controller.remove(id=id)
     return Success(msg="Deleted Success")
+
+
+def _scan_views_dir(base_path: str, rel_prefix: str = "") -> list[dict]:
+    """递归扫描 views 目录，返回树形结构。
+    每个节点：{ path: str, name: str, children?: list }
+    """
+    result = []
+    try:
+        entries = sorted(os.listdir(base_path))
+    except FileNotFoundError:
+        return result
+
+    for entry in entries:
+        full = os.path.join(base_path, entry)
+        if not os.path.isdir(full):
+            continue
+        # 跳过 __pycache__ 等特殊目录
+        if entry.startswith(".") or entry.startswith("__"):
+            continue
+        rel_path = f"{rel_prefix}/{entry}" if rel_prefix else f"/{entry}"
+        node: dict = {"path": rel_path, "name": entry}
+        children = _scan_views_dir(full, rel_path)
+        if children:
+            node["children"] = children
+        result.append(node)
+    return result
+
+
+@router.get("/scan-views", summary="扫描前端视图文件夹")
+async def scan_views():
+    """扫描 web/src/views/ 下所有子文件夹，返回树形结构供菜单配置参考。"""
+    # 项目根目录相对于当前文件: app/api/v1/menus/menus.py → 项目根
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+    views_dir = os.path.join(project_root, "web", "src", "views")
+    tree = _scan_views_dir(views_dir)
+    return Success(data=tree)

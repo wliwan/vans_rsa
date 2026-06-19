@@ -63,7 +63,7 @@ build-web: ## Build frontend to web/dist/
 
 .PHONY: build-docker
 build-docker: ## Build Docker image
-	docker build --no-cache . -t vue-fastapi-admin:$(APP_VERSION)
+	docker build --no-cache . -t vansrsa:$(APP_VERSION)
 
 .PHONY: build
 build: build-web ## Full build (frontend only; backend is Python, no compile needed)
@@ -73,13 +73,13 @@ build: build-web ## Full build (frontend only; backend is Python, no compile nee
 
 .PHONY: release
 release: build-docker ## Build and tag Docker image as latest
-	docker tag vue-fastapi-admin:$(APP_VERSION) vue-fastapi-admin:latest
-	@echo "Release image: vue-fastapi-admin:$(APP_VERSION) / vue-fastapi-admin:latest"
+	docker tag vansrsa:$(APP_VERSION) vansrsa:latest
+	@echo "Release image: vansrsa:$(APP_VERSION) / vansrsa:latest"
 
 .PHONY: publish
 publish: release ## Push Docker image to registry
-	@echo "docker push vue-fastapi-admin:$(APP_VERSION)"
-	@echo "docker push vue-fastapi-admin:latest"
+	@echo "docker push vansrsa:$(APP_VERSION)"
+	@echo "docker push vansrsa:latest"
 
 # Check, lint and format targets
 # ------------------------------

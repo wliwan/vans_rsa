@@ -6,12 +6,17 @@ import {
   NFormItem,
   NInput,
   NInputNumber,
+  NModal,
   NPopconfirm,
+  NSpace,
+  NSpin,
   NSwitch,
+  NTree,
   NTreeSelect,
   NRadio,
   NRadioGroup,
   NTag,
+  useMessage,
 } from 'naive-ui'
 
 import CommonPage from '@/components/page/CommonPage.vue'
@@ -253,15 +258,57 @@ async function getTreeSelect() {
   menu.children = data
   menuOptions.value = [menu]
 }
+
+// 扫描视图
+const message = useMessage()
+const showScanModal = ref(false)
+const scanLoading = ref(false)
+const scanTreeData = ref([])
+const selectedScanPath = ref('')
+
+async function handleScanViews() {
+  showScanModal.value = true
+  scanLoading.value = true
+  selectedScanPath.value = ''
+  try {
+    const res = await api.scanViews()
+    scanTreeData.value = res.data || []
+  } catch (e) {
+    message.error('扫描视图文件夹失败')
+  } finally {
+    scanLoading.value = false
+  }
+}
+
+function onScanNodeSelect(keys) {
+  if (keys.length > 0) {
+    selectedScanPath.value = keys[0]
+  }
+}
+
+async function copyScanPath() {
+  if (!selectedScanPath.value) return
+  try {
+    await navigator.clipboard.writeText(selectedScanPath.value)
+    message.success('已复制到剪贴板')
+  } catch {
+    message.warning('复制失败，请手动复制')
+  }
+}
 </script>
 
 <template>
   <!-- 业务页面 -->
   <CommonPage show-footer title="菜单列表">
     <template #action>
-      <NButton v-permission="'post/api/v1/menu/create'" type="primary" @click="handleClickAdd">
-        <TheIcon icon="material-symbols:add" :size="18" class="mr-5" />新建根菜单
-      </NButton>
+      <NSpace>
+        <NButton v-permission="'post/api/v1/menu/create'" type="primary" @click="handleClickAdd">
+          <TheIcon icon="material-symbols:add" :size="18" class="mr-5" />新建根菜单
+        </NButton>
+        <NButton secondary @click="handleScanViews">
+          <TheIcon icon="material-symbols:folder-open-outline" :size="18" class="mr-5" />扫描视图
+        </NButton>
+      </NSpace>
     </template>
 
     <!-- 表格 -->
@@ -356,5 +403,65 @@ async function getTreeSelect() {
         </NFormItem>
       </NForm>
     </CrudModal>
+
+    <!-- 扫描视图弹窗 -->
+    <NModal
+      v-model:show="showScanModal"
+      title="视图文件夹扫描结果"
+      preset="card"
+      style="width: 600px; max-height: 80vh"
+    >
+      <template #header>
+        <span>视图文件夹扫描结果</span>
+      </template>
+      <div style="min-height: 200px">
+        <NSpin :show="scanLoading">
+          <p style="color: var(--n-text-color-3); margin-bottom: 12px; font-size: 13px">
+            以下是 <code>web/src/views/</code> 下的所有视图文件夹，可用于菜单配置中的「组件路径」字段。
+          </p>
+          <div
+            v-if="!scanLoading && scanTreeData.length === 0"
+            style="color: var(--n-text-color-3); text-align: center; padding: 40px 0"
+          >
+            未扫描到视图文件夹
+          </div>
+          <div
+            v-if="!scanLoading && scanTreeData.length > 0"
+            style="display: flex; flex-direction: column; gap: 12px"
+          >
+            <NTree
+              :data="scanTreeData"
+              label-field="path"
+              key-field="path"
+              :default-expand-all="true"
+              block-line
+              selectable
+              style="max-height: 50vh; overflow: auto; border: 1px solid var(--n-border-color); border-radius: 4px; padding: 8px"
+              @update:selected-keys="onScanNodeSelect"
+            />
+            <div
+              v-if="selectedScanPath"
+              style="
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 12px;
+                background: var(--n-color-embedded);
+                border-radius: 4px;
+              "
+            >
+              <span style="color: var(--n-text-color-2); font-size: 13px">已选路径：</span>
+              <code style="font-size: 13px; flex: 1">{{ selectedScanPath }}</code>
+              <NButton size="tiny" secondary @click="copyScanPath">复制</NButton>
+            </div>
+          </div>
+        </NSpin>
+      </div>
+      <template #footer>
+        <NSpace justify="end">
+          <NButton @click="showScanModal = false">关闭</NButton>
+        </NSpace>
+      </template>
+    </NModal>
   </CommonPage>
 </template>

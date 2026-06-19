@@ -3,9 +3,9 @@
     <div flex-1>
       <!-- 用户问候 + 统计区 -->
       <n-card rounded-10>
-        <div flex items-center justify-between>
-          <div flex items-center>
-            <img rounded-full width="60" :src="userStore.avatar" />
+        <div class="greeting-row" flex items-center justify-between>
+          <div class="greeting-left" flex items-center>
+            <img class="greeting-avatar" rounded-full width="60" :src="userStore.avatar" />
             <div ml-10>
               <p text-20 font-semibold>
                 {{ $t('views.workbench.text_hello', { username: userStore.name }) }}
@@ -13,7 +13,7 @@
               <p mt-5 text-14 op-60>{{ $t('views.workbench.text_welcome') }}</p>
             </div>
           </div>
-          <n-space :size="12" :wrap="false" align="center">
+          <n-space :size="12" :wrap="isMobile" align="center">
             <n-statistic v-for="item in statisticData" :key="item.id" v-bind="item" />
             <!-- 编辑模式开关 -->
             <n-button
@@ -57,7 +57,7 @@
 
         <div
           class="card-grid"
-          :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
+          :style="{ gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridCols}, 1fr)` }"
         >
           <n-card
             v-for="(card, idx) in orderedMenus"
@@ -128,6 +128,20 @@ const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
 const userStore = useUserStore()
 const permissionStore = usePermissionStore()
+
+// ── 响应式断点 ──
+const BREAKPOINT = 768
+const isMobile = ref(false)
+function onResize() {
+  isMobile.value = window.innerWidth < BREAKPOINT
+}
+onMounted(() => {
+  onResize()
+  window.addEventListener('resize', onResize)
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', onResize)
+})
 
 // ── 卡片颜色 ──
 const cardColors = ['#0185F5', '#339DF7', '#006AC4', '#4098FC', '#1060C9', '#5BA0FA']
@@ -297,18 +311,25 @@ const statisticData = computed(() => [
 }
 .card-icon {
   flex-shrink: 0;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 48px;
   height: 48px;
   border-radius: 10px;
+}
+.card-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
   background: currentColor;
   opacity: 0.12;
 }
 .card-icon :deep(svg) {
-  color: currentColor;
-  opacity: 1;
+  position: relative;
+  z-index: 1;
 }
 .card-info {
   flex: 1;
@@ -341,5 +362,43 @@ const statisticData = computed(() => [
   align-items: center;
   justify-content: center;
   padding: 60px 0;
+}
+
+/* ========== 移动端适配 ========== */
+@media (max-width: 767px) {
+  .greeting-row {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+  .greeting-left {
+    width: 100%;
+  }
+  .greeting-avatar {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  .greeting-row :deep(.n-space) {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .card-grid {
+    gap: 8px;
+  }
+  .card-body {
+    gap: 8px;
+  }
+  .card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+  .card-title {
+    font-size: 13px;
+  }
+  .card-sub {
+    font-size: 11px;
+  }
 }
 </style>

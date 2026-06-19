@@ -1,11 +1,13 @@
 """
 路网分析器
 
-基于 networkx + osmnx 对 GraphML 路网数据进行：
+基于 networkx 对多格式路网数据进行：
 - 读取与统计（节点数/边数/总里程/道路类型分布）
 - 转换为 GeoJSON（用于前端地图预览）
 - 道路等级提取与筛选
 - 路网分段（按指定长度切分）
+
+支持格式：GPKG / GraphML / OSM / SHP / GeoJSON / OpenDRIVE
 """
 import json
 import math
@@ -17,14 +19,288 @@ from typing import Dict, List, Optional
 class RoadNetworkAnalyzer:
     """路网分析器（同步方法，调用方应在线程池中执行）"""
 
+    # ── OSM highway → 中文名映射 ──
+    HIGHWAY_ZH: Dict[str, str] = {
+        "motorway": "高速公路",
+        "motorway_link": "高速匝道",
+        "trunk": "国道/快速路",
+        "trunk_link": "国道匝道",
+        "primary": "主干道",
+        "primary_link": "主干道匝道",
+        "secondary": "次干道",
+        "secondary_link": "次干道匝道",
+        "tertiary": "三级道路",
+        "tertiary_link": "三级道路匝道",
+        "residential": "居住区道路",
+        "living_street": "生活街道",
+        "unclassified": "未分类道路",
+        "road": "道路",
+        "service": "服务道路",
+        "track": "乡村/农耕路",
+        "path": "小径",
+        "footway": "步道",
+        "cycleway": "自行车道",
+        "pedestrian": "步行街",
+        "busway": "公交专用道",
+        "bus_guideway": "导轨公交",
+        "escape": "避险车道",
+        "crossing": "路口",
+        "steps": "台阶",
+        "corridor": "走廊",
+        "raceway": "赛道",
+        "bridleway": "马道",
+    }
+
+    # ═══════════════════════════════════════════
+    # 工具方法
+    # ═══════════════════════════════════════════
+
     @staticmethod
-    def _load_graph(graphml_path: str):
-        """加载 GraphML 文件为 networkx 图"""
+    def _sanitize_highway(hw) -> str:
+        """
+        净化 highway 值——去除非 [a-z_] 的字符，多值取首个。
+
+        OSM 标准 highway 值仅包含小写字母和下划线（如 motorway, trunk_link）。
+        处理三种异常：
+          1. GPKG 序列化的 Python 列表字面值（如 \"['primary', 'secondary']\" → primary）
+          2. OSM 分号多值（如 living_street;residential → living_street）
+          3. 空值/None → unclassified
+        """
+        import re
+
+        if hw is None:
+            return "unclassified"
+        if isinstance(hw, list):
+            hw = hw[0] if hw else "unclassified"
+        s = str(hw)
+        # GPKG 列表字面值: \"['primary', 'secondary']\" → 提取首个元素
+        m = re.match(r"^\s*\[(?:\"|')([a-z_]+)(?:\"|')", s)
+        if m:
+            return m.group(1)
+        # 分号分隔的多值取第一个
+        if ";" in s:
+            s = s.split(";")[0]
+        cleaned = "".join(c for c in s if c.isascii() and (c.islower() and c.isalpha() or c == "_"))
+        return cleaned if cleaned else "unclassified"
+
+    @staticmethod
+    def _load_graph(file_path: str):
+        """多格式路网加载器，统一返回 networkx 图"""
         import networkx as nx
 
-        if not os.path.exists(graphml_path):
-            raise FileNotFoundError(f"路网文件不存在: {graphml_path}")
-        return nx.read_graphml(graphml_path)
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"路网文件不存在: {file_path}")
+
+        ext = os.path.splitext(file_path)[1].lower()
+
+        # ── GPKG（osmnx 保存的 GeoPackage）──
+        if ext == ".gpkg":
+            return RoadNetworkAnalyzer._load_gpkg(file_path)
+
+        # ── GraphML / XML ──
+        if ext in (".graphml", ".xml"):
+            return nx.read_graphml(file_path)
+
+        # ── OSM ──
+        if ext == ".osm":
+            try:
+                import osmnx as ox
+                return ox.graph_from_xml(file_path, simplify=False)
+            except ImportError:
+                raise RuntimeError("OSM 格式需要 osmnx: pip install osmnx")
+
+        # ── SHP / GeoJSON → networkx 转换 ──
+        if ext in (".shp", ".geojson", ".json"):
+            return RoadNetworkAnalyzer._load_geodataframe_as_graph(file_path)
+
+        # ── OpenDRIVE ──
+        if ext == ".xodr":
+            return RoadNetworkAnalyzer._load_opendrive(file_path)
+
+        raise ValueError(f"不支持的路网格式: {ext}")
+
+    @staticmethod
+    def _load_gpkg(file_path: str):
+        """从 OSMnx 保存的 GPKG 重建 networkx 图"""
+        import geopandas as gpd
+        import networkx as nx
+
+        G = nx.MultiDiGraph()
+
+        # 读取节点层，添加节点属性
+        try:
+            gdf_nodes = gpd.read_file(file_path, layer="nodes")
+            for _, row in gdf_nodes.iterrows():
+                osmid = row.get("osmid", _)
+                y = row.geometry.y if row.geometry else None
+                x = row.geometry.x if row.geometry else None
+                G.add_node(osmid, y=y, x=x, lat=y, lon=x)
+        except Exception:
+            pass  # nodes 层可能不存在
+
+        # 读取边层，重建边
+        gdf_edges = gpd.read_file(file_path, layer="edges")
+        for _, row in gdf_edges.iterrows():
+            u = row.get("u")
+            v = row.get("v")
+            if u is None or v is None:
+                continue
+            k = row.get("key", 0)
+            edge_data = {}
+            for col in gdf_edges.columns:
+                if col not in ("u", "v", "key", "geometry"):
+                    val = row[col]
+                    if not (isinstance(val, float) and math.isnan(val)):
+                        edge_data[col] = val
+            # 传递几何坐标给节点，同时保留原始几何到边属性
+            geom = row.geometry
+            if geom and not geom.is_empty:
+                coords = list(geom.coords)
+                if len(coords) >= 1:
+                    G.add_node(u, y=coords[0][1], x=coords[0][0], lat=coords[0][1], lon=coords[0][0])
+                if len(coords) >= 2:
+                    G.add_node(v, y=coords[-1][1], x=coords[-1][0], lat=coords[-1][1], lon=coords[-1][0])
+                edge_data["geometry"] = geom
+            G.add_edge(u, v, key=k, **edge_data)
+
+        if G.number_of_edges() == 0:
+            raise ValueError("GPKG 文件中无有效边数据")
+        return G
+
+    @staticmethod
+    def _save_gpkg(G, file_path: str, include_nodes: bool = True):
+        """将 networkx 图保存为 GPKG 文件（nodes + edges layers）"""
+        import geopandas as gpd
+        from shapely.geometry import LineString, Point
+
+        # ── 节点层 ──
+        if include_nodes:
+            nodes_data = []
+            for n, attrs in G.nodes(data=True):
+                y = attrs.get("y", attrs.get("lat"))
+                x = attrs.get("x", attrs.get("lon"))
+                if x is None or y is None:
+                    continue
+                row = {"osmid": n, "geometry": Point(float(x), float(y))}
+                for k, v in attrs.items():
+                    if k not in ("x", "y", "lat", "lon") and not (
+                        isinstance(v, float) and math.isnan(v)
+                    ):
+                        row[k] = v
+                nodes_data.append(row)
+
+            if nodes_data:
+                gdf_nodes = gpd.GeoDataFrame(nodes_data, crs="EPSG:4326")
+                gdf_nodes.to_file(file_path, layer="nodes", driver="GPKG")
+
+        # ── 边层 ──
+        edges_data = []
+        for edge in G.edges(data=True, keys=True):
+            if len(edge) == 4:
+                u, v, k, data = edge
+            else:
+                u, v, data = edge
+                k = 0
+
+            u_attrs = G.nodes.get(u, {})
+            v_attrs = G.nodes.get(v, {})
+            u_y = u_attrs.get("y", u_attrs.get("lat"))
+            u_x = u_attrs.get("x", u_attrs.get("lon"))
+            v_y = v_attrs.get("y", v_attrs.get("lat"))
+            v_x = v_attrs.get("x", v_attrs.get("lon"))
+
+            if u_x is None or u_y is None or v_x is None or v_y is None:
+                continue
+
+            # 优先使用边原始 geometry（含拐点），否则从端点构建直线
+            raw_geom = data.pop("geometry", None)
+            if raw_geom is not None and hasattr(raw_geom, "coords"):
+                geom = raw_geom
+            elif isinstance(raw_geom, list):
+                geom = LineString(raw_geom)
+            elif isinstance(raw_geom, str):
+                try:
+                    from shapely import wkt
+                    geom = wkt.loads(raw_geom)
+                except Exception:
+                    geom = LineString(
+                        [(float(u_x), float(u_y)), (float(v_x), float(v_y))]
+                    )
+            else:
+                geom = LineString(
+                    [(float(u_x), float(u_y)), (float(v_x), float(v_y))]
+                )
+
+            row = {
+                "u": u,
+                "v": v,
+                "key": k,
+                "geometry": geom,
+            }
+            for key, val in data.items():
+                if not (isinstance(val, float) and math.isnan(val)):
+                    row[key] = val
+            edges_data.append(row)
+
+        if edges_data:
+            gdf_edges = gpd.GeoDataFrame(edges_data, crs="EPSG:4326")
+            gdf_edges.to_file(file_path, layer="edges", driver="GPKG")
+
+    @staticmethod
+    def _load_geodataframe_as_graph(file_path: str):
+        """从 SHP / GeoJSON 构建 networkx 图"""
+        import geopandas as gpd
+        import networkx as nx
+
+        gdf = gpd.read_file(file_path)
+        G = nx.MultiDiGraph()
+
+        for idx, row in gdf.iterrows():
+            geom = row.geometry
+            if geom is None or geom.is_empty:
+                continue
+            coords = list(geom.coords)
+            if len(coords) >= 2:
+                u, v = f"n{idx}_0", f"n{idx}_1"
+                G.add_node(u, y=coords[0][1], x=coords[0][0], lat=coords[0][1], lon=coords[0][0])
+                G.add_node(v, y=coords[-1][1], x=coords[-1][0], lat=coords[-1][1], lon=coords[-1][0])
+                props = {k: v for k, v in row.items() if k != "geometry"
+                         and not (isinstance(v, float) and math.isnan(v))}
+                G.add_edge(u, v, **props)
+
+        if G.number_of_edges() == 0:
+            raise ValueError("文件无有效几何数据")
+        return G
+
+    @staticmethod
+    def _load_opendrive(file_path: str):
+        """OpenDRIVE (.xodr) → networkx 图"""
+        import networkx as nx
+        import xml.etree.ElementTree as ET
+
+        tree = ET.parse(file_path)
+        root = tree.getroot()
+        ns = {"odr": "http://www.opendrive.org"}
+        G = nx.MultiDiGraph()
+
+        for road in root.findall(".//road"):
+            road_id = road.attrib.get("id", "")
+            plan = road.find(".//planView/geometry")
+            if plan is None:
+                continue
+            x_start = float(plan.attrib.get("x", 0))
+            y_start = float(plan.attrib.get("y", 0))
+            length = float(road.attrib.get("length", 100))
+
+            u, v = f"odr_s{road_id}", f"odr_e{road_id}"
+            G.add_node(u, y=y_start, x=x_start, lat=y_start, lon=x_start)
+            G.add_node(v, y=y_start + length * 0.001, x=x_start + length * 0.001,
+                       lat=y_start + length * 0.001, lon=x_start + length * 0.001)
+            G.add_edge(u, v, highway="road", length=length, road_id=road_id)
+
+        if G.number_of_edges() == 0:
+            raise ValueError("OpenDRIVE 文件中无有效道路")
+        return G
 
     @staticmethod
     def _haversine(lat1, lon1, lat2, lon2) -> float:
@@ -60,17 +336,21 @@ class RoadNetworkAnalyzer:
             length = cls._haversine(lat1, lon1, lat2, lon2)
             total_length += length
 
-            highway = data.get("highway", "unclassified")
-            if isinstance(highway, list):
-                highway = highway[0]
+            highway = cls._sanitize_highway(data.get("highway", "unclassified"))
             highway_counter[highway] += 1
 
         # 路口数 = 度数 >= 3 的节点
         junctions = sum(1 for n in G.nodes() if G.degree(n) >= 3)
 
-        # 道路类型统计
+        # 道路类型统计（含中文名）
+        edge_total = G.number_of_edges()
         type_stats = [
-            {"type": hw, "count": cnt, "percent": round(cnt / G.number_of_edges() * 100, 1)}
+            {
+                "type": hw,
+                "name_zh": cls.HIGHWAY_ZH.get(hw, hw),
+                "count": cnt,
+                "percent": round(cnt / edge_total * 100, 1) if edge_total > 0 else 0,
+            }
             for hw, cnt in highway_counter.most_common()
         ]
 
@@ -84,6 +364,7 @@ class RoadNetworkAnalyzer:
             if area_km2 > 0:
                 density = round(total_length / 1000 / area_km2, 2)  # km/km²
 
+        bbox = cls._get_bbox(G)
         return {
             "node_count": G.number_of_nodes(),
             "edge_count": G.number_of_edges(),
@@ -92,6 +373,7 @@ class RoadNetworkAnalyzer:
             "total_length_km": round(total_length / 1000, 2),
             "density_km_per_km2": density,
             "highway_stats": type_stats,
+            "bbox": bbox,
         }
 
     @staticmethod
@@ -126,9 +408,7 @@ class RoadNetworkAnalyzer:
             lat2 = float(v_attrs.get("y", v_attrs.get("lat", 0)))
             lon2 = float(v_attrs.get("x", v_attrs.get("lon", 0)))
 
-            highway = data.get("highway", "unclassified")
-            if isinstance(highway, list):
-                highway = highway[0]
+            highway = cls._sanitize_highway(data.get("highway", "unclassified"))
 
             features.append({
                 "type": "Feature",
@@ -158,10 +438,8 @@ class RoadNetworkAnalyzer:
         G = cls._load_graph(graphml_path)
         types = set()
         for u, v, data in G.edges(data=True):
-            hw = data.get("highway", "unclassified")
-            if isinstance(hw, list):
-                hw = hw[0]
-            types.add(str(hw))
+            hw = cls._sanitize_highway(data.get("highway", "unclassified"))
+            types.add(hw)
         return sorted(types)
 
     # ═══════════════════════════════════════════
@@ -172,24 +450,26 @@ class RoadNetworkAnalyzer:
     def filter_by_highway(
         cls, graphml_path: str, output_path: str, selected_types: List[str]
     ) -> dict:
-        """按道路等级筛选路网，保存为新文件"""
+        """按道路等级筛选路网，保存为 GPKG"""
         G = cls._load_graph(graphml_path)
 
-        # 找出要保留的边
-        edges_to_keep = []
-        for u, v, data in G.edges(data=True):
-            hw = data.get("highway", "unclassified")
-            if isinstance(hw, list):
-                hw = hw[0]
-            if str(hw) in selected_types:
-                edges_to_keep.append((u, v))
+        # 构建筛选后的新图（直接构造，绕过 edge_subgraph 对 MultiDiGraph 的 key 要求）
+        G_filtered = type(G)()
+        G_filtered.add_nodes_from(G.nodes(data=True))
 
-        # 创建子图
-        G_filtered = G.edge_subgraph(edges_to_keep).copy()
+        for edge in G.edges(data=True, keys=True):
+            # 兼容 MultiDiGraph (u,v,k,data) 和 DiGraph (u,v,data)
+            if len(edge) == 4:
+                u, v, k, data = edge
+            else:
+                u, v, data = edge
+                k = 0
+            hw = cls._sanitize_highway(data.get("highway", "unclassified"))
+            if hw in selected_types:
+                G_filtered.add_edge(u, v, key=k, **data)
 
-        import networkx as nx
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        nx.write_graphml(G_filtered, output_path)
+        cls._save_gpkg(G_filtered, output_path, include_nodes=False)
 
         return {
             "node_count": G_filtered.number_of_nodes(),

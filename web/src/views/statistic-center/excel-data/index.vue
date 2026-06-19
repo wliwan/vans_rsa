@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useBreakpoints } from '@vueuse/core'
 import {
   NButton, NInput, NLayout, NLayoutSider, NLayoutContent,
   NList, NListItem, NModal, NSpace, NSelect, NPopconfirm,
@@ -12,6 +13,10 @@ import api from '@/api'
 defineOptions({ name: '统计中心' })
 
 const message = useMessage()
+
+// 移动端适配：默认折叠左侧 Sider
+const bp = reactive(useBreakpoints({ sm: 666, md: 991 }))
+const isMobileCollapsed = computed(() => bp.isSmaller('sm') || bp.between('sm', 'md'))
 
 function formatFileSize(bytes) {
   if (bytes == null || bytes === 0) return ''
@@ -304,7 +309,7 @@ onMounted(() => loadWorkspaces())
 <template>
   <NLayout has-sider style="height: calc(100vh - 120px)">
     <!-- 左侧工作区菜单 -->
-    <NLayoutSider bordered width="300" :native-scrollbar="false" content-style="padding: 12px">
+    <NLayoutSider bordered width="300" :collapsed-width="0" :collapsed="isMobileCollapsed" show-trigger="arrow-circle" :native-scrollbar="false" content-style="padding: 12px">
       <NSpace vertical>
         <NButton type="primary" block @click="openCreateWs">
           <TheIcon icon="material-symbols:add" :size="18" class="mr-5" />新建工作区

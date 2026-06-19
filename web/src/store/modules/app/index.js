@@ -12,6 +12,7 @@ export const useAppStore = defineStore('app', {
     return {
       reloadFlag: true,
       collapsed: false,
+      mobileDrawerVisible: false,
       fullScreen: true,
       /** keepAlive路由的key，重新赋值可重置keepAlive */
       aliveKeys: {},
@@ -36,6 +37,12 @@ export const useAppStore = defineStore('app', {
     },
     setCollapsed(collapsed) {
       this.collapsed = collapsed
+    },
+    toggleMobileDrawer() {
+      this.mobileDrawerVisible = !this.mobileDrawerVisible
+    },
+    setMobileDrawer(visible) {
+      this.mobileDrawerVisible = visible
     },
     setFullScreen(fullScreen) {
       this.fullScreen = fullScreen

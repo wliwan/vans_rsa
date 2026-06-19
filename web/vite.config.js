@@ -30,7 +30,10 @@ export default defineConfig(({ command, mode }) => {
       open: true,
       proxy: VITE_USE_PROXY
         ? {
-            [VITE_BASE_API]: PROXY_CONFIG[VITE_BASE_API],
+            '/api': {
+              target: 'http://127.0.0.1:9999',
+              changeOrigin: true,
+            },
           }
         : undefined,
     },

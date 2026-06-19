@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════
-# Vue-FastAPI-Admin Docker 一键部署
+# Vance Road Scanner Assistant Docker 一键部署
 #
 # 前置条件: Docker 17.05+
 #
@@ -15,26 +15,28 @@
 #   docker compose logs -f            # 查看日志
 #   docker compose restart            # 重启服务
 #   docker compose down               # 停止并删除容器
-#   docker compose down -v            # 停止并删除容器+数据卷（⚠️ 会删除数据库！）
+#   docker compose down -v            # 停止并删除容器+数据卷
 #   docker compose build --no-cache   # 强制重新构建镜像
 # ═══════════════════════════════════════════════════════════════
 
+name: VansRSA
+
 services:
-  vue-fastapi-admin:
+  vansrsa:
     build:
       context: .
       dockerfile: Dockerfile
-    image: vue-fastapi-admin:latest
-    container_name: vue-fastapi-admin
+      args:
+        - NODE_IMAGE=${NODE_IMAGE:-node:22-alpine}
+        - PYTHON_IMAGE=${PYTHON_IMAGE:-python:3.11-slim-bullseye}
+    pull_policy: build
+    container_name: VansRSA
     ports:
-      - "${APP_PORT:-9999}:80"
+      - "${APP_PORT:-1110}:80"
     volumes:
-      # SQLite 数据库持久化（宿主机路径可改为绝对路径）
-      - ./db.sqlite3:/opt/vue-fastapi-admin/db.sqlite3
-      # 上传文件持久化
-      - ./uploads:/opt/vue-fastapi-admin/uploads
-      # 日志持久化（可选）
-      - ./app/logs:/opt/vue-fastapi-admin/app/logs
+      - ./data:/opt/VansRSA/data
+      - ./uploads:/opt/VansRSA/uploads
+      - ./app/logs:/opt/VansRSA/app/logs
     environment:
       - TZ=Asia/Shanghai
     restart: always
@@ -45,8 +47,8 @@ services:
       retries: 3
       start_period: 60s
     networks:
-      - vfa-network
+      - vansrsa-net
 
 networks:
-  vfa-network:
+  vansrsa-net:
     driver: bridge

@@ -43,7 +43,7 @@ if [ "$SKIP_WEB" = true ]; then
 fi
 
 # ── 配置 ──
-APP_NAME="vue-fastapi-admin"
+APP_NAME="vansrsa"
 APP_VERSION=$(sed -n 's/^ *version.*=.*"\([^"]*\)".*/\1/p' pyproject.toml)
 IMAGE="${APP_NAME}:${TAG}"
 LATEST_IMAGE="${APP_NAME}:latest"

@@ -95,6 +95,9 @@ function getIcon(meta) {
 }
 
 function handleMenuSelect(key, item) {
+  // 移动端选中菜单后自动关闭 drawer
+  appStore.setMobileDrawer(false)
+
   if (isExternal(item.path)) {
     window.open(item.path)
   } else {

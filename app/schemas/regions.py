@@ -119,3 +119,16 @@ class RoadNetworkOut(BaseModel):
     error_message: Optional[str] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
+
+
+# ── FilterTemplate Schemas ──
+
+class FilterTemplateCreate(BaseModel):
+    name: str = Field(..., description="模板名称")
+    selected_types: List[str] = Field(..., description="选中的道路等级列表")
+
+
+class FilterTemplateUpdate(BaseModel):
+    id: int
+    name: Optional[str] = Field(None, description="模板名称")
+    selected_types: Optional[List[str]] = Field(None, description="选中的道路等级列表")

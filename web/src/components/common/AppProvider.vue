@@ -1,8 +1,8 @@
 <template>
   <n-config-provider
     wh-full
-    :locale="zhCN"
-    :date-locale="dateZhCN"
+    :locale="naiveLocale"
+    :date-locale="naiveDateLocale"
     :theme="appStore.isDark ? darkTheme : undefined"
     :theme-overrides="naiveThemeOverrides"
   >
@@ -20,10 +20,14 @@
 </template>
 
 <script setup>
-import { defineComponent, h } from 'vue'
+import { computed, defineComponent, h } from 'vue'
 import {
   zhCN,
   dateZhCN,
+  enUS,
+  dateEnUS,
+  trTR,
+  dateTrTR,
   darkTheme,
   useLoadingBar,
   useDialog,
@@ -37,6 +41,20 @@ import { naiveThemeOverrides } from '~/settings'
 import { useAppStore } from '@/store'
 
 const appStore = useAppStore()
+
+const localeMap = {
+  cn: zhCN,
+  en: enUS,
+  tr: trTR,
+}
+const dateLocaleMap = {
+  cn: dateZhCN,
+  en: dateEnUS,
+  tr: dateTrTR,
+}
+
+const naiveLocale = computed(() => localeMap[appStore.locale] || zhCN)
+const naiveDateLocale = computed(() => dateLocaleMap[appStore.locale] || dateZhCN)
 
 function setupCssVar() {
   const common = naiveThemeOverrides.common

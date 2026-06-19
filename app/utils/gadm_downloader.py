@@ -25,6 +25,26 @@ class GADMDownloadError(Exception):
     """GADM 下载异常"""
 
 
+def _get_proxy() -> str | None:
+    """从系统配置读取代理"""
+    try:
+        from app.controllers.system_config import system_config_controller
+        import asyncio
+        loop = asyncio.get_running_loop()
+        if loop.is_running():
+            # 在事件循环中异步读取
+            import concurrent.futures
+            async def _read():
+                return await system_config_controller.get_value("download_proxy", "")
+            try:
+                return loop.run_until_complete(_read())
+            except RuntimeError:
+                return None
+    except Exception:
+        pass
+    return None
+
+
 class GADMDownloader:
     """GADM 边界数据下载器"""
 
@@ -68,7 +88,11 @@ class GADMDownloader:
         logger.info(f"GADM 下载: url={url}")
 
         try:
-            async with httpx.AsyncClient(timeout=timeout) as client:
+            proxy = _get_proxy()
+            client_kwargs = {"timeout": timeout}
+            if proxy:
+                client_kwargs["proxy"] = proxy
+            async with httpx.AsyncClient(**client_kwargs) as client:
                 resp = await client.get(
                     url,
                     headers={"User-Agent": "vue-fastapi-admin/1.0"},
@@ -107,7 +131,11 @@ class GADMDownloader:
         """检查 GADM 是否提供该国家/级别的数据"""
         url = cls._build_url(iso_alpha3, level)
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            proxy = _get_proxy()
+            client_kwargs = {"timeout": 15.0}
+            if proxy:
+                client_kwargs["proxy"] = proxy
+            async with httpx.AsyncClient(**client_kwargs) as client:
                 resp = await client.head(
                     url,
                     headers={"User-Agent": "vue-fastapi-admin/1.0"},

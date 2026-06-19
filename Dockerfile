@@ -1,9 +1,15 @@
 # ══════════════════════════════════════════════
+# 镜像源（通过 docker compose --build-arg 或 .env 覆盖）
+# ══════════════════════════════════════════════
+ARG NODE_IMAGE=node:22-alpine
+ARG PYTHON_IMAGE=python:3.11-slim-bullseye
+
+# ══════════════════════════════════════════════
 # Stage 1: 前端构建
 # ══════════════════════════════════════════════
-FROM node:22-alpine AS web-builder
+FROM ${NODE_IMAGE} AS web-builder
 
-WORKDIR /opt/vue-fastapi-admin/web
+WORKDIR /opt/VansRSA/web
 COPY /web/package.json /web/pnpm-lock.yaml /web/pnpm-workspace.yaml ./
 RUN corepack enable && corepack prepare pnpm@latest --activate && pnpm install --frozen-lockfile
 
@@ -14,9 +20,9 @@ RUN pnpm build
 # ══════════════════════════════════════════════
 # Stage 2: 生产镜像 (Python + Nginx)
 # ══════════════════════════════════════════════
-FROM python:3.11-slim-bullseye
+FROM ${PYTHON_IMAGE}
 
-WORKDIR /opt/vue-fastapi-admin
+WORKDIR /opt/VansRSA
 ADD . .
 COPY /deploy/entrypoint.sh .
 
@@ -27,11 +33,15 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=core-apt \
     && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone \
     && apt-get update \
-    && apt-get install -y --no-install-recommends gcc python3-dev bash nginx vim curl procps net-tools
+    && apt-get install -y --no-install-recommends \
+        gcc python3-dev \
+        bash nginx vim curl procps net-tools \
+        libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0 \
+        libharfbuzz0b libffi7 shared-mime-info
 
 RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-COPY --from=web-builder /opt/vue-fastapi-admin/web/dist /opt/vue-fastapi-admin/web/dist
+COPY --from=web-builder /opt/VansRSA/web/dist /opt/VansRSA/web/dist
 
 ADD /deploy/web.conf /etc/nginx/sites-available/web.conf
 RUN rm -f /etc/nginx/sites-enabled/default \

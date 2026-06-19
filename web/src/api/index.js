@@ -26,6 +26,7 @@ export default {
   createMenu: (data = {}) => request.post('/menu/create', data),
   updateMenu: (data = {}) => request.post('/menu/update', data),
   deleteMenu: (params = {}) => request.delete('/menu/delete', { params }),
+  scanViews: () => request.get('/menu/scan-views'),
   // apis
   getApis: (params = {}) => request.get('/api/list', { params }),
   createApi: (data = {}) => request.post('/api/create', data),
@@ -69,6 +70,13 @@ export default {
   clearRegions: () => request.post('/region/clear', {}, { timeout: 0 }),
   exportRegions: (data = {}) => request.post('/region/export', data),
   batchUpdateRegions: (data = {}) => request.post('/region/batch-update', data),
+  fillGeonames: (force = false, proxy = null) =>
+    request.post('/region/fill-geonames', { force_download: force, proxy }, { timeout: 0 }),
+  getGeonamesProgress: () => request.get('/region/fill-geonames/progress'),
+  // system-config
+  getDownloadConfig: () => request.get('/system-config/download'),
+  updateDownloadConfig: (data = {}) => request.post('/system-config/download', data),
+  testProxy: (proxy_url) => request.post('/system-config/test-proxy', { proxy_url }),
   // region-boundary
   getBoundaryStatus: (region_id) => request.get('/region/region-boundary/status', { params: { region_id } }),
   downloadBoundary: (data = {}) => request.post('/region/region-boundary/download', data, { timeout: 0 }),
@@ -103,7 +111,7 @@ export default {
   }),
   // ai-proxy
   getAIProxyList: (params = {}) => request.get('/ai-proxy/list', { params }),
-  getAIProxyById: (params = {}) => request.get('/ai-proxy/get', { params }),
+  getAIProxyByName: (name) => request.get('/ai-proxy/get', { params: { name } }),
   createAIProxy: (data = {}) => request.post('/ai-proxy/create', data),
   updateAIProxy: (data = {}) => request.post('/ai-proxy/update', data),
   deleteAIProxy: (params = {}) => request.delete('/ai-proxy/delete', { params }),
@@ -114,6 +122,23 @@ export default {
   updateWorkspace: (data = {}) => request.post('/workspace/update', data),
   deleteWorkspace: (params = {}) => request.delete('/workspace/delete', { params }),
   getWorkspaceUsers: () => request.get('/workspace/users'),
+  // workspace documents
+  getDocumentList: (params = {}) => request.get('/workspace/document/list', { params }),
+  uploadDocument: (workspace_id, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post(`/workspace/document/upload?workspace_id=${workspace_id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
+    })
+  },
+  downloadDocument: (params = {}) => request.get('/workspace/document/download', { params, responseType: 'blob', timeout: 0 }),
+  deleteDocument: (params = {}) => request.delete('/workspace/document/delete', { params }),
+  batchDeleteDocuments: (data = {}) => request.post('/workspace/document/batch-delete', data),
+  clearDocuments: (params = {}) => request.delete('/workspace/document/clear', { params }),
+  aiAnalyzeDocuments: (data = {}) => request.post('/workspace/document/ai-analyze', data, { timeout: 0 }),
+  getDocumentContent: (params = {}) => request.get('/workspace/document/get-content', { params }),
+  updateDocumentContent: (data = {}) => request.post('/workspace/document/update-content', data),
   // workspace sheets
   uploadSheet: (workspace_id, file) => {
     const formData = new FormData()
@@ -154,10 +179,42 @@ export default {
   getVehicleFullCheck: (params = {}) => request.get('/vehicle/full-check', { params }),
   refreshVehicleStatus: (params = {}) => request.get('/vehicle/refresh', { params }),
   getVehicleFlow: (params = {}) => request.get('/vehicle/flow', { params }),
+  // road-material
+  getMaterialList: (params = {}) => request.get('/region/road-material/list', { params }),
+  getMaterialById: (params = {}) => request.get('/region/road-material/get', { params }),
+  updateMaterial: (data = {}) => request.put('/region/road-material/update', data),
+  deleteMaterial: (params = {}) => request.delete('/region/road-material/delete', { params }),
+  uploadMaterial: (region_id, name, description, file, source = 'upload') => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('name', name || '')
+    formData.append('description', description || '')
+    formData.append('source', source || 'upload')
+    return request.post(`/region/road-material/upload?region_id=${region_id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
+    })
+  },
+  downloadMaterialFile: (params = {}) => request.get('/region/road-material/download-file', {
+    params, responseType: 'blob', timeout: 0,
+  }),
+  aiProcessMaterial: (data = {}) => request.post('/region/road-material/ai-process', data, { timeout: 0 }),
+  cvProcessMaterial: (data = {}) => request.post('/region/road-material/cv-process', data, { timeout: 0 }),
+  getCVOperations: () => request.get('/region/road-material/cv-operations'),
+  // i18n
+  getI18nList: () => request.get('/i18n/list'),
+  updateI18n: (data = {}) => request.put('/i18n/update', data),
+  batchUpdateI18n: (data = {}) => request.put('/i18n/batch-update', data),
+  exportI18n: () => request.get('/i18n/export'),
+  importI18n: (data = {}) => request.post('/i18n/import', data),
+  aiGenerateI18n: (data = {}) => request.post('/i18n/ai-generate', data, { timeout: 0 }),
+  scanFrontendI18n: () => request.get('/i18n/scan-frontend'),
+  replaceHardcodedI18n: (data = {}) => request.post('/i18n/replace-hardcoded', data),
   // skills
   getSkillList: (params = {}) => request.get('/skill/list', { params }),
   getSkillById: (params = {}) => request.get('/skill/get', { params }),
   createSkill: (data = {}) => request.post('/skill/create', data),
+  aiCreateSkill: (data = {}) => request.post('/skill/ai-create', data, { timeout: 0 }),
   updateSkill: (data = {}) => request.post('/skill/update', data),
   deleteSkill: (params = {}) => request.delete('/skill/delete', { params }),
   exportSkill: (params = {}) => request.get('/skill/export', { params, responseType: 'blob' }),
@@ -167,4 +224,16 @@ export default {
   analyzeNetwork: (params = {}) => request.get('/region/road-network/analyze', { params, timeout: 0  }),
   filterNetwork: (data = {}) => request.post('/region/road-network/filter', data, { timeout: 0 }),
   segmentNetwork: (data = {}) => request.post('/region/road-network/segment', data, { timeout: 0 }),
+  warmTileCache: (params = {}) => request.post('/region/road-network/warm-cache', null, { params }),
+  clearTileCache: (params = {}) => request.delete('/region/road-network/tiles/cache', { params }),
+  // road fields
+  getRoadFields: (params = {}) => request.get('/region/road-network/fields', { params , timeout: 0 }),
+  exportRoadFields: (params = {}) => request.get('/region/road-network/fields/export', { params, timeout: 0 }),
+  importRoadFields: (data = {}) => request.post('/region/road-network/fields/import', data, { timeout: 0 }),
+  batchUpdateRoadFields: (data = {}) => request.post('/region/road-network/fields/batch-update', data, { timeout: 0 }),
+  aiProcessRoadFields: (data = {}) => request.post('/region/road-network/fields/ai-process', data, { timeout: 0 }),
+  // filter templates
+  getFilterTemplates: () => request.get('/region/road-network/filter-templates'),
+  createFilterTemplate: (data = {}) => request.post('/region/road-network/filter-templates/create', data),
+  deleteFilterTemplate: (params = {}) => request.delete('/region/road-network/filter-templates/delete', { params }),
 }

@@ -1,6 +1,6 @@
 {
   "lang": "中文",
-  "app_name": "Vance Road Scanner Assistant",
+  "app_name": "VansRSA",
   "header": {
     "label_profile": "个人信息",
     "label_logout": "退出登录",
@@ -102,6 +102,445 @@
         "label_receive": "下载",
         "label_total": "合计",
         "label_flow_detail": "IP 明细"
+      }
+    },
+    "network": {
+      "region": {
+        "title": "全球国家及行政区管理",
+        "breadcrumb": {
+          "root": "根"
+        },
+        "levelLabel": {
+          "country": "国家",
+          "state": "行政区",
+          "city": "城市"
+        },
+        "typeOptions": [
+          {
+            "label": "国家",
+            "value": "COUNTRY"
+          },
+          {
+            "label": "行政区",
+            "value": "STATE"
+          },
+          {
+            "label": "城市",
+            "value": "CITY"
+          }
+        ],
+        "exportLevelOptions": {
+          "all": "全部（含国家）",
+          "stateAndCity": "行政区 + 城市",
+          "stateOnly": "仅行政区"
+        },
+        "searchPlaceholder": "搜索{level}中英文名称或代码...",
+        "list": {
+          "hasChildren": "有子级",
+          "loading": "加载中...",
+          "noData": "暂无数据",
+          "delete": "删除",
+          "confirmDelete": "确认删除「{name}」？",
+          "confirmClear": "确认清空所有数据？此操作不可撤销。",
+          "confirmDeleteWithChildren": "确认删除「{name}」及其所有子级？",
+          "count": "共 {count} 条",
+          "currentLevel": "当前层级：{level}"
+        },
+        "detail": {
+          "title": "详情 — {name}",
+          "export": "导出",
+          "fields": {
+            "name": "名称",
+            "localName": "本地名称",
+            "code": "代码",
+            "isoAlpha2": "ISO Alpha-2",
+            "isoAlpha3": "ISO Alpha-3",
+            "isoNumeric": "ISO Numeric",
+            "type": "类型",
+            "capital": "首都/首府",
+            "population": "人口",
+            "area": "面积",
+            "latitude": "纬度",
+            "longitude": "经度",
+            "timezone": "时区"
+          },
+          "exportPlaceholder": "选择导出级别"
+        },
+        "buttons": {
+          "create": "新建",
+          "edit": "编辑",
+          "import": "导入",
+          "clear": "清空",
+          "fillGeonames": "填充中文名",
+          "setProxy": "设置代理",
+          "cancelProxy": "取消代理",
+          "save": "保存",
+          "cancel": "取消",
+          "showDetail": "查看详情",
+          "hideDetail": "收起详情",
+          "addChild": "新增子级",
+          "clearAll": "清空数据",
+          "importIso3166": "导入 ISO 3166"
+        },
+        "proxyPlaceholder": "输入代理地址...",
+        "checking": "检查中...",
+        "formRules": {
+          "nameRequired": "请输入名称"
+        },
+        "formLabels": {
+          "name": "名称",
+          "localName": "本地名称",
+          "code": "代码",
+          "isoAlpha2": "ISO Alpha-2",
+          "isoAlpha3": "ISO Alpha-3",
+          "isoNumeric": "ISO Numeric",
+          "type": "类型",
+          "parentId": "父级ID",
+          "capital": "首都/首府",
+          "population": "人口",
+          "area": "面积(km²)",
+          "latitude": "纬度",
+          "longitude": "经度",
+          "timezone": "时区"
+        },
+        "formPlaceholders": {
+          "name": "如：中国",
+          "localName": "如：China",
+          "code": "如：CN",
+          "isoAlpha2": "CN",
+          "isoAlpha3": "CHN",
+          "isoNumeric": "156",
+          "capital": "如：北京",
+          "timezone": "Asia/Shanghai"
+        },
+        "modalTitle": "区域信息",
+        "messages": {
+          "createSuccess": "新增成功",
+          "updateSuccess": "更新成功",
+          "saveFail": "保存失败",
+          "deleteSuccess": "删除成功",
+          "deleteFail": "删除失败",
+          "importSuccess": "导入完成：{detail}",
+          "importFail": "导入失败",
+          "importNoData": "无新数据",
+          "clearSuccess": "已清空 {count} 条",
+          "clearFail": "清空失败",
+          "geonamesCacheSuccess": "已从缓存填充 {count} 个行政区中文名",
+          "geonamesNoData": "暂无数据需要填充，请先导入国家数据",
+          "geonamesDownloadFail": "下载失败，请检查网络后重试",
+          "exportFail": "导出失败",
+          "exportSuccess": "导出成功",
+          "geonamesFillComplete": "中文名填充完成",
+          "geonamesRetryHint": "下载失败，可在全局进度面板点击重试",
+          "geonamesTaskName": "填充行政区中文名",
+          "geonamesTimeout": "填充超时",
+          "geonamesTimeoutDetail": "填充操作超过30分钟，已自动取消"
+        },
+        "taskName": "填充行政区中文名",
+        "detailLabels": {
+          "area": "面积",
+          "capital": "首都/首府",
+          "code": "代码",
+          "isoAlpha2": "ISO Alpha-2",
+          "isoAlpha3": "ISO Alpha-3",
+          "isoNumeric": "ISO Numeric",
+          "latitude": "纬度",
+          "localName": "本地名称",
+          "longitude": "经度",
+          "name": "名称",
+          "population": "人口",
+          "timezone": "时区",
+          "type": "类型"
+        }
+      },
+      "regionBoundary": {
+        "title": "行政区边界文件管理",
+        "breadcrumb": {
+          "root": "根"
+        },
+        "levelLabel": {
+          "country": "国家",
+          "state": "行政区",
+          "city": "城市"
+        },
+        "panel": {
+          "currentLevel": "当前层级：{level}",
+          "boundaryFiles": "边界文件 — {name}",
+          "selectRegion": "请选择区域",
+          "selectHint": "← 选择区域查看和下载边界文件",
+          "noFiles": "暂无边界文件，请从 GADM 下载或上传",
+          "downloadStatus": "下载状态：",
+          "downloaded": "已下载",
+          "notDownloaded": "未下载",
+          "fileCount": "共 {count} 个文件"
+        },
+        "searchPlaceholder": "搜索{level}中英文名称或代码...",
+        "list": {
+          "loading": "加载中...",
+          "noData": "暂无数据，请先导入"
+        },
+        "fileColumns": {
+          "fileName": "文件名",
+          "fileType": "类型",
+          "fileSize": "大小",
+          "status": "状态",
+          "time": "时间",
+          "actions": "操作"
+        },
+        "statusMap": {
+          "SUCCESS": "已下载",
+          "DOWNLOADING": "下载中",
+          "FAILED": "失败",
+          "PENDING": "待下载"
+        },
+        "buttons": {
+          "gadmDownload": "从 GADM 下载",
+          "upload": "上传文件",
+          "clear": "清除",
+          "export": "导出",
+          "delete": "删除",
+          "selectFile": "选择文件"
+        },
+        "confirmClear": "确认清除「{name}」的所有边界文件？",
+        "uploadModal": {
+          "title": "上传边界文件",
+          "supportedFormats": "支持 GeoJSON、KML、SHP 格式"
+        },
+        "messages": {
+          "downloadSuccess": "边界文件下载成功",
+          "downloadFailTip": "下载失败，可点击右下角面板重试",
+          "uploadSuccess": "上传成功",
+          "deleteSuccess": "删除成功",
+          "deleteFail": "删除失败",
+          "clearSuccess": "已清除 {count} 个文件",
+          "clearFail": "清除失败",
+          "exportFail": "导出失败"
+        },
+        "task": {
+          "downloadName": "边界下载: {name}",
+          "downloading": "下载中...",
+          "complete": "边界下载完成",
+          "fail": "边界下载失败"
+        }
+      },
+      "roadNetwork": {
+        "title": "路网文件管理",
+        "breadcrumb": {
+          "root": "根"
+        },
+        "levelLabel": {
+          "country": "国家",
+          "state": "行政区",
+          "city": "城市"
+        },
+        "panel": {
+          "currentLevel": "当前层级：{level}",
+          "networkFiles": "路网文件 — {name}",
+          "selectRegion": "请选择区域",
+          "selectHint": "← 选择区域查看和下载路网文件",
+          "noFiles": "暂无路网文件，请从 OSM 下载或上传",
+          "downloadStatus": "下载状态：",
+          "downloaded": "已下载",
+          "notDownloaded": "未下载",
+          "fileCount": "共 {count} 个文件"
+        },
+        "searchPlaceholder": "搜索{level}中英文名称或代码...",
+        "list": {
+          "loading": "加载中...",
+          "noData": "暂无数据，请先导入"
+        },
+        "fileColumns": {
+          "fileName": "文件名",
+          "fileType": "格式",
+          "fileSize": "大小",
+          "nodeCount": "节点数",
+          "edgeCount": "边数",
+          "mode": "模式",
+          "status": "状态",
+          "time": "时间",
+          "actions": "操作"
+        },
+        "statusMap": {
+          "SUCCESS": "已下载",
+          "DOWNLOADING": "下载中",
+          "FAILED": "失败",
+          "PENDING": "待下载"
+        },
+        "downloadModes": {
+          "byName": "按地名下载",
+          "byBoundary": "按边界文件下载"
+        },
+        "buttons": {
+          "osmDownload": "从 OSM 下载",
+          "upload": "上传文件",
+          "clear": "清除",
+          "export": "导出",
+          "delete": "删除",
+          "selectFile": "选择文件"
+        },
+        "confirmClear": "确认清除「{name}」的所有路网文件？",
+        "uploadModal": {
+          "title": "上传路网文件",
+          "supportedFormats": "支持 GraphML、OSM、GPKG、SHP 格式"
+        },
+        "messages": {
+          "downloadSuccess": "路网下载成功",
+          "downloadFail": "下载失败: {error}",
+          "uploadSuccess": "上传成功",
+          "deleteSuccess": "删除成功",
+          "deleteFail": "删除失败",
+          "clearSuccess": "已清除 {count} 个文件",
+          "clearFail": "清除失败",
+          "exportFail": "导出失败"
+        },
+        "task": {
+          "downloadName": "路网下载: {name}",
+          "downloading": "下载中...",
+          "complete": "路网下载完成",
+          "fail": "路网下载失败",
+          "unknownError": "未知错误"
+        }
+      },
+      "roadNetworkWorkbench": {
+        "title": "路网工作台",
+        "basemap": "底图",
+        "clearCache": "清除瓦片缓存",
+        "fullscreen": "全屏",
+        "selectors": {
+          "country": "选择国家 →",
+          "region": "选择区域 →",
+          "network": "选择路网文件 →"
+        },
+        "stats": {
+          "title": "路网统计概览",
+          "nodes": "节点",
+          "edges": "边",
+          "junctions": "路口",
+          "nodeCount": "节点",
+          "edgeCount": "边",
+          "junctionCount": "路口",
+          "nodesShort": "节点",
+          "unitItem": "条",
+          "totalLength": "总里程",
+          "density": "密度",
+          "fileSize": "文件",
+          "srid": "坐标系",
+          "center": "中心",
+          "zoom": "缩放",
+          "km": "km",
+          "kmPerKm2": "km/km²"
+        },
+        "statsDetail": {
+          "title": "统计详情",
+          "label": "指标",
+          "value": "值",
+          "totalLength": "总里程",
+          "totalLengthM": "总里程(米)",
+          "nodeCount": "节点数",
+          "edgeCount": "边数",
+          "junctionCount": "路口数",
+          "density": "路网密度"
+        },
+        "legend": {
+          "title": "图例"
+        },
+        "coords": {
+          "zoom": "缩放"
+        },
+        "mapEmpty": "选择国家和路网文件后显示地图",
+        "tabs": {
+          "filter": {
+            "label": "等级筛选",
+            "selectTemplate": "选择模板",
+            "cancel": "取消",
+            "saveTemplate": "保存模板",
+            "delete": "删除",
+            "templateName": "模板名称",
+            "confirmSave": "确认保存",
+            "preset": "预设",
+            "selectHint": "勾选需要显示的道路等级（取消勾选即时隐藏）",
+            "saveAndFilter": "筛选并保存"
+          },
+          "segment": {
+            "label": "路网分段",
+            "lengthLabel": "分段长度(米):",
+            "segmentAndSave": "分段并保存"
+          },
+          "stats": {
+            "label": "统计详情"
+          },
+          "fields": {
+            "label": "字段参数",
+            "colActions": "操作",
+            "selectTargetField": "选择目标字段",
+            "batchSanitize": "数组取首值（sanitize）",
+            "batchSet": "设置统一值（set）",
+            "selectAIProxy": "选择 AI 代理",
+            "selectSkill": "选择 Skill（可选）",
+            "aiPromptPlaceholder": "描述处理需求，例如：筛选 highway 为 motorway 的边 / 将 maxspeed 字段转为数字 / 按 name 分组去重...",
+            "search": "搜索字段值...",
+            "query": "查询",
+            "batchOp": "批量操作",
+            "aiProcess": "AI 处理",
+            "exportJson": "导出 JSON",
+            "importJson": "导入 JSON",
+            "paginationPrefix": "共 {total} 条",
+            "edit": "编辑",
+            "editField": "编辑字段",
+            "selectField": "选择字段",
+            "newValue": "新值",
+            "cancel": "取消",
+            "save": "保存",
+            "batchOpTitle": "批量操作",
+            "selectTarget": "选择目标字段",
+            "sanitize": "数组取首值（sanitize）",
+            "setValue": "设置统一值（set）",
+            "unifiedValue": "统一值",
+            "execute": "执行",
+            "aiTitle": "AI 处理字段",
+            "aiProxy": "选择 AI 代理",
+            "skill": "选择 Skill（可选）",
+            "aiPrompt": "描述处理需求，例如：筛选 highway 为 motorway 的边 / 将 maxspeed 字段转为数字 / 按 name 分组去重...",
+            "aiExecute": "执行"
+          }
+        },
+        "messages": {
+          "filterSuccess": "筛选完成并已保存",
+          "filterFail": "筛选失败",
+          "segmentSuccess": "分段完成并已保存",
+          "segmentFail": "分段失败",
+          "selectHighwayFirst": "请选择道路等级",
+          "enterSegmentLength": "请输入分段长度",
+          "selectNetworkFirst": "请先选择路网文件",
+          "cacheCleared": "瓦片缓存已清除，已重新加载",
+          "clearCacheFail": "清除失败",
+          "exportSuccess": "导出成功",
+          "exportFail": "导出失败",
+          "importSuccess": "导入完成，已保存新区路网",
+          "importFail": "导入失败：{error}",
+          "jsonFormatError": "JSON 格式错误：需要 edges 数组",
+          "aiSelectFirst": "请选择 AI 代理和 Skill 或输入处理需求",
+          "aiSuccess": "AI 处理成功",
+          "aiFail": "AI 处理失败",
+          "checkNetwork": "检测中...",
+          "analyzeFail": "分析失败",
+          "templateLoaded": "已加载模板：{name}",
+          "enterTemplateName": "请输入模板名称",
+          "templateSaved": "模板已保存",
+          "saveFail": "保存失败",
+          "selectTemplateFirst": "请先选择模板",
+          "presetTemplateCannotDelete": "预设模板不可删除",
+          "templateDeleted": "模板已删除",
+          "deleteFail": "删除失败",
+          "selectTargetField": "请选择目标字段",
+          "batchOpSuccess": "批量操作成功，影响 {count} 条",
+          "batchOpFail": "批量操作失败",
+          "aiProcessTask": "AI 处理路网字段",
+          "aiProcessDone": "AI 处理完成，更新 {count} 条",
+          "aiNoValidData": "无有效数据可更新",
+          "aiProcessFail": "AI 处理失败",
+          "unknownError": "未知错误"
+        }
       }
     }
   },

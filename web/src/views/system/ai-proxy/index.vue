@@ -72,6 +72,20 @@ function handleEditOverride(row) {
   handleEdit(row)
 }
 
+function handleClone(row) {
+  loadUserOptions()
+  modalAction.value = 'add'
+  modalTitle.value = '克隆AI代理'
+  modalForm.value = {
+    name: row.name + '_副本',
+    url: row.url || '',
+    token: row.token || '',
+    model: row.model || '',
+    user_ids: (row.users || []).map(u => u.id),
+  }
+  modalVisible.value = true
+}
+
 const columns = [
   {
     title: '名称', key: 'name', width: 60, align: 'center', ellipsis: { tooltip: true },
@@ -85,6 +99,7 @@ const columns = [
   {
     title: '令牌', key: 'token', width: 70, align: 'center',
     render(row) {
+      if (!row.token) return '-'
       return h(NTag, { type: 'info' }, { default: () => '****' + row.token.slice(-4) })
     },
   },
@@ -99,7 +114,7 @@ const columns = [
     title: '更新时间', key: 'updated_at', width: 80, align: 'center',
   },
   {
-    title: '操作', key: 'actions', width: 80, align: 'center', fixed: 'right',
+    title: '操作', key: 'actions', width: 120, align: 'center', fixed: 'right',
     render(row) {
       return [
         withDirectives(
@@ -109,8 +124,15 @@ const columns = [
           }, { default: () => '编辑', icon: renderIcon('material-symbols:edit', { size: 16 }) }),
           [[vPermission, 'post/api/v1/ai-proxy/update']],
         ),
+        withDirectives(
+          h(NButton, {
+            size: 'small', style: 'margin-right: 8px;',
+            onClick: () => handleClone(row),
+          }, { default: () => '克隆', icon: renderIcon('material-symbols:content-copy', { size: 16 }) }),
+          [[vPermission, 'post/api/v1/ai-proxy/create']],
+        ),
         h(NPopconfirm, {
-          onPositiveClick: () => handleDelete({ proxy_id: row.id }),
+          onPositiveClick: () => handleDelete({ name: row.name }),
         }, {
           trigger: () =>
             withDirectives(
@@ -154,16 +176,16 @@ const columns = [
     >
       <NForm ref="modalFormRef" :model="modalForm">
         <NFormItem label="代理名称" required>
-          <NInput v-model:value="modalForm.name" placeholder="代理名称" />
+          <NInput v-model:value="modalForm.name" placeholder="代理名称" :disabled="modalAction === 'update'" />
         </NFormItem>
-        <NFormItem label="接口地址" required>
-          <NInput v-model:value="modalForm.url" placeholder="接口地址" />
+        <NFormItem label="接口地址">
+          <NInput v-model:value="modalForm.url" placeholder="接口地址（可选）" />
         </NFormItem>
-        <NFormItem label="认证令牌" required>
-          <NInput v-model:value="modalForm.token" placeholder="认证令牌" />
+        <NFormItem label="认证令牌">
+          <NInput v-model:value="modalForm.token" placeholder="认证令牌（可选）" />
         </NFormItem>
         <NFormItem label="模型名称">
-          <NInput v-model:value="modalForm.model" placeholder="如 gpt-4" />
+          <NInput v-model:value="modalForm.model" placeholder="如 gpt-4（可选）" />
         </NFormItem>
         <NFormItem label="授权用户">
           <NSelect

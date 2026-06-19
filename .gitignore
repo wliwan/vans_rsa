@@ -13,6 +13,14 @@ db.sqlite3
 db.sqlite3-journal
 db.sqlite3-shm
 db.sqlite3-wal
+data/db.sqlite3
+data/db.sqlite3-journal
+data/db.sqlite3-shm
+data/db.sqlite3-wal
 
 .DS_Store
 ._.DS_Store
+**/.codewhale/*
+!**/.codewhale/constitution.json
+.deepseek/
+*.pickle

@@ -4,6 +4,7 @@ from aerich import Command
 from fastapi import FastAPI
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from tortoise.expressions import Q
 
 from app.api import api_router
@@ -39,6 +40,7 @@ def make_middlewares():
             allow_headers=settings.CORS_ALLOW_HEADERS,
         ),
         Middleware(BackGroundTaskMiddleware),
+        Middleware(GZipMiddleware, minimum_size=1024),
         Middleware(
             HttpAuditLogMiddleware,
             methods=["GET", "POST", "PUT", "DELETE"],
@@ -46,11 +48,18 @@ def make_middlewares():
                 "/api/v1/base/access_token",
                 "/api/v1/skill/export",
                 "/api/v1/workspace/sheet/upload",
+                "/api/v1/workspace/document/upload",
+                "/api/v1/workspace/document/download",
                 "/api/v1/workspace/sheet/export",
                 "/api/v1/workspace/analysis/export",
                 "/api/v1/report/export/",
                 "/api/v1/region/region-boundary/download-file",
                 "/api/v1/region/road-network/download-file",
+                "/api/v1/region/road-network/tiles/",
+                "/api/v1/region/road-material/upload",
+                "/api/v1/region/road-material/download-file",
+                "/api/v1/i18n/export",
+                "/api/s/",
                 "/docs",
                 "/openapi.json",
             ],
@@ -69,6 +78,9 @@ def register_exceptions(app: FastAPI):
 
 def register_routers(app: FastAPI, prefix: str = "/api"):
     app.include_router(api_router, prefix=prefix)
+    # 短链接公开访问 — 挂载在 /api/s 下，无鉴权，可被 Vite/Nginx 代理
+    from app.api.v1.regions.road_material import short_router
+    app.include_router(short_router, prefix="/api/s", tags=["路网素材短链接"])
 
 
 def register_static(app: FastAPI):
@@ -162,9 +174,20 @@ async def init_menus():
             ),
             Menu(
                 menu_type=MenuType.MENU,
+                name="国际化管理",
+                path="i18n",
+                order=5,
+                parent_id=parent_menu.id,
+                icon="carbon:translate",
+                is_hidden=False,
+                component="/system/i18n",
+                keepalive=False,
+            ),
+            Menu(
+                menu_type=MenuType.MENU,
                 name="部门管理",
                 path="dept",
-                order=5,
+                order=6,
                 parent_id=parent_menu.id,
                 icon="mingcute:department-line",
                 is_hidden=False,
@@ -175,11 +198,22 @@ async def init_menus():
                 menu_type=MenuType.MENU,
                 name="审计日志",
                 path="auditlog",
-                order=6,
+                order=7,
                 parent_id=parent_menu.id,
                 icon="ph:clipboard-text-bold",
                 is_hidden=False,
                 component="/system/auditlog",
+                keepalive=False,
+            ),
+            Menu(
+                menu_type=MenuType.MENU,
+                name="下载配置",
+                path="/system/download-config",
+                order=8,
+                parent_id=0,
+                icon="material-symbols:download",
+                is_hidden=False,
+                component="/system/download-config",
                 keepalive=False,
             ),
         ]
@@ -240,6 +274,17 @@ async def init_menus():
             icon="carbon:road",
             is_hidden=False,
             component="/network/road-network",
+            keepalive=False,
+        )
+        await Menu.create(
+            menu_type=MenuType.MENU,
+            name="路网素材管理",
+            path="road-material",
+            order=4,
+            parent_id=network_parent.id,
+            icon="carbon:image-reference",
+            is_hidden=False,
+            component="/network/road-material",
             keepalive=False,
         )
         # 像素平台数据同步
@@ -318,9 +363,20 @@ async def init_roles():
         await user_role.apis.add(*basic_apis)
 
 
+async def init_system_config():
+    """初始化系统下载配置默认值"""
+    try:
+        from app.controllers.system_config import system_config_controller
+        await system_config_controller.init_defaults()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"系统配置初始化失败: {e}")
+
+
 async def init_data():
     await init_db()
     await init_superuser()
     await init_menus()
     await init_apis()
     await init_roles()
+    await init_system_config()

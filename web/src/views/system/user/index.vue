@@ -1,5 +1,6 @@
 <script setup>
-import { h, onMounted, ref, resolveDirective, withDirectives } from 'vue'
+import { computed, h, onMounted, ref, resolveDirective, withDirectives } from 'vue'
+import { useBreakpoints } from '@vueuse/core'
 import {
   NButton,
   NCheckbox,
@@ -31,6 +32,10 @@ import TheIcon from '@/components/icon/TheIcon.vue'
 import { useUserStore } from '@/store'
 
 defineOptions({ name: '用户管理' })
+
+// 移动端适配：默认折叠左侧部门树
+const bp = reactive(useBreakpoints({ sm: 666, md: 991 }))
+const isMobileCollapsed = computed(() => bp.isSmaller('sm') || bp.between('sm', 'md'))
 
 const $table = ref(null)
 const queryItems = ref({})
@@ -358,6 +363,7 @@ const validateAddUser = {
       content-style="padding: 24px;"
       :collapsed-width="0"
       :width="240"
+      :collapsed="isMobileCollapsed"
       show-trigger="arrow-circle"
     >
       <h1>部门列表</h1>

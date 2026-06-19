@@ -1,0 +1,61 @@
+{
+    "wrapper": {
+        "ipAddr": "172.17.4.8",
+        "city": "zy",
+        "areacode": "",
+        "cityFlag": true,
+        "protocolVersion": 8,
+
+        "lastImage": 0,
+        "parameters": {},
+        "lastImageList": [],
+        "lastImageListWithChannel": [
+            "1781065900531_5",
+            "1781065901213_5",
+            "1781065901894_5",
+            "1781064269719_5",
+            "1781065902573_5",
+            "1781065903251_5",
+            "1781064269719_5",
+            "1781064269879_5",
+            "1781064270039_5",
+            "1781064270400_5",
+            "1781064270560_5"
+        ],
+        
+        "hardware": "deviceId:002D036DA6imei:866989057477769iccid:8962100079903965818FpanelVersion:software:C6D5.0_B30509T201_D26043002 CH5:B3.5.9_D26042702_B68I2_UKN_RAgpsVersion:UNKNOWNversion:V8.0.10n9mVersion:N9M2.0",
+        "software": "C6D5.0_B30509T201_D26043002 CH5:B3.5.9_D26042702_B68I2_UKN_RA",
+        "deviceId": "002D036DA6",
+        "imei": "866989057477769",
+        "iccid": "8962100079903965818F",
+        "jsonReport": "{\"DEVICE_STATISTICS\":{\"ALG_PIC\":{\"CURRENT_RUN_COUNT\":4258,\"CURRENT_RUN_UPLOADED_TOTAL\":1881,\"PENDING_UPLOAD_COUNT\":2379},\"ALG_RESULT\":{\"CURRENT_RUN_COUNT\":6196,\"CURRENT_RUN_UPLOADED_TOTAL\":30924,\"PENDING_UPLOAD_COUNT\":4},\"DISTANCE_PIC\":{\"CURRENT_RUN_COUNT\":3420,\"CURRENT_RUN_UPLOADED_TOTAL\":3408,\"PENDING_UPLOAD_COUNT\":12},\"POSITION_COUNT\":{\"CURRENT_RUN_COUNT\":4308,\"CURRENT_RUN_UPLOADED_TOTAL\":4305,\"PENDING_UPLOAD_COUNT\":3}}}",
+        "lastImageUrl": null,
+        "lastTime": 1781065956437,
+        "lastUpdateTime": 1781065939679,
+        "gsensor": []
+    },
+    "info": {
+        "carNo": "xzy3mHPUDqUgd8xm5",
+        "mdtId": 0,
+        "lastReponseTime": 1781065950000,
+        "lon": 107.07227333333334,
+        "lat": 6.282371666666666,
+        "carState": 10,
+        "speed": 51.0,
+        "angle": 106.0,
+        "height": 0,
+        "laneColor": null,
+        "lineType": null,
+        "type": 0,
+        "code": null,
+        "eastLongitude": true,
+        "northLatitude": false,
+        "elementAbility": false,
+        "elementEnable": false,
+        "booking": false,
+        "off": true,
+        "taken": false,
+        "empty": true
+    },
+    "parameters": {}
+}

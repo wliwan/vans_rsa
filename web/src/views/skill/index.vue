@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted, onBeforeUnmount, ref, nextTick } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, nextTick, reactive } from 'vue'
+import { useBreakpoints } from '@vueuse/core'
 import {
   NButton,
   NInput,
@@ -14,6 +15,8 @@ import {
   NPopconfirm,
   NForm,
   NFormItem,
+  NTabs,
+  NTabPane,
   useMessage,
 } from 'naive-ui'
 import TheIcon from '@/components/icon/TheIcon.vue'
@@ -22,6 +25,10 @@ import api from '@/api'
 defineOptions({ name: '技能管理' })
 
 const message = useMessage()
+
+// 移动端适配：默认折叠左侧 Sider
+const bp = reactive(useBreakpoints({ sm: 666, md: 991 }))
+const isMobileCollapsed = computed(() => bp.isSmaller('sm') || bp.between('sm', 'md'))
 
 // ---- 状态 ----
 const skills = ref([])
@@ -38,6 +45,19 @@ const modalTitle = ref('')
 const modalForm = ref({ title: '', user_ids: [] })
 const userOptions = ref([])
 const isEditing = ref(false)
+
+// 当前激活的创建模式 tab
+const activeTab = ref('manual')
+// AI 创建表单
+const aiForm = ref({
+  proxy_name: null,
+  source_skill_id: null,
+  prompt: '',
+  user_ids: [],
+})
+const proxyOptions = ref([])
+const skillOptions = ref([])
+const aiCreating = ref(false)
 
 // ---- 加载 Skill 列表 ----
 async function loadSkills() {
@@ -98,8 +118,13 @@ function openCreate() {
   isEditing.value = false
   modalTitle.value = '新建技能'
   modalForm.value = { title: '', user_ids: [] }
+  // 重置 AI 创建表单
+  activeTab.value = 'manual'
+  aiForm.value = { proxy_name: null, source_skill_id: null, prompt: '', user_ids: [] }
+  aiCreating.value = false
   showModal.value = true
   loadUserOptions()
+  loadProxyOptions()
 }
 
 // ---- 编辑 Skill ----
@@ -133,12 +158,39 @@ async function loadUserOptions() {
   }
 }
 
+// ---- 加载 AI 代理选项 ----
+async function loadProxyOptions() {
+  try {
+    const res = await api.getAIProxyList({ page: 1, page_size: 9999 })
+    proxyOptions.value = (res.data || []).map((p) => ({
+      label: `${p.name} (${p.model || 'unknown'})`,
+      value: p.name,
+    }))
+  } catch (e) {
+    // ignore
+  }
+}
+
+// ---- 加载技能选项（用于 AI 再创作） ----
+async function loadSkillOptions() {
+  if (skillOptions.value.length > 0) return
+  try {
+    const res = await api.getSkillList({ page: 1, page_size: 9999 })
+    skillOptions.value = (res.data || []).map((s) => ({
+      label: s.title,
+      value: s.id,
+    }))
+  } catch (e) {
+    // ignore
+  }
+}
+
 // ---- 获取当前编辑器内容 ----
 function getEditorContent() {
   return vditorInstance ? vditorInstance.getValue() : ''
 }
 
-// ---- 提交创建/更新 ----
+// ---- 提交创建/更新（手动模式） ----
 async function handleModalSubmit() {
   if (!modalForm.value.title) {
     message.warning('请输入标题')
@@ -169,6 +221,41 @@ async function handleModalSubmit() {
     await loadSkills()
   } catch (e) {
     message.error('操作失败')
+  }
+}
+
+// ---- AI 创建提交 ----
+async function handleAICreate() {
+  if (!aiForm.value.proxy_name) {
+    message.warning('请选择AI代理')
+    return
+  }
+  if (!aiForm.value.prompt.trim()) {
+    message.warning('请输入提示词')
+    return
+  }
+  aiCreating.value = true
+  try {
+    const res = await api.aiCreateSkill({
+      proxy_name: aiForm.value.proxy_name,
+      source_skill_id: aiForm.value.source_skill_id || undefined,
+      prompt: aiForm.value.prompt,
+      user_ids: aiForm.value.user_ids,
+    })
+    message.success('AI创建成功')
+    showModal.value = false
+    await loadSkills()
+    // 自动选中新创建的技能
+    if (res.data?.id) {
+      const newSkill = skills.value.find((s) => s.id === res.data.id)
+      if (newSkill) {
+        await selectSkill(newSkill)
+      }
+    }
+  } catch (e) {
+    message.error(e?.message || 'AI创建失败')
+  } finally {
+    aiCreating.value = false
   }
 }
 
@@ -243,6 +330,9 @@ onBeforeUnmount(() => {
     <NLayoutSider
       bordered
       width="280"
+      :collapsed-width="0"
+      :collapsed="isMobileCollapsed"
+      show-trigger="arrow-circle"
       :native-scrollbar="false"
       content-style="padding: 12px"
     >
@@ -324,30 +414,119 @@ onBeforeUnmount(() => {
     v-model:show="showModal"
     :title="modalTitle"
     preset="card"
-    style="width: 560px"
+    style="width: 600px"
   >
-    <NForm
-      ref="modalFormRef"
-      :model="modalForm"
-      label-placement="top"
-    >
-      <NFormItem label="标题" required>
-        <NInput v-model:value="modalForm.title" placeholder="请输入技能标题" />
-      </NFormItem>
-      <NFormItem label="授权用户">
-        <NSelect
-          v-model:value="modalForm.user_ids"
-          :options="userOptions"
-          multiple
-          placeholder="选择可访问该技能的用户"
-          filterable
-        />
-      </NFormItem>
-    </NForm>
+    <!-- 编辑模式：无 Tab，直接显示表单 -->
+    <template v-if="isEditing">
+      <NForm
+        ref="modalFormRef"
+        :model="modalForm"
+        label-placement="top"
+      >
+        <NFormItem label="标题" required>
+          <NInput v-model:value="modalForm.title" placeholder="请输入技能标题" />
+        </NFormItem>
+        <NFormItem label="授权用户">
+          <NSelect
+            v-model:value="modalForm.user_ids"
+            :options="userOptions"
+            multiple
+            placeholder="选择可访问该技能的用户"
+            filterable
+          />
+        </NFormItem>
+      </NForm>
+    </template>
+
+    <!-- 新建模式：Tab 切换手动/AI -->
+    <template v-else>
+      <NTabs v-model:value="activeTab" type="line">
+        <!-- 手动创建 Tab -->
+        <NTabPane name="manual" tab="手动创建">
+          <NForm
+            ref="modalFormRef"
+            :model="modalForm"
+            label-placement="top"
+          >
+            <NFormItem label="标题" required>
+              <NInput v-model:value="modalForm.title" placeholder="请输入技能标题" />
+            </NFormItem>
+            <NFormItem label="授权用户">
+              <NSelect
+                v-model:value="modalForm.user_ids"
+                :options="userOptions"
+                multiple
+                placeholder="选择可访问该技能的用户"
+                filterable
+              />
+            </NFormItem>
+          </NForm>
+        </NTabPane>
+
+        <!-- AI 创建 Tab -->
+        <NTabPane name="ai" tab="AI创建">
+          <NForm
+            :model="aiForm"
+            label-placement="top"
+          >
+            <NFormItem label="AI代理" required>
+              <NSelect
+                v-model:value="aiForm.proxy_name"
+                :options="proxyOptions"
+                placeholder="选择AI代理"
+                filterable
+              />
+            </NFormItem>
+            <NFormItem label="参考技能（可选）">
+              <NSelect
+                v-model:value="aiForm.source_skill_id"
+                :options="skillOptions"
+                placeholder="选择一个现有技能作为参考风格"
+                filterable
+                clearable
+                @focus="loadSkillOptions"
+              />
+            </NFormItem>
+            <NFormItem label="提示词" required>
+              <NInput
+                v-model:value="aiForm.prompt"
+                type="textarea"
+                placeholder="描述你想要创建的技能，例如：生成一个关于 Python 数据分析的技能文档，包含数据清洗、可视化和统计分析方法"
+                :autosize="{ minRows: 4, maxRows: 10 }"
+              />
+            </NFormItem>
+            <NFormItem label="授权用户">
+              <NSelect
+                v-model:value="aiForm.user_ids"
+                :options="userOptions"
+                multiple
+                placeholder="选择可访问该技能的用户"
+                filterable
+              />
+            </NFormItem>
+          </NForm>
+        </NTabPane>
+      </NTabs>
+    </template>
+
     <template #footer>
       <NSpace justify="end">
         <NButton @click="showModal = false">取消</NButton>
-        <NButton type="primary" @click="handleModalSubmit">确认</NButton>
+        <NButton
+          v-if="isEditing || activeTab === 'manual'"
+          type="primary"
+          @click="handleModalSubmit"
+        >
+          确认
+        </NButton>
+        <NButton
+          v-else
+          type="primary"
+          :loading="aiCreating"
+          @click="handleAICreate"
+        >
+          AI生成
+        </NButton>
       </NSpace>
     </template>
   </NModal>
