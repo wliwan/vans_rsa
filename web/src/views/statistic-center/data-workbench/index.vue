@@ -1027,21 +1027,27 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex" style="height: calc(100vh - 120px)">
+  <div class="flex" :class="{ 'mobile-root': isMobileCollapsed }" style="height: calc(100vh - 120px)">
     <!-- ── 左侧工作区列表 ── -->
     <div
       v-show="sidebarVisible"
       class="data-sidebar"
-      style="width: 300px; flex-shrink: 0"
+      :class="{ 'mobile-overlay': isMobileCollapsed }"
+      :style="isMobileCollapsed ? '' : 'width: 300px; flex-shrink: 0'"
     >
       <div class="sidebar-header">
         <div class="flex items-center justify-between mb-3">
           <span class="header-label">{{ $t('views.statistic-center.title_cn_aad781ad') }}</span>
           <div class="flex items-center gap-2">
             <span class="header-count">{{ workspaces.length }}</span>
-            <NButton size="tiny" quaternary @click="sidebarVisible = false" class="sidebar-toggle-btn">
+            <!-- 桌面端折叠按钮 -->
+            <NButton v-if="!isMobileCollapsed" size="tiny" quaternary @click="sidebarVisible = false" class="sidebar-toggle-btn">
               <TheIcon icon="material-symbols:chevron-left" :size="16" />
             </NButton>
+            <!-- 移动端关闭按钮（圆形 X） -->
+            <div v-if="isMobileCollapsed" class="mobile-close-btn" @click="sidebarVisible = false">
+              <TheIcon icon="material-symbols:close" :size="20" />
+            </div>
           </div>
         </div>
         <NInput
@@ -1092,15 +1098,24 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- ── 右侧数据源区域 ── -->
-    <div class="flex-1 min-w-0 overflow-hidden flex flex-col" style="padding: 16px">
-      <!-- 侧边栏收起时的边栏拉手 -->
+    <div class="flex-1 min-w-0 overflow-hidden flex flex-col" :class="{ 'mobile-content': isMobileCollapsed }" :style="isMobileCollapsed ? '' : 'padding: 16px'">
+      <!-- 桌面端：侧边栏收起时的边栏拉手 -->
       <div
-        v-if="!sidebarVisible"
+        v-if="!sidebarVisible && !isMobileCollapsed"
         class="sidebar-pull-handle"
         @click="sidebarVisible = true"
         :title="$t('views.statistic-center.label_cn_9cb11943')"
       >
         <TheIcon icon="material-symbols:chevron-right" :size="18" />
+      </div>
+
+      <!-- 移动端：汉堡菜单浮动按钮 -->
+      <div
+        v-if="!sidebarVisible && isMobileCollapsed"
+        class="mobile-menu-btn"
+        @click="sidebarVisible = true"
+      >
+        <TheIcon icon="material-symbols:menu" :size="26" />
       </div>
 
       <NSpin :show="loading">
@@ -1110,7 +1125,7 @@ onBeforeUnmount(() => {
 
         <div v-else class="h-full flex flex-col">
           <!-- 工作区标题栏 -->
-          <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center justify-between mb-4" :class="{ 'mobile-ws-header': isMobileCollapsed }">
             <div class="flex items-center gap-3">
               <div>
                 <h2 class="text-xl font-bold m-0">{{ selectedWs.name }}</h2>
@@ -1144,7 +1159,7 @@ onBeforeUnmount(() => {
                    ═══════════════════════════════════════════ -->
               <div v-if="tab.name === 'excel'" class="flex-1 flex flex-col" style="min-height: 0">
                 <!-- 上传区 -->
-                <div class="mb-5">
+                <div class="mb-5" :class="{ 'upload-dragger-mobile': isMobileCollapsed }">
                   <NUpload :show-file-list="false" :default-upload="false" accept=".xlsx,.xls,.csv" @change="handleUpload">
                     <NUploadDragger
                       class="w-full"
@@ -1176,8 +1191,8 @@ onBeforeUnmount(() => {
                   </NUpload>
                 </div>
 
-                <!-- 左右双栏布局 -->
-                <div class="flex gap-3 flex-1" style="min-height: 0">
+                <!-- 左右双栏布局（移动端堆叠） -->
+                <div class="flex gap-3 flex-1" :class="{ 'mobile-stack': isMobileCollapsed }" style="min-height: 0">
                   <!-- ── 左栏：原始表格 ── -->
                   <div class="flex-1 flex flex-col" style="min-width: 0">
                     <div class="flex items-center justify-between mb-2 px-1">
@@ -1366,8 +1381,8 @@ onBeforeUnmount(() => {
                   </NUpload>
                 </div>
 
-                <!-- 左右双栏布局 -->
-                <div class="flex gap-3 flex-1" style="min-height: 0">
+                <!-- 左右双栏布局（移动端堆叠） -->
+                <div class="flex gap-3 flex-1" :class="{ 'mobile-stack': isMobileCollapsed }" style="min-height: 0">
                   <!-- ── 左栏：原始文档 ── -->
                   <div class="flex-1 flex flex-col" style="min-width: 0">
                     <div class="flex items-center justify-between mb-2 px-1">
@@ -1632,8 +1647,8 @@ onBeforeUnmount(() => {
                   <NButton size="small" :disabled="!selectedStaticFileIds.length" @click="openStaticFileCopyToModal"><TheIcon icon="material-symbols:content-copy" :size="16" class="mr-1" />{{ t('views.statistic-center.label_cn_a9ac3f71') }}</NButton>
                   <NButton size="small" @click="openBaseUrlModal"><TheIcon icon="material-symbols:link" :size="16" class="mr-1" />BaseUrl</NButton>
                 </div>
-                <div class="flex-1 flex gap-3" style="min-height: 0">
-                  <div class="flex flex-col" :style="{ width: selectedStaticFile ? '55%' : '100%', minWidth: 0, transition: 'width 0.2s' }" style="min-height: 0">
+                <div class="flex-1 flex gap-3" :class="{ 'mobile-stack': isMobileCollapsed }" style="min-height: 0">
+                  <div class="flex flex-col" :style="isMobileCollapsed ? 'width: 100%, minWidth: 0' : { width: selectedStaticFile ? '55%' : '100%', minWidth: 0, transition: 'width 0.2s' }" style="min-height: 0">
                     <div class="flex items-center gap-2 mb-2 px-1">
                       <NCheckbox size="small" :checked="selectedStaticFileIds.length === staticFiles.length && staticFiles.length > 0" :indeterminate="selectedStaticFileIds.length > 0 && selectedStaticFileIds.length < staticFiles.length" @update:checked="toggleAllStaticFiles" />
                       <span class="text-xs text-gray-400">已选 {{ selectedStaticFileIds.length }} / {{ staticFiles.length }}</span>
@@ -2283,5 +2298,124 @@ onBeforeUnmount(() => {
 .sidebar-pull-handle:hover {
   width: 28px;
   color: var(--primary-color);
+}
+
+/* ======== 移动端响应式 ======== */
+
+/* 根容器在移动端改为 relative，供浮层定位 */
+.mobile-root {
+  position: relative;
+}
+
+/* ── 汉堡菜单按钮 ── */
+.mobile-menu-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  z-index: 100;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.mobile-menu-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+/* ── 侧边栏：移动端全屏浮层 ── */
+.mobile-overlay {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100% !important;
+  z-index: 200;
+  border-right: none !important;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+}
+.mobile-overlay .sidebar-header {
+  padding-top: env(safe-area-inset-top, 16px);
+}
+
+/* 侧边栏浮层内的关闭按钮 */
+.mobile-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--n-color-embedded);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--n-text-color-3);
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.mobile-close-btn:hover {
+  background: var(--n-color-hover);
+  color: var(--n-text-color);
+}
+
+/* ── 工作区标题栏：移动端换行 ── */
+.mobile-ws-header {
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+}
+.mobile-ws-header > div:last-child {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── Excel 双栏堆叠 ── */
+.mobile-stack {
+  flex-direction: column !important;
+}
+
+/* ── Tab 标签在移动端缩小间距 ── */
+@media (max-width: 990px) {
+  :deep(.n-tabs .n-tabs-tab) {
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* ── 移动端右侧内容区：允许滚动 + 边距缩减 ── */
+.mobile-content {
+  padding: 10px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── 移动端双栏堆叠：子元素不抢 flex，各自撑开 + 内部滚动 ── */
+.mobile-stack > * {
+  flex: none !important;
+  width: 100% !important;
+  max-height: 45vh;
+}
+
+/* ── 移动端：弹窗全宽 ── */
+@media (max-width: 990px) {
+  :deep(.n-modal) {
+    width: 95vw !important;
+    max-width: 95vw !important;
+  }
+}
+
+/* ── 移动端：上传区缩小 ── */
+@media (max-width: 990px) {
+  .upload-dragger-mobile :deep(.n-upload-dragger) {
+    padding: 12px 8px !important;
+  }
 }
 </style>
