@@ -2,13 +2,12 @@
 import { useI18n } from 'vue-i18n'
 import { computed, h, onMounted, ref } from 'vue'
 import {
-
-
-
   NButton,
   NDataTable,
   NInput,
   NModal,
+  NRadio,
+  NRadioGroup,
   NSelect,
   NSpace,
   NTag,
@@ -219,20 +218,42 @@ async function handleImport() {
   }
 }
 
-// ── AI 生成 ──
+// ── AI 翻译 ──
 const aiVisible = ref(false)
 const aiGenerating = ref(false)
 const aiProxyName = ref(null)
-const aiTargetLocale = ref('')
-const aiTargetLangName = ref('')
-const aiPromptExtra = ref('')
+const aiTargetLanguage = ref(null)
+const aiMode = ref('incremental')
 const proxyOptions = ref([])
+
+const modeOptions = [
+  { label: '增量模式（只补充未翻译的条目，已有翻译保留）', value: 'incremental' },
+  { label: '全量模式（全部重新翻译替换）', value: 'full' },
+]
+
+// 主流语言列表（除中文外）
+const languageOptions = [
+  { label: 'English（英文）', value: 'en' },
+  { label: '日本語（日文）', value: 'jp' },
+  { label: 'Français（法文）', value: 'fr' },
+  { label: 'Deutsch（德文）', value: 'de' },
+  { label: '한국어（韩文）', value: 'ko' },
+  { label: 'Español（西班牙文）', value: 'es' },
+  { label: 'Русский（俄文）', value: 'ru' },
+  { label: 'العربية（阿拉伯文）', value: 'ar' },
+  { label: 'Português（葡萄牙文）', value: 'pt' },
+  { label: 'Italiano（意大利文）', value: 'it' },
+  { label: 'Türkçe（土耳其文）', value: 'tr' },
+  { label: 'ไทย（泰文）', value: 'th' },
+  { label: 'Tiếng Việt（越南文）', value: 'vi' },
+  { label: 'Nederlands（荷兰文）', value: 'nl' },
+  { label: 'Polski（波兰文）', value: 'pl' },
+]
 
 async function openAIGenerate() {
   aiProxyName.value = null
-  aiTargetLocale.value = ''
-  aiTargetLangName.value = ''
-  aiPromptExtra.value = ''
+  aiTargetLanguage.value = null
+  aiMode.value = 'incremental'
   aiVisible.value = true
   try {
     const res = await api.getAIProxyList({ page: 1, page_size: 9999 })
@@ -246,63 +267,82 @@ async function openAIGenerate() {
 }
 
 async function handleAIGenerate() {
-  if (!aiProxyName.value || !aiTargetLocale.value || !aiTargetLangName.value) {
-    message.warning('请完善 AI 生成参数')
+  if (!aiProxyName.value || !aiTargetLanguage.value) {
+    message.warning('请选择 AI 代理和目标语言')
     return
   }
   aiGenerating.value = true
   try {
     const res = await api.aiGenerateI18n({
       ai_proxy_name: aiProxyName.value,
-      target_locale: aiTargetLocale.value,
-      target_lang_name: aiTargetLangName.value,
-      prompt_extra: aiPromptExtra.value || null,
+      target_locale: aiTargetLanguage.value,
+      mode: aiMode.value,
     })
-    message.success(`AI 翻译生成完成，共翻译 ${res.data?.translated_count || 0} 条`)
+    const failedBatches = res.data?.failed_batches
+    const skipped = res.data?.skipped_count || 0
+    let msg = `AI 翻译完成，共翻译 ${res.data?.translated_count || 0} / ${res.data?.total_count || 0} 条`
+    if (skipped > 0) {
+      msg += `（跳过 ${skipped} 条已有翻译）`
+    }
+    if (failedBatches && failedBatches.length > 0) {
+      msg += `（${failedBatches.length} 个批次失败）`
+    }
+    message.success(msg)
     aiVisible.value = false
     $table.value?.handleSearch()
   } catch (e) {
-    message.error('AI 翻译生成失败: ' + (e.message || t('views.network.roadNetworkWorkbench.messages.unknownError')))
+    message.error('AI 翻译失败: ' + (e.message || t('views.network.roadNetworkWorkbench.messages.unknownError')))
   } finally {
     aiGenerating.value = false
   }
 }
 
-// ── 前端扫描（弹窗内保持 NDataTable） ──
-const scanVisible = ref(false)
-const scanResults = ref([])
-const scanTotal = ref(0)
+// ── 扫描新字段并添加 ──
+const scanAddVisible = ref(false)
+const scanAddProxyName = ref(null)
+const scanAddLoading = ref(false)
 const scanLoading = ref(false)
+const scanAddProxyOptions = ref([])
 
-async function handleScanFrontend() {
-  scanLoading.value = true
+async function openScanAdd() {
+  scanAddProxyName.value = null
+  scanAddVisible.value = true
   try {
-    const res = await api.scanFrontendI18n()
-    scanResults.value = res.data.items || []
-    scanTotal.value = res.data.total || 0
-    scanVisible.value = true
-    message.success(`扫描完成，发现 ${scanTotal.value} 处硬编码字符串`)
-  } catch (e) {
-    message.error('扫描失败')
-  } finally {
-    scanLoading.value = false
+    const res = await api.getAIProxyList({ page: 1, page_size: 9999 })
+    scanAddProxyOptions.value = (res.data || []).map((p) => ({
+      label: `${p.name} (${p.model || 'unknown'})`,
+      value: p.name,
+    }))
+  } catch {
+    // ignore
   }
 }
 
-const scanColumns = [
-  { title: t('views.network.roadNetworkWorkbench.stats.fileSize'), key: 'file', width: 200, ellipsis: { tooltip: true } },
-  { title: '行号', key: 'line', width: 60, align: 'center' },
-  { title: '文本', key: 'text', width: 150, ellipsis: { tooltip: true } },
-  { title: '建议 Key', key: 'suggested_key', width: 200, ellipsis: { tooltip: true } },
-  {
-    title: '上下文',
-    key: 'context',
-    ellipsis: { tooltip: true },
-    render(row) {
-      return h('code', { style: 'font-size: 12px; color: #888;' }, row.context)
-    },
-  },
-]
+async function handleScanAdd() {
+  if (!scanAddProxyName.value) {
+    message.warning('请选择 AI 代理')
+    return
+  }
+  scanAddLoading.value = true
+  scanLoading.value = true
+  try {
+    const res = await api.scanAndAddI18n({
+      ai_proxy_name: scanAddProxyName.value,
+    })
+    const d = res.data || {}
+    let msg = `扫描到 ${d.scanned_count || 0} 条新字段，成功添加 ${d.added_count || 0} 条`
+    if (d.skipped_count > 0) msg += `，跳过 ${d.skipped_count} 条已有字段`
+    if (d.failed_batches && d.failed_batches.length > 0) msg += `（${d.failed_batches.length} 个批次失败）`
+    message.success(msg)
+    scanAddVisible.value = false
+    $table.value?.handleSearch()
+  } catch (e) {
+    message.error('扫描添加失败: ' + (e.message || '未知错误'))
+  } finally {
+    scanAddLoading.value = false
+    scanLoading.value = false
+  }
+}
 
 onMounted(() => {
   // CrudTable 不会自动加载，需要手动触发
@@ -323,11 +363,11 @@ onMounted(() => {
         <NButton @click="openImport">
           <TheIcon icon="material-symbols:upload" :size="18" class="mr-5" />导入
         </NButton>
-        <NButton type="warning" @click="handleScanFrontend" :loading="scanLoading">
-          <TheIcon icon="material-symbols:search" :size="18" class="mr-5" />扫描前端硬编码
+        <NButton type="warning" @click="openScanAdd">
+          <TheIcon icon="material-symbols:search" :size="18" class="mr-5" />扫描新字段并添加
         </NButton>
         <NButton type="info" v-permission="'post/api/v1/i18n/ai-generate'" @click="openAIGenerate">
-          <TheIcon icon="material-symbols:auto-awesome" :size="18" class="mr-5" />AI 生成新语言
+          <TheIcon icon="material-symbols:auto-awesome" :size="18" class="mr-5" />AI 翻译
         </NButton>
       </NSpace>
     </template>
@@ -360,8 +400,8 @@ onMounted(() => {
       </template>
     </NModal>
 
-    <!-- AI 生成弹窗 -->
-    <NModal v-model:show="aiVisible" preset="card" title="AI 生成新语言翻译" style="width: 550px">
+    <!-- AI 翻译弹窗 -->
+    <NModal v-model:show="aiVisible" preset="card" title="AI 翻译" style="width: 600px">
       <div>
         <label style="display: block; margin-bottom: 4px"><b>AI 代理</b></label>
         <NSelect
@@ -371,41 +411,62 @@ onMounted(() => {
           filterable
         />
       </div>
-      <div style="margin-top: 12px">
-        <label style="display: block; margin-bottom: 4px"><b>目标语言代码</b>（如 jp, fr, de）</label>
-        <NInput v-model:value="aiTargetLocale" placeholder="如: jp" />
+      <div style="margin-top: 16px">
+        <label style="display: block; margin-bottom: 4px"><b>目标语言</b></label>
+        <NSelect
+          v-model:value="aiTargetLanguage"
+          :options="languageOptions"
+          placeholder="请选择要翻译成的目标语言"
+          filterable
+        />
       </div>
-      <div style="margin-top: 12px">
-        <label style="display: block; margin-bottom: 4px"><b>目标语言名称（中文描述）</b></label>
-        <NInput v-model:value="aiTargetLangName" placeholder="如: 日文、法文、德文" />
-      </div>
-      <div style="margin-top: 12px">
-        <label style="display: block; margin-bottom: 4px"><b>额外提示词</b>（可选）</label>
-        <NInput v-model:value="aiPromptExtra" placeholder="额外的翻译要求..." />
+      <div style="margin-top: 16px">
+        <label style="display: block; margin-bottom: 6px"><b>翻译模式</b></label>
+        <NRadioGroup v-model:value="aiMode" name="aiMode">
+          <NSpace vertical :size="8">
+            <NRadio value="incremental">
+              <span style="font-weight: 500">增量模式</span>
+              <span style="color: #666; margin-left: 8px; font-size: 13px">只补充未翻译的条目，已有翻译保留</span>
+            </NRadio>
+            <NRadio value="full">
+              <span style="font-weight: 500">全量模式</span>
+              <span style="color: #666; margin-left: 8px; font-size: 13px">全部重新翻译并替换现有文件</span>
+            </NRadio>
+          </NSpace>
+        </NRadioGroup>
       </div>
       <template #footer>
         <NSpace justify="end">
           <NButton @click="aiVisible = false">取消</NButton>
           <NButton type="primary" :loading="aiGenerating" @click="handleAIGenerate">
-            {{ aiGenerating ? '生成中...' : '开始生成' }}
+            {{ aiGenerating ? '翻译中...' : '开始翻译' }}
           </NButton>
         </NSpace>
       </template>
     </NModal>
 
-    <!-- 扫描结果弹窗 -->
-    <NModal v-model:show="scanVisible" preset="card" title="前端硬编码扫描结果" style="width: 900px">
-      <div style="margin-bottom: 12px; color: #666">
-        共发现 <b>{{ scanTotal }}</b> 处硬编码字符串
+    <!-- 扫描新字段并添加弹窗 -->
+    <NModal v-model:show="scanAddVisible" preset="card" title="扫描新字段并添加" style="width: 500px">
+      <div>
+        <label style="display: block; margin-bottom: 4px"><b>AI 代理</b></label>
+        <NSelect
+          v-model:value="scanAddProxyName"
+          :options="scanAddProxyOptions"
+          placeholder="请选择用于生成 key 的 AI 代理"
+          filterable
+        />
+        <div style="margin-top: 8px; color: #888; font-size: 13px">
+          将扫描前端代码中直接使用的中文文本，用 AI 生成合适的 i18n key 后追加到 cn.json。
+        </div>
       </div>
-      <NDataTable
-        :columns="scanColumns"
-        :data="scanResults"
-        :max-height="500"
-        virtual-scroll
-        size="small"
-        striped
-      />
+      <template #footer>
+        <NSpace justify="end">
+          <NButton @click="scanAddVisible = false">取消</NButton>
+          <NButton type="primary" :loading="scanAddLoading" @click="handleScanAdd">
+            {{ scanAddLoading ? '扫描中...' : '开始扫描并添加' }}
+          </NButton>
+        </NSpace>
+      </template>
     </NModal>
   </CommonPage>
 </template>

@@ -290,6 +290,7 @@ export default {
   aiGenerateI18n: (data = {}) => request.post('/i18n/ai-generate', data, { timeout: 0 }),
   scanFrontendI18n: () => request.get('/i18n/scan-frontend'),
   replaceHardcodedI18n: (data = {}) => request.post('/i18n/replace-hardcoded', data),
+  scanAndAddI18n: (data = {}) => request.post('/i18n/scan-and-add', data, { timeout: 0 }),
   // skills
   getSkillList: (params = {}) => request.get('/skill/list', { params }),
   getSkillById: (params = {}) => request.get('/skill/get', { params }),

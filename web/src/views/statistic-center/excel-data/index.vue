@@ -32,6 +32,9 @@ function formatFileSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
+const wsAccentColors = ['#6366f1', '#8b5cf6', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899']
+function wsAccent(idx) { return wsAccentColors[idx % wsAccentColors.length] }
+
 // 状态
 const workspaces = ref([])
 const selectedWs = ref(null)
@@ -323,18 +326,23 @@ onMounted(() => loadWorkspaces())
         </NButton>
         <NList hoverable clickable :show-divider="false">
           <NListItem
-            v-for="ws in workspaces" :key="ws.id"
+            v-for="(ws, idx) in workspaces" :key="ws.id"
             :class="{ 'bg-blue-50 dark:bg-blue-900': selectedWs?.id === ws.id }"
             style="border-radius: 8px; margin-bottom: 4px; cursor: pointer"
             @click="selectWorkspace(ws)"
           >
-            <div class="flex flex-col flex-1 min-w-0">
-              <span class="font-medium truncate">{{ ws.name }}</span>
-              <span class="text-gray-400 text-xs">{{ ws.updated_at }}</span>
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <div class="ws-avatar" :style="{ background: wsAccent(idx) }">
+                {{ ws.name.charAt(0) }}
+              </div>
+              <div class="flex flex-col flex-1 min-w-0">
+                <span class="font-medium truncate">{{ ws.name }}</span>
+                <span class="text-gray-400 text-xs">{{ ws.updated_at }}</span>
+              </div>
             </div>
           </NListItem>
         </NList>
-        <div v-if="!workspaces.length" class="text-center text-gray-400 py-10">暂无工作区</div>
+        <div v-if="!workspaces.length" class="text-center text-gray-400 py-10">{{ t('views.statistic-center.label_cn_c3e99070') }}</div>
       </NSpace>
     </NLayoutSider>
 
@@ -369,7 +377,7 @@ onMounted(() => loadWorkspaces())
           <!-- 上传区 -->
           <div class="mb-4 p-4 border rounded border-dashed">
             <div class="flex items-center justify-between mb-2">
-              <span class="font-medium">上传原始表格</span>
+              <span class="font-medium">{{ t('views.statistic-center.label_cn_b26de1f0') }}</span>
               <NUpload :show-file-list="false" accept=".xlsx,.xls,.csv" @change="handleUpload">
                 <NButton size="small" type="primary" :loading="uploading">
                   <TheIcon icon="material-symbols:upload" :size="16" class="mr-4" />选择文件
@@ -408,7 +416,7 @@ onMounted(() => loadWorkspaces())
                 </div>
               </NListItem>
             </NList>
-            <div v-else class="text-gray-400 text-sm py-4 text-center">暂无原始表格</div>
+            <div v-else class="text-gray-400 text-sm py-4 text-center">{{ t('views.statistic-center.label_cn_1c64ab34') }}</div>
           </div>
 
           <NDivider />
@@ -481,7 +489,7 @@ onMounted(() => loadWorkspaces())
                 </div>
               </NListItem>
             </NList>
-            <div v-else class="text-gray-400 text-sm py-4 text-center">暂无分析结果</div>
+            <div v-else class="text-gray-400 text-sm py-4 text-center">{{ t('views.statistic-center.label_cn_2e9506a3') }}</div>
           </div>
         </div>
       </NSpin>
@@ -503,8 +511,8 @@ onMounted(() => loadWorkspaces())
     </NForm>
     <template #footer>
       <NSpace justify="end">
-        <NButton @click="showWsModal = false">取消</NButton>
-        <NButton type="primary" @click="handleWsSubmit">确认</NButton>
+        <NButton @click="showWsModal = false">{{ t('views.statistic-center.label_cn_625fb26b') }}</NButton>
+        <NButton type="primary" @click="handleWsSubmit">{{ t('views.statistic-center.message_cn_e83a256e') }}</NButton>
       </NSpace>
     </template>
   </NModal>
@@ -527,8 +535,8 @@ onMounted(() => loadWorkspaces())
     </NForm>
     <template #footer>
       <NSpace justify="end">
-        <NButton @click="showAnalyzeModal = false">取消</NButton>
-        <NButton type="primary" :loading="loading" @click="handleAnalyzeSubmit">开始分析</NButton>
+        <NButton @click="showAnalyzeModal = false">{{ t('views.statistic-center.label_cn_625fb26b') }}</NButton>
+        <NButton type="primary" :loading="loading" @click="handleAnalyzeSubmit">{{ t('views.statistic-center.label_cn_a7e17ae8') }}</NButton>
       </NSpace>
     </template>
   </NModal>
@@ -557,9 +565,20 @@ onMounted(() => loadWorkspaces())
     </NForm>
     <template #footer>
       <NSpace justify="end">
-        <NButton @click="showCorrelateModal = false">取消</NButton>
-        <NButton type="primary" :loading="loading" @click="handleCorrelateSubmit">开始分析</NButton>
+        <NButton @click="showCorrelateModal = false">{{ t('views.statistic-center.label_cn_625fb26b') }}</NButton>
+        <NButton type="primary" :loading="loading" @click="handleCorrelateSubmit">{{ t('views.statistic-center.label_cn_a7e17ae8') }}</NButton>
       </NSpace>
     </template>
   </NModal>
 </template>
+
+<style scoped>
+.ws-avatar {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 14px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+</style>

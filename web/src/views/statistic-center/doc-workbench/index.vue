@@ -528,8 +528,8 @@ onBeforeUnmount(() => destroyCodeMirror())
         </div>
         <NSpace>
           <NSwitch v-model:value="viewMode" checked-value="edit" unchecked-value="preview">
-            <template #checked>编辑</template>
-            <template #unchecked>预览</template>
+            <template #checked>{{ t('views.statistic-center.label_cn_95b351c8') }}</template>
+            <template #unchecked>{{ t('views.statistic-center.label_cn_645dbc55') }}</template>
           </NSwitch>
           <NButton v-if="viewMode === 'edit'" size="small" @click="saveEdit">
             <TheIcon icon="material-symbols:save" :size="16" class="mr-4" />保存
@@ -567,7 +567,7 @@ onBeforeUnmount(() => destroyCodeMirror())
             v-show="viewMode !== 'edit'"
             ref="previewFrame"
             style="position: absolute; inset: 0; width: 100%; height: 100%; border: none"
-            :title="'预览'"
+            ::title="t('views.statistic-center.label_cn_f24f895f')"
           />
         </template>
         <div v-if="loading" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.6); z-index: 10">
@@ -599,7 +599,7 @@ onBeforeUnmount(() => destroyCodeMirror())
       <!-- 数据来源分区 -->
       <NFormItem v-if="generateForm.workspace_id" :label="t('views.pixel.title_cn_a094e5b7')">
         <div v-if="dataSourcesLoading" class="flex justify-center py-6">
-          <NSpin size="small" /><span class="ml-2 text-sm text-gray-400">加载数据源...</span>
+          <NSpin size="small" /><span class="ml-2 text-sm text-gray-400">{{ t('views.statistic-center.label_cn_6f6b9b2f') }}</span>
         </div>
         <div v-else-if="totalDataSourceCount === 0" class="text-sm text-gray-400 text-center py-6">
           该工作区暂无数据源，请先在数据工作台中上传数据
@@ -635,7 +635,7 @@ onBeforeUnmount(() => destroyCodeMirror())
                     @click.stop="toggleSectionAll(sec.key)"
                     :type="sectionStats[sec.key]?.all ? 'primary' : 'default'"
                   >
-                    {{ sectionStats[sec.key]?.all ? '取消' : '$t(\'views.statistic-center.label_cn_66eeacd9\')' }}
+                    {{ sectionStats[sec.key]?.all ? t('views.statistic-center.label_cn_625fb26b') : '$t(\'views.statistic-center.label_cn_66eeacd9\')' }}
                   </NButton>
                   <!-- 折叠箭头 -->
                   <div class="ds-section__arrow" :class="{ 'ds-section__arrow--open': expandedSections[sec.key] }">
@@ -671,22 +671,22 @@ onBeforeUnmount(() => destroyCodeMirror())
           <div class="preview-stats__grid">
             <div class="preview-stat">
               <span class="preview-stat__value">{{ previewData.source_counts?.total ?? 0 }}</span>
-              <span class="preview-stat__label">数据源</span>
+              <span class="preview-stat__label">{{ t('views.statistic-center.label_cn_c11322c9') }}</span>
             </div>
             <div class="preview-stat">
               <span class="preview-stat__value">{{ previewData.total_chars?.toLocaleString() ?? 0 }}</span>
-              <span class="preview-stat__label">总字数</span>
+              <span class="preview-stat__label">{{ t('views.statistic-center.label_cn_e0d421f2') }}</span>
             </div>
             <div class="preview-stat">
               <span class="preview-stat__value">{{ previewData.estimated_tokens?.toLocaleString() ?? 0 }}</span>
-              <span class="preview-stat__label">Token 估算</span>
+              <span class="preview-stat__label">{{ t('views.statistic-center.label_cn_df9703ad') }}</span>
             </div>
           </div>
           <div class="preview-stats__detail">
             <span v-if="previewData.source_counts?.sheets">📊 表格 {{ previewData.source_counts.sheets }} </span>
             <span v-if="previewData.source_counts?.analyses">📈 分析 {{ previewData.source_counts.analyses }} </span>
             <span v-if="previewData.source_counts?.documents">📄 文档 {{ previewData.source_counts.documents }} </span>
-            <span v-if="previewData.source_counts?.static_files">📁 文件 {{ previewData.source_counts.static_files }} </span>
+            <span v-if="previewData.source_counts?.static_files">📁 {{ t('views.statistic-center.label_cn_2a0c4740') }} {{ previewData.source_counts.static_files }} </span>
           </div>
         </div>
       </NFormItem>
@@ -735,7 +735,7 @@ onBeforeUnmount(() => destroyCodeMirror())
         </NButton>
         <div v-else />
         <NSpace>
-          <NButton size="large" @click="showGenerateModal = false">取消</NButton>
+          <NButton size="large" @click="showGenerateModal = false">{{ t('views.statistic-center.label_cn_625fb26b') }}</NButton>
           <NButton type="primary" size="large" @click="handleGenerate" :disabled="dataSourcesLoading">
             <TheIcon icon="material-symbols:smart-toy" :size="18" class="mr-1" />开始生成
           </NButton>
@@ -753,8 +753,8 @@ onBeforeUnmount(() => destroyCodeMirror())
     </NForm>
     <template #footer>
       <NSpace justify="end">
-        <NButton @click="showCloneModal = false">取消</NButton>
-        <NButton type="primary" @click="handleClone">确认克隆</NButton>
+        <NButton @click="showCloneModal = false">{{ t('views.statistic-center.label_cn_625fb26b') }}</NButton>
+        <NButton type="primary" @click="handleClone">{{ t('views.statistic-center.message_cn_82f85866') }}</NButton>
       </NSpace>
     
 </template>

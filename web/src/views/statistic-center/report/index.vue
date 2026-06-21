@@ -293,7 +293,7 @@ onBeforeUnmount(() => destroyCodeMirror())
             </div>
           </NListItem>
         </NList>
-        <div v-if="!workspaces.length" class="text-center text-gray-400 py-10">暂无工作区</div>
+        <div v-if="!workspaces.length" class="text-center text-gray-400 py-10">{{ t('views.statistic-center.label_cn_c3e99070') }}</div>
 
         <template v-if="selectedWs">
           <NDivider />
@@ -310,7 +310,7 @@ onBeforeUnmount(() => destroyCodeMirror())
                 <span class="text-xs text-gray-400">{{ r.updated_at }}</span>
               </div>
             </NListItem>
-            <div v-if="!reports.length" class="text-xs text-gray-400 py-2 text-center">无</div>
+            <div v-if="!reports.length" class="text-xs text-gray-400 py-2 text-center">{{ t('views.statistic-center.label_cn_d81bb206') }}</div>
           </NList>
         
 </template>
@@ -328,8 +328,8 @@ onBeforeUnmount(() => destroyCodeMirror())
         <h2 class="text-lg font-bold m-0">{{ selectedReport.name }}</h2>
         <NSpace>
           <NSwitch v-model:value="viewMode" checked-value="edit" unchecked-value="preview">
-            <template #checked>编辑</template>
-            <template #unchecked>预览</template>
+            <template #checked>{{ t('views.statistic-center.label_cn_95b351c8') }}</template>
+            <template #unchecked>{{ t('views.statistic-center.label_cn_645dbc55') }}</template>
           </NSwitch>
           <NButton v-if="viewMode === 'edit'" size="small" @click="saveEdit">
             <TheIcon icon="material-symbols:save" :size="16" class="mr-4" />保存
@@ -408,8 +408,8 @@ onBeforeUnmount(() => destroyCodeMirror())
     </NForm>
     <template #footer>
       <NSpace justify="end">
-        <NButton @click="showGenerateModal = false">取消</NButton>
-        <NButton type="primary" @click="handleGenerate">开始生成</NButton>
+        <NButton @click="showGenerateModal = false">{{ t('views.statistic-center.label_cn_625fb26b') }}</NButton>
+        <NButton type="primary" @click="handleGenerate">{{ t('views.statistic-center.label_cn_dac38a8b') }}</NButton>
       </NSpace>
     
 </template>
@@ -424,8 +424,8 @@ onBeforeUnmount(() => destroyCodeMirror())
     </NForm>
     <template #footer>
       <NSpace justify="end">
-        <NButton @click="showCloneModal = false">取消</NButton>
-        <NButton type="primary" @click="handleClone">确认克隆</NButton>
+        <NButton @click="showCloneModal = false">{{ t('views.statistic-center.label_cn_625fb26b') }}</NButton>
+        <NButton type="primary" @click="handleClone">{{ t('views.statistic-center.message_cn_82f85866') }}</NButton>
       </NSpace>
     
 </template>

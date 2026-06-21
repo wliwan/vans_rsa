@@ -47,11 +47,10 @@ class I18nImportRequest(BaseModel):
 
 
 class I18nAIGenerateRequest(BaseModel):
-    """AI 生成新语言翻译"""
+    """AI 翻译请求"""
     ai_proxy_name: str = Field(..., description="AI 代理名称")
-    target_locale: str = Field(..., description="目标语言代码，如 jp/fr/de")
-    target_lang_name: str = Field(..., description="目标语言名称（中文），如 日文/法文/德文")
-    prompt_extra: Optional[str] = Field(None, description="额外提示词")
+    target_locale: str = Field(..., description="目标语言代码，如 en/jp/fr/de")
+    mode: str = Field("full", description="翻译模式: full=全量替换, incremental=增量补充（只翻译缺失条目）")
 
 
 class HardcodedString(BaseModel):
@@ -75,3 +74,8 @@ class HardcodedReplaceRequest(BaseModel):
     line: int = Field(..., description="行号")
     original: str = Field(..., description="原始行内容")
     replacement: str = Field(..., description="替换后的行内容")
+
+
+class ScanAndAddRequest(BaseModel):
+    """扫描前端硬编码中文，AI 生成 key 并追加到 cn.json"""
+    ai_proxy_name: str = Field(..., description="AI 代理名称")

@@ -11,6 +11,7 @@ from app.schemas.i18n import (
     I18nAIGenerateRequest,
     I18nBatchUpdateRequest,
     I18nImportRequest,
+    ScanAndAddRequest,
     I18nUpdateRequest,
 )
 
@@ -61,22 +62,21 @@ async def import_i18n(import_in: I18nImportRequest):
     return Success(msg=f"语言 {import_in.locale} 导入成功")
 
 
-@router.post("/ai-generate", summary="AI生成新语言翻译")
+@router.post("/ai-generate", summary="AI翻译")
 async def ai_generate_i18n(req: I18nAIGenerateRequest):
-    """使用 AI 代理自动生成新语言的翻译"""
+    """使用 AI 代理将中文翻译为目标语言"""
     try:
         result = await i18n_controller.ai_generate(
             ai_proxy_name=req.ai_proxy_name,
             target_locale=req.target_locale,
-            target_lang_name=req.target_lang_name,
-            prompt_extra=req.prompt_extra,
+            mode=req.mode,
         )
-        return Success(data=result, msg="AI 翻译生成完成")
+        return Success(data=result, msg="AI 翻译完成")
     except ValueError as e:
         return Fail(code=400, msg=str(e))
     except Exception as e:
-        logger.exception("AI 翻译生成失败")
-        return Fail(code=500, msg=f"AI 翻译生成失败: {e}")
+        logger.exception("AI 翻译失败")
+        return Fail(code=500, msg=f"AI 翻译失败: {e}")
 
 
 @router.get("/scan-frontend", summary="扫描前端硬编码字符串")
@@ -85,6 +85,25 @@ async def scan_frontend():
     data = await i18n_controller.scan_frontend()
     return Success(data=data)
 
+
+@router.post("/scan-and-add", summary="扫描新字段并添加")
+async def scan_and_add(req: ScanAndAddRequest):
+    """扫描前端硬编码中文，AI 生成 i18n key 后追加到 cn.json"""
+    try:
+        result = await i18n_controller.scan_and_add(
+            ai_proxy_name=req.ai_proxy_name,
+        )
+        msg = (
+            f"扫描到 {result['scanned_count']} 条新字段，"
+            f"成功添加 {result['added_count']} 条，"
+            f"跳过 {result['skipped_count']} 条已有字段"
+        )
+        return Success(data=result, msg=msg)
+    except ValueError as e:
+        return Fail(code=400, msg=str(e))
+    except Exception as e:
+        logger.exception("扫描添加失败")
+        return Fail(code=500, msg=f"扫描添加失败: {e}")
 
 @router.post("/replace-hardcoded", summary="替换前端硬编码")
 async def replace_hardcoded(req: HardcodedReplaceRequest):

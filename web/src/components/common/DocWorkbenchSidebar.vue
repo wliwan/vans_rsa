@@ -106,7 +106,7 @@ defineExpose({ loadReports })
       </div>
       <NInput
         v-model:value="searchQuery"
-        :placeholder="selectedWs ? '搜索报告...' : '搜索工作区...'"
+        :placeholder="selectedWs ? t('views.statistic-center.placeholder_cn_d37f5b56') : t('views.statistic-center.placeholder_cn_a466ba6b')"
         clearable
         size="small"
         class="search-box"
@@ -116,7 +116,7 @@ defineExpose({ loadReports })
         </template>
       </NInput>
       <NButton type="primary" block @click="handleGenerate" class="generate-btn" size="large">
-        <TheIcon icon="material-symbols:smart-toy" :size="20" class="mr-1" />生成报告
+        <TheIcon icon="material-symbols:smart-toy" :size="20" class="mr-1" />{{ t('views.statistic-center.title_cn_ca40d85d') }}
       </NButton>
     </div>
 
@@ -145,7 +145,7 @@ defineExpose({ loadReports })
       <div v-if="!filteredWorkspaces.length" class="empty-state">
         <TheIcon icon="material-symbols:inbox-outline" :size="40" class="text-gray-300 dark:text-gray-600 mb-3" />
         <p class="text-sm text-gray-400">
-          {{ searchQuery ? '无匹配工作区' : '暂无工作区' }}
+          {{ searchQuery ? t('views.statistic-center.label_cn_f63f56b1') : t('views.statistic-center.label_cn_c3e99070') }}
         </p>
       </div>
     </div>
@@ -155,13 +155,13 @@ defineExpose({ loadReports })
       <!-- 面包屑 -->
       <div class="breadcrumb-row">
         <NButton size="tiny" quaternary @click="backToWorkspaces">
-          <TheIcon icon="material-symbols:folder" :size="15" class="mr-1" />工作区
+          <TheIcon icon="material-symbols:folder" :size="15" class="mr-1" />{{ t('views.statistic-center.label_cn_4fa8c1a3') }}
         </NButton>
         <span class="breadcrumb-sep">›</span>
         <span class="breadcrumb-current">{{ selectedWs.name }}</span>
       </div>
       <NDivider style="margin: 8px 0" />
-      <div class="section-label">报告 ({{ reports.length }})</div>
+      <div class="section-label">{{ t('views.statistic-center.message_cn_a6a1c93e', { count: reports.length }) }}</div>
       <div
         v-for="(r, idx) in filteredReports"
         :key="r.id"
@@ -181,11 +181,11 @@ defineExpose({ loadReports })
       </div>
       <div v-if="!filteredReports.length && !searchQuery" class="empty-state">
         <TheIcon icon="material-symbols:description-outline" :size="40" class="text-gray-300 dark:text-gray-600 mb-3" />
-        <p class="text-sm text-gray-400">暂无报告</p>
+        <p class="text-sm text-gray-400">{{ t('views.statistic-center.label_cn_48ea44d0') }}</p>
       </div>
       <div v-if="!filteredReports.length && searchQuery" class="empty-state">
         <TheIcon icon="material-symbols:search-off" :size="40" class="text-gray-300 dark:text-gray-600 mb-3" />
-        <p class="text-sm text-gray-400">无匹配报告</p>
+        <p class="text-sm text-gray-400">{{ t('views.statistic-center.label_cn_d85571de') }}</p>
       </div>
     </div>
   </div>

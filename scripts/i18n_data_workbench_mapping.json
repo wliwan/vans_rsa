@@ -1,0 +1,3446 @@
+{
+  "all_keys": {
+    "views.statistic-center.label_cn_9de9bf4c": {
+      "zh": "短链接不可用",
+      "en": "Short Link Unavailable"
+    },
+    "views.statistic-center.label_cn_20ad8798": {
+      "zh": "短链接已复制",
+      "en": "Short Link Copied"
+    },
+    "views.statistic-center.message_cn_5f476ef2": {
+      "zh": "加载静态文件失败",
+      "en": "Failed to load static files"
+    },
+    "views.statistic-center.placeholder_cn_aac7e445": {
+      "zh": "请先选择工作区",
+      "en": "Please select a workspace first"
+    },
+    "views.statistic-center.message_cn_54e5de42": {
+      "zh": "上传失败",
+      "en": "Upload failed"
+    },
+    "views.statistic-center.message_cn_0007d170": {
+      "zh": "删除成功",
+      "en": "Delete successful"
+    },
+    "views.statistic-center.message_cn_acf0664a": {
+      "zh": "删除失败",
+      "en": "Delete failed"
+    },
+    "views.statistic-center.placeholder_cn_3c2412f9": {
+      "zh": "请先选择文件",
+      "en": "Please select files first"
+    },
+    "views.statistic-center.message_cn_eedd70c6": {
+      "zh": "批量删除成功",
+      "en": "Batch delete successful"
+    },
+    "views.statistic-center.message_cn_1bac376d": {
+      "zh": "批量删除失败",
+      "en": "Batch delete failed"
+    },
+    "views.statistic-center.label_cn_f7b42666": {
+      "zh": "静态文件批量导出.zip",
+      "en": "Static Files Batch Export.zip"
+    },
+    "views.statistic-center.message_cn_dd51ab50": {
+      "zh": "导出失败",
+      "en": "Export failed"
+    },
+    "views.statistic-center.message_cn_65e200d3": {
+      "zh": "下载失败",
+      "en": "Download failed"
+    },
+    "views.statistic-center.placeholder_cn_7d69c1a5": {
+      "zh": "请先选择图片文件",
+      "en": "Please select image files first"
+    },
+    "views.statistic-center.message_cn_c4ec4878": {
+      "zh": "OpenCV处理完成",
+      "en": "OpenCVProcessing complete"
+    },
+    "views.statistic-center.message_cn_fb005598": {
+      "zh": "OpenCV处理失败",
+      "en": "OpenCV processing failed"
+    },
+    "views.statistic-center.placeholder_cn_ee488ec6": {
+      "zh": "请选择AI代理",
+      "en": "Please select an AI proxy"
+    },
+    "views.statistic-center.label_cn_a88a39d8": {
+      "zh": "AI图片处理",
+      "en": "AI Image Processing"
+    },
+    "views.statistic-center.message_cn_5f13f399": {
+      "zh": "AI处理完成",
+      "en": "AI processing completed"
+    },
+    "views.statistic-center.message_cn_9ecb35a3": {
+      "zh": "AI处理失败",
+      "en": "AI processing failed"
+    },
+    "views.statistic-center.label_cn_aef2c23a": {
+      "zh": "OCR文本提取",
+      "en": "OCR Text Extraction"
+    },
+    "views.statistic-center.message_cn_8c3035a0": {
+      "zh": "OCR提取完成",
+      "en": "OCR extraction completed"
+    },
+    "views.statistic-center.message_cn_13c8c69b": {
+      "zh": "OCR提取失败",
+      "en": "OCR extraction failed"
+    },
+    "views.statistic-center.message_cn_bbb8fde2": {
+      "zh": "获取路网素材区域失败",
+      "en": "Failed to get road material regions"
+    },
+    "views.statistic-center.message_cn_934bcb9c": {
+      "zh": "获取素材列表失败",
+      "en": "Failed to get material list"
+    },
+    "views.statistic-center.placeholder_cn_8af38652": {
+      "zh": "请选择要导入的素材",
+      "en": "Please select materials to import"
+    },
+    "views.statistic-center.message_cn_fddcd7c6": {
+      "zh": "导入失败",
+      "en": "Import failed"
+    },
+    "views.statistic-center.placeholder_cn_946eef8d": {
+      "zh": "请选择目标工作区",
+      "en": "Please select target workspace"
+    },
+    "views.statistic-center.message_cn_5154ae17": {
+      "zh": "复制失败",
+      "en": "Copy failed"
+    },
+    "views.statistic-center.label_cn_df261b91": {
+      "zh": "BaseUrl 已更新",
+      "en": "BaseUrl Updated"
+    },
+    "views.statistic-center.message_cn_930442e2": {
+      "zh": "更新失败",
+      "en": "Update failed"
+    },
+    "views.statistic-center.placeholder_cn_f3328c38": {
+      "zh": "请先选择数据",
+      "en": "Please select data first"
+    },
+    "views.statistic-center.label_cn_01470c4d": {
+      "zh": "数据库数据批量导出.zip",
+      "en": "Database Data Batch Export.zip"
+    },
+    "views.statistic-center.label_cn_8242c2cd": {
+      "zh": "请填写主机和数据库名",
+      "en": "Please fill in host and database name"
+    },
+    "views.statistic-center.message_cn_0745fc09": {
+      "zh": "连接失败",
+      "en": "Connection failed"
+    },
+    "views.statistic-center.placeholder_cn_ffd60b41": {
+      "zh": "请至少选择一个表",
+      "en": "Please select at least one table"
+    },
+    "views.statistic-center.message_cn_5348dcac": {
+      "zh": "解析失败",
+      "en": "Parse failed"
+    },
+    "views.statistic-center.message_cn_5bbfb780": {
+      "zh": "获取像素账户失败",
+      "en": "Failed to get pixel accounts"
+    },
+    "views.statistic-center.message_cn_dfe3f39d": {
+      "zh": "获取数据表失败",
+      "en": "Failed to get data tables"
+    },
+    "views.statistic-center.placeholder_cn_2162302a": {
+      "zh": "请选择账户和数据表",
+      "en": "Please select account and table"
+    },
+    "views.statistic-center.message_cn_b6d16a81": {
+      "zh": "导入成功",
+      "en": "Import successful"
+    },
+    "views.statistic-center.message_cn_a495eb1d": {
+      "zh": "获取路网区域失败",
+      "en": "Failed to get road network regions"
+    },
+    "views.statistic-center.message_cn_52191929": {
+      "zh": "获取路网列表失败",
+      "en": "Failed to get road network list"
+    },
+    "views.statistic-center.placeholder_cn_79e1b67e": {
+      "zh": "请选择路网文件",
+      "en": "Please select road network files"
+    },
+    "views.statistic-center.label_cn_c274dc20": {
+      "zh": "数据库导入数据",
+      "en": "Database Imported Data"
+    },
+    "views.statistic-center.label_cn_001b4405": {
+      "zh": "删除({{ selectedDatabaseDocIds.length }})",
+      "en": "Delete({{ selectedDatabaseDocIds.length }})"
+    },
+    "views.statistic-center.label_cn_00fb0e78": {
+      "zh": "导入MySQL数据",
+      "en": "Import MySQL Data"
+    },
+    "views.statistic-center.label_cn_827cdec1": {
+      "zh": "导入SQLite数据",
+      "en": "Import SQLite Data"
+    },
+    "views.statistic-center.label_cn_40909c62": {
+      "zh": "导入像素数据",
+      "en": "Import Pixel Data"
+    },
+    "views.statistic-center.label_cn_63b03fa8": {
+      "zh": "导入路网数据",
+      "en": "Import Road Network Data"
+    },
+    "views.statistic-center.label_cn_dc1e2959": {
+      "zh": "已选 {{ selectedDatabaseDocIds.length }} / {{ databaseDocs.length }}",
+      "en": "Selected {{ selectedDatabaseDocIds.length }} / {{ databaseDocs.length }}"
+    },
+    "views.statistic-center.label_cn_2374026f": {
+      "zh": "像素平台",
+      "en": "Pixel Platform"
+    },
+    "views.statistic-center.label_cn_75ec0658": {
+      "zh": "路网",
+      "en": "Road Network"
+    },
+    "views.statistic-center.label_cn_fa20396d": {
+      "zh": "源表: {{ d.source_table }}",
+      "en": "Source Table: {{ d.source_table }}"
+    },
+    "views.statistic-center.label_cn_228b17d7": {
+      "zh": "源更新: {{ d.source_last_updated?.slice(0, 10) }}",
+      "en": "Source Updated: {{ d.source_last_updated?.slice(0, 10) }}"
+    },
+    "views.statistic-center.label_cn_f26ef914": {
+      "zh": "下载",
+      "en": "Download"
+    },
+    "views.statistic-center.label_cn_9d9ce242": {
+      "zh": "暂无数据库导入数据",
+      "en": "No Database Imported Data"
+    },
+    "views.statistic-center.label_cn_8ac56daa": {
+      "zh": "点击上方按钮导入 MySQL / SQLite / 像素平台 / 路网数据",
+      "en": "Click buttons above to import MySQL / SQLite / Pixel / Road Network data"
+    },
+    "views.statistic-center.label_cn_41a36615": {
+      "zh": ">暂无数据库导入数据</div><div class=",
+      "en": ">No Database Imported Data</div><div class="
+    },
+    "views.statistic-center.label_cn_70ac56dc": {
+      "zh": "原始文档目录",
+      "en": "Original Documentsdirectory"
+    },
+    "views.statistic-center.label_cn_907b787c": {
+      "zh": "AI分析文档目录",
+      "en": "AI Analysis Documentsdirectory"
+    },
+    "views.statistic-center.label_cn_00ca8c6a": {
+      "zh": "导出({{ selectedStaticFileIds.length }})",
+      "en": "Export({{ selectedStaticFileIds.length }})"
+    },
+    "views.statistic-center.label_cn_076d206f": {
+      "zh": "删除({{ selectedStaticFileIds.length }})",
+      "en": "Delete({{ selectedStaticFileIds.length }})"
+    },
+    "views.statistic-center.label_cn_accd5b33": {
+      "zh": "上传文件到{{ staticFileSourceType === 'original' ? '原始文档' : 'AI分析文档' }}目录",
+      "en": "Upload files to{{ staticFileSourceType === 'original' ? 'Original Documents' : 'AI Analysis Documents' }}directory"
+    },
+    "views.statistic-center.label_cn_d3182537": {
+      "zh": "原始文档",
+      "en": "Original Documents"
+    },
+    "views.statistic-center.label_cn_c57e8ae8": {
+      "zh": "AI分析文档",
+      "en": "AI Analysis Documents"
+    },
+    "views.statistic-center.label_cn_fef7540f": {
+      "zh": "拖拽文件到此处或点击选择，支持批量上传",
+      "en": "Drag files here or click to select, batch upload supported"
+    },
+    "views.statistic-center.label_cn_cedfaa94": {
+      "zh": "OpenCV处理",
+      "en": "OpenCV Processing"
+    },
+    "views.statistic-center.label_cn_98264bd9": {
+      "zh": "AI图片优化",
+      "en": "AI Image Optimization"
+    },
+    "views.statistic-center.label_cn_0ff045c8": {
+      "zh": "OCR提取",
+      "en": "OCR Extraction"
+    },
+    "views.statistic-center.label_cn_f747d2cc": {
+      "zh": "从路网素材导入",
+      "en": "Import from Road Materials"
+    },
+    "views.statistic-center.label_cn_a9ac3f71": {
+      "zh": "复制到",
+      "en": "Copy To"
+    },
+    "views.statistic-center.label_cn_5292d9b6": {
+      "zh": "已选 {{ selectedStaticFileIds.length }} / {{ staticFiles.length }}",
+      "en": "Selected {{ selectedStaticFileIds.length }} / {{ staticFiles.length }}"
+    },
+    "views.statistic-center.label_cn_0ed3d703": {
+      "zh": "复制短链接",
+      "en": "Copy Short Link"
+    },
+    "views.statistic-center.label_cn_4b78b2cb": {
+      "zh": "暂无文件",
+      "en": "No Files"
+    },
+    "views.statistic-center.label_cn_a15b0de1": {
+      "zh": ">暂无文件</div><div class=",
+      "en": ">No Files</div><div class="
+    },
+    "views.statistic-center.label_cn_80fb2db8": {
+      "zh": "新标签页打开",
+      "en": "Open in New Tab"
+    },
+    "views.statistic-center.label_cn_2f3a89be": {
+      "zh": "关闭预览",
+      "en": "Close Preview"
+    },
+    "views.statistic-center.label_cn_2a0c4740": {
+      "zh": "文件",
+      "en": "File"
+    },
+    "views.statistic-center.label_cn_43a262a5": {
+      "zh": "基本属性",
+      "en": "Basic Properties"
+    },
+    "views.statistic-center.label_cn_d7ec2d3f": {
+      "zh": "名称",
+      "en": "Name"
+    },
+    "views.statistic-center.label_cn_09d3931b": {
+      "zh": ">名称</span><span class=",
+      "en": ">Name</span><span class="
+    },
+    "views.statistic-center.label_cn_58f96667": {
+      "zh": "大小",
+      "en": "Size"
+    },
+    "views.statistic-center.label_cn_8b61a690": {
+      "zh": ">大小</span><span class=",
+      "en": ">Size</span><span class="
+    },
+    "views.statistic-center.label_cn_874a5816": {
+      "zh": "分辨率",
+      "en": "Resolution"
+    },
+    "views.statistic-center.label_cn_82db4501": {
+      "zh": ">分辨率</span><span class=",
+      "en": ">Resolution</span><span class="
+    },
+    "views.statistic-center.label_cn_e3127cc1": {
+      "zh": "格式",
+      "en": "Format"
+    },
+    "views.statistic-center.label_cn_61fa2e33": {
+      "zh": ">格式</span><span class=",
+      "en": ">Format</span><span class="
+    },
+    "views.statistic-center.label_cn_88b1d5ce": {
+      "zh": "色彩",
+      "en": "Color"
+    },
+    "views.statistic-center.label_cn_964998e8": {
+      "zh": ">色彩</span><span class=",
+      "en": ">Color</span><span class="
+    },
+    "views.statistic-center.label_cn_8e660983": {
+      "zh": "位深",
+      "en": "Bit Depth"
+    },
+    "views.statistic-center.label_cn_de4b8415": {
+      "zh": ">位深</span><span class=",
+      "en": ">Bit Depth</span><span class="
+    },
+    "views.statistic-center.label_cn_26ca20b1": {
+      "zh": "来源",
+      "en": "Source"
+    },
+    "views.statistic-center.label_cn_0fcac549": {
+      "zh": ">来源</span><span class=",
+      "en": ">Source</span><span class="
+    },
+    "views.statistic-center.label_cn_19fcb9eb": {
+      "zh": "时间",
+      "en": "Time"
+    },
+    "views.statistic-center.label_cn_43444284": {
+      "zh": ">时间</span><span class=",
+      "en": ">Time</span><span class="
+    },
+    "views.statistic-center.label_cn_738f3dc4": {
+      "zh": "短链接（公开访问）",
+      "en": "Short Link (Public Access)"
+    },
+    "views.statistic-center.label_cn_5a1d8e9f": {
+      "zh": "EXIF 信息",
+      "en": "EXIF Info"
+    },
+    "views.statistic-center.label_cn_34681d7f": {
+      "zh": "元数据",
+      "en": "Metadata"
+    },
+    "views.statistic-center.label_cn_65060ed5": {
+      "zh": "OpenCV 图片处理",
+      "en": "OpenCV Image Processing"
+    },
+    "views.statistic-center.label_cn_de9cc3dd": {
+      "zh": "操作类型",
+      "en": "Operation Type"
+    },
+    "views.statistic-center.label_cn_d66218b0": {
+      "zh": "宽度 (px)",
+      "en": "Width (px)"
+    },
+    "views.statistic-center.label_cn_026c0953": {
+      "zh": "高度 (px, 0=等比)",
+      "en": "Height (px, 0=proportional)"
+    },
+    "views.statistic-center.label_cn_0fdb4804": {
+      "zh": "角度 (度)",
+      "en": "Angle (deg)"
+    },
+    "views.statistic-center.label_cn_05853d9c": {
+      "zh": "缩放",
+      "en": "Zoom"
+    },
+    "views.statistic-center.label_cn_ac7c8f8c": {
+      "zh": "X 起点",
+      "en": "X Start"
+    },
+    "views.statistic-center.label_cn_8d50f63f": {
+      "zh": "Y 起点",
+      "en": "Y Start"
+    },
+    "views.statistic-center.label_cn_c2847901": {
+      "zh": "宽度",
+      "en": "Width"
+    },
+    "views.statistic-center.label_cn_c1df04ee": {
+      "zh": "高度",
+      "en": "Height"
+    },
+    "views.statistic-center.label_cn_9b79c744": {
+      "zh": "垂直翻转 (0)",
+      "en": "Flip Vertical (0)"
+    },
+    "views.statistic-center.label_cn_1be8c30f": {
+      "zh": "水平翻转 (1)",
+      "en": "Flip Horizontal (1)"
+    },
+    "views.statistic-center.label_cn_c387fb43": {
+      "zh": "两者 (-1)",
+      "en": "Both (-1)"
+    },
+    "views.statistic-center.label_cn_e4e5b3af": {
+      "zh": "翻转方向",
+      "en": "Flip Direction"
+    },
+    "views.statistic-center.label_cn_755be84e": {
+      "zh": "[{label:'垂直翻转 (0)',value:0},{label:'水平翻转 (1)',value:1},{label:'两者 (-1)',value:-1}]",
+      "en": "[{label:'Flip Vertical (0)',value:0},{label:'Flip Horizontal (1)',value:1},{label:'Both (-1)',value:-1}]"
+    },
+    "views.statistic-center.label_cn_af767b7e": {
+      "zh": "上",
+      "en": "Top"
+    },
+    "views.statistic-center.label_cn_3850a186": {
+      "zh": "下",
+      "en": "Bottom"
+    },
+    "views.statistic-center.label_cn_d2aff141": {
+      "zh": "左",
+      "en": "Left"
+    },
+    "views.statistic-center.label_cn_4d9c32c2": {
+      "zh": "右",
+      "en": "Right"
+    },
+    "views.statistic-center.label_cn_b7ef3e5b": {
+      "zh": "颜色 (Hex)",
+      "en": "Color (Hex)"
+    },
+    "views.statistic-center.label_cn_ea43639d": {
+      "zh": "1=亮)\">",
+      "en": "[TODO] 1=亮)\">"
+    },
+    "views.statistic-center.label_cn_74da6ec4": {
+      "zh": "亮度 (0=暗, 1=原图, >1=亮)",
+      "en": "Brightness (0=dark, 1=original, >1=bright)"
+    },
+    "views.statistic-center.label_cn_0f58f4af": {
+      "zh": "1=高对比)\">",
+      "en": "[TODO] 1=高对比)\">"
+    },
+    "views.statistic-center.label_cn_272bec28": {
+      "zh": "对比度 (0=灰, 1=原图, >1=高对比)",
+      "en": "Contrast (0=gray, 1=original, >1=high)"
+    },
+    "views.statistic-center.label_cn_20d2311a": {
+      "zh": "灰度(GRAY)",
+      "en": "Grayscale (GRAY)"
+    },
+    "views.statistic-center.label_cn_7c9e228a": {
+      "zh": "目标色彩空间",
+      "en": "Target Color Space"
+    },
+    "views.statistic-center.label_cn_54038583": {
+      "zh": "[{label:'灰度(GRAY)',value:'GRAY'},{label:'RGB',value:'RGB'},{label:'HSV',value:'HSV'},{label:'LAB',value:'LAB'}]",
+      "en": "[{label:'Grayscale (GRAY)',value:'GRAY'},{label:'RGB',value:'RGB'},{label:'HSV',value:'HSV'},{label:'LAB',value:'LAB'}]"
+    },
+    "views.statistic-center.label_cn_44188480": {
+      "zh": "高斯(gaussian)",
+      "en": "Gaussian"
+    },
+    "views.statistic-center.label_cn_09a69e28": {
+      "zh": "中值(median)",
+      "en": "Median"
+    },
+    "views.statistic-center.label_cn_dedc433a": {
+      "zh": "双边(bilateral)",
+      "en": "Bilateral"
+    },
+    "views.statistic-center.label_cn_16f23db3": {
+      "zh": "模糊类型",
+      "en": "Blur Type"
+    },
+    "views.statistic-center.label_cn_dfdba43e": {
+      "zh": "[{label:'高斯(gaussian)',value:'gaussian'},{label:'中值(median)',value:'median'},{label:'双边(bilateral)',value:'bilateral'}]",
+      "en": "[{label:'Gaussian',value:'gaussian'},{label:'Median',value:'median'},{label:'Bilateral',value:'bilateral'}]"
+    },
+    "views.statistic-center.label_cn_26a9c662": {
+      "zh": "核大小 (奇数)",
+      "en": "Kernel Size (odd)"
+    },
+    "views.statistic-center.label_cn_f5f8588f": {
+      "zh": "腐蚀(erode)",
+      "en": "Erode"
+    },
+    "views.statistic-center.label_cn_7c7e4736": {
+      "zh": "膨胀(dilate)",
+      "en": "Dilate"
+    },
+    "views.statistic-center.label_cn_89d891c7": {
+      "zh": "开(open)",
+      "en": "Open"
+    },
+    "views.statistic-center.label_cn_1a8bdc3f": {
+      "zh": "闭(close)",
+      "en": "Close"
+    },
+    "views.statistic-center.label_cn_2b6bc0f2": {
+      "zh": "操作",
+      "en": "Operation"
+    },
+    "views.statistic-center.label_cn_76c4cdb6": {
+      "zh": "[{label:'腐蚀(erode)',value:'erode'},{label:'膨胀(dilate)',value:'dilate'},{label:'开(open)',value:'open'},{label:'闭(close)',value:'close'}]",
+      "en": "[{label:'Erode',value:'erode'},{label:'Dilate',value:'dilate'},{label:'Open',value:'open'},{label:'Close',value:'close'}]"
+    },
+    "views.statistic-center.label_cn_c5237285": {
+      "zh": "核大小",
+      "en": "Kernel Size"
+    },
+    "views.statistic-center.label_cn_0877fae0": {
+      "zh": "迭代次数",
+      "en": "Iterations"
+    },
+    "views.statistic-center.label_cn_ae605ee1": {
+      "zh": "非局部均值(nlmeans)",
+      "en": "Non-local Means (nlmeans)"
+    },
+    "views.statistic-center.label_cn_ea340b9d": {
+      "zh": "方法",
+      "en": "Method"
+    },
+    "views.statistic-center.label_cn_4897e548": {
+      "zh": "[{label:'双边(bilateral)',value:'bilateral'},{label:'非局部均值(nlmeans)',value:'nlmeans'}]",
+      "en": "[{label:'Bilateral',value:'bilateral'},{label:'Non-local Means (nlmeans)',value:'nlmeans'}]"
+    },
+    "views.statistic-center.label_cn_4aa9877e": {
+      "zh": "滤波强度 (h)",
+      "en": "Filter Strength (h)"
+    },
+    "views.statistic-center.label_cn_70db0487": {
+      "zh": "全局(global)",
+      "en": "Global"
+    },
+    "views.statistic-center.label_cn_6f1acd0b": {
+      "zh": "[{label:'全局(global)',value:'global'},{label:'CLAHE',value:'clahe'}]",
+      "en": "[{label:'Global',value:'global'},{label:'CLAHE',value:'clahe'}]"
+    },
+    "views.statistic-center.label_cn_fb6315e2": {
+      "zh": "\" label=\"裁剪限制\"><NInputNumber :value=\"cvForm.params.clip_limit || 2.0\" :min=\"0.1\" :max=\"10\" :step=\"0.1\" @update:value=\"v => updateCVParam(",
+      "en": "\" label=\"Clip Limit\"><NInputNumber :value=\"cvForm.params.clip_limit || 2.0\" :min=\"0.1\" :max=\"10\" :step=\"0.1\" @update:value=\"v => updateCVParam("
+    },
+    "views.statistic-center.label_cn_23f2e5f1": {
+      "zh": "裁剪限制",
+      "en": "Clip Limit"
+    },
+    "views.statistic-center.label_cn_3cc27f9f": {
+      "zh": "\" label=\"网格大小\"><NInputNumber :value=\"cvForm.params.tile_size || 8\" :min=\"2\" :max=\"32\" @update:value=\"v => updateCVParam(",
+      "en": "\" label=\"Grid Size\"><NInputNumber :value=\"cvForm.params.tile_size || 8\" :min=\"2\" :max=\"32\" @update:value=\"v => updateCVParam("
+    },
+    "views.statistic-center.label_cn_405bbef3": {
+      "zh": "网格大小",
+      "en": "Grid Size"
+    },
+    "views.statistic-center.label_cn_15f24ac0": {
+      "zh": "阈值(threshold)",
+      "en": "Threshold"
+    },
+    "views.statistic-center.label_cn_ff6a9ca5": {
+      "zh": "[{label:'GrabCut',value:'grabcut'},{label:'阈值(threshold)',value:'threshold'}]",
+      "en": "[{label:'GrabCut',value:'grabcut'},{label:'Threshold',value:'threshold'}]"
+    },
+    "views.statistic-center.label_cn_e8ed49e9": {
+      "zh": "边距",
+      "en": "Margin"
+    },
+    "views.statistic-center.label_cn_625fb26b": {
+      "zh": "取消",
+      "en": "Cancel"
+    },
+    "views.statistic-center.label_cn_931f6f67": {
+      "zh": "处理 ({{ selectedStaticFileIds.length }} 张)",
+      "en": "Process ({{ selectedStaticFileIds.length }} 张)"
+    },
+    "views.statistic-center.label_cn_e3e527c2": {
+      "zh": ">取消</NButton><NButton type=",
+      "en": ">Cancel</NButton><NButton type="
+    },
+    "views.statistic-center.label_cn_5748192d": {
+      "zh": "AI 图片优化",
+      "en": "AI Image Optimization"
+    },
+    "views.statistic-center.label_cn_9697e5cf": {
+      "zh": "AI 代理",
+      "en": "AI Proxy"
+    },
+    "views.statistic-center.label_cn_523369d2": {
+      "zh": "选择AI代理",
+      "en": "Select AI Proxy"
+    },
+    "views.statistic-center.label_cn_c7dd72e6": {
+      "zh": "Skill（可选）",
+      "en": "Skill (optional)"
+    },
+    "views.statistic-center.label_cn_1b115fe6": {
+      "zh": "选择预设Skill",
+      "en": "Select Preset Skill"
+    },
+    "views.statistic-center.label_cn_47b7af95": {
+      "zh": "提示词",
+      "en": "Prompt"
+    },
+    "views.statistic-center.placeholder_cn_9e8f7099": {
+      "zh": "输入处理提示词，或选择 Skill 自动填充",
+      "en": "Enter processing prompt, or select Skill for auto-fill"
+    },
+    "views.statistic-center.label_cn_d028fa5e": {
+      "zh": "AI 优化 ({{ selectedStaticFileIds.length }} 张)",
+      "en": "AI Optimize ({{ selectedStaticFileIds.length }} 张)"
+    },
+    "views.statistic-center.label_cn_5bf32f76": {
+      "zh": "全部区域",
+      "en": "All Regions"
+    },
+    "views.statistic-center.label_cn_12809aa9": {
+      "zh": "暂无路网素材区域",
+      "en": "No Road Material Regions"
+    },
+    "views.statistic-center.label_cn_1ab8884c": {
+      "zh": "全选 (已选 {{ materialSelectedIds.length }} / {{ materialCurrentList.length }})",
+      "en": "Select All (Selected {{ materialSelectedIds.length }} / {{ materialCurrentList.length }})"
+    },
+    "views.statistic-center.message_cn_26e9154b": {
+      "zh": "该区域暂无素材",
+      "en": "No Materials in This Region"
+    },
+    "views.statistic-center.label_cn_95addf75": {
+      "zh": "导入 ({{ materialSelectedIds.length }})",
+      "en": "Import ({{ materialSelectedIds.length }})"
+    },
+    "views.statistic-center.label_cn_86919bd3": {
+      "zh": "复制文件到工作区",
+      "en": "Copy Files to Workspace"
+    },
+    "views.statistic-center.label_cn_03a86f02": {
+      "zh": "将选中的 {{ selectedStaticFileIds.length }} 个文件复制到另一工作区。",
+      "en": "将选中的 {{ selectedStaticFileIds.length }} 个FileCopy To另一Workspace。"
+    },
+    "views.statistic-center.label_cn_5bdbbae6": {
+      "zh": "仅创建数据库记录指向同一文件，不拷贝物理文件。",
+      "en": "Only creates database records pointing to the same file, no physical copy."
+    },
+    "views.statistic-center.label_cn_9269a338": {
+      "zh": "目标工作区",
+      "en": "Target Workspace"
+    },
+    "views.statistic-center.label_cn_96d6caf0": {
+      "zh": "选择目标工作区",
+      "en": "SelectTarget Workspace"
+    },
+    "views.statistic-center.message_cn_d987a67e": {
+      "zh": "确认复制",
+      "en": "ConfirmCopy"
+    },
+    "views.statistic-center.label_cn_16b3e029": {
+      "zh": "导入 MySQL 数据",
+      "en": "Import MySQL Data"
+    },
+    "views.statistic-center.label_cn_aeb5271e": {
+      "zh": "主机地址",
+      "en": "Host Address"
+    },
+    "views.statistic-center.label_cn_c76cfefe": {
+      "zh": "端口",
+      "en": "Port"
+    },
+    "views.statistic-center.label_cn_819767ad": {
+      "zh": "用户名",
+      "en": "Username"
+    },
+    "views.statistic-center.label_cn_a8105204": {
+      "zh": "密码",
+      "en": "Password"
+    },
+    "views.statistic-center.label_cn_5ccbbd01": {
+      "zh": "数据库名",
+      "en": "Database Name"
+    },
+    "views.statistic-center.label_cn_d5f399b9": {
+      "zh": "数据库名称",
+      "en": "Database Name"
+    },
+    "views.statistic-center.label_cn_671bfe2f": {
+      "zh": "重新连接",
+      "en": "Reconnect"
+    },
+    "views.statistic-center.label_cn_69e74756": {
+      "zh": "测试连接",
+      "en": "Test Connection"
+    },
+    "views.statistic-center.label_cn_560d54bd": {
+      "zh": "选择要导入的表（可多选）：",
+      "en": "Select tables to import (multiple allowed):"
+    },
+    "views.statistic-center.label_cn_a98cbf80": {
+      "zh": "~{{ t.estimated_rows?.toLocaleString() }} 行",
+      "en": "~{{ t.estimated_rows?.toLocaleString() }} rows"
+    },
+    "views.statistic-center.label_cn_d20edab2": {
+      "zh": "t.selected)\" :loading=\"dbLoading\" @click=\"importMySQL\">导入 ({{ mysqlTables.filter(t => t.selected).length }})",
+      "en": "t.selected)\" :loading=\"dbLoading\" @click=\"importMySQL\">Import ({{ mysqlTables.filter(t => t.selected).length }})"
+    },
+    "views.statistic-center.label_cn_e2846471": {
+      "zh": "导入 SQLite 数据",
+      "en": "Import SQLite Data"
+    },
+    "views.statistic-center.label_cn_d895f612": {
+      "zh": "上传 SQLite 文件",
+      "en": "Upload SQLite File"
+    },
+    "views.statistic-center.label_cn_d7b2adbf": {
+      "zh": "t.selected)\" :loading=\"dbLoading\" @click=\"importSQLite\">导入 ({{ sqliteTables.filter(t => t.selected).length }})",
+      "en": "t.selected)\" :loading=\"dbLoading\" @click=\"importSQLite\">Import ({{ sqliteTables.filter(t => t.selected).length }})"
+    },
+    "views.statistic-center.label_cn_e034af06": {
+      "zh": "像素账户",
+      "en": "Pixel Account"
+    },
+    "views.statistic-center.label_cn_9692c535": {
+      "zh": "选择像素账户",
+      "en": "Select Pixel Account"
+    },
+    "views.statistic-center.label_cn_e9273484": {
+      "zh": "数据表",
+      "en": "Data Table"
+    },
+    "views.statistic-center.label_cn_1acf0346": {
+      "zh": "选择数据表",
+      "en": "Select Data Table"
+    },
+    "views.statistic-center.label_cn_8d9a071e": {
+      "zh": "导入",
+      "en": "Import"
+    },
+    "views.statistic-center.label_cn_97d03d46": {
+      "zh": "选择区域",
+      "en": "Select Region"
+    },
+    "views.statistic-center.label_cn_b65a096f": {
+      "zh": "选择国家 / 行政区 / 城市",
+      "en": "Select Country / State / City"
+    },
+    "views.statistic-center.placeholder_cn_7d7c8426": {
+      "zh": "请先选择区域以加载该区域下的路网文件",
+      "en": "Please select a region first to load road network files"
+    },
+    "views.statistic-center.label_cn_2eaae997": {
+      "zh": "选择区域后加载路网文件",
+      "en": "Select a region to load road network files"
+    },
+    "views.statistic-center.label_cn_aa6aa60d": {
+      "zh": "支持导入路网拓扑统计信息（节点数 / 边数 / 道路等级分布等）",
+      "en": "Supports importing road network topology stats (nodes / edges / road class distribution etc.)"
+    },
+    "views.statistic-center.placeholder_cn_a9da3576": {
+      "zh": "加载路网文件列表...",
+      "en": "Loading road network file list..."
+    },
+    "views.statistic-center.label_cn_dfb9060b": {
+      "zh": "已全选",
+      "en": "All Selected"
+    },
+    "views.statistic-center.label_cn_ec68176e": {
+      "zh": "部分选中",
+      "en": "Partially Selected"
+    },
+    "views.statistic-center.label_cn_f0409ecf": {
+      "zh": "未选择",
+      "en": "Not Selected"
+    },
+    "views.statistic-center.label_cn_d06a491f": {
+      "zh": "地名模式",
+      "en": "Place Name Mode"
+    },
+    "views.statistic-center.label_cn_1ded98db": {
+      "zh": "边界模式",
+      "en": "Boundary Mode"
+    },
+    "views.statistic-center.label_cn_2008c3ff": {
+      "zh": "复制到工作区",
+      "en": "Copy to Workspace"
+    },
+    "views.statistic-center.label_cn_f232c3e8": {
+      "zh": "将复制 {{ selectedDatabaseDocIds.length }} 项数据库导入数据到目标工作区",
+      "en": "Will copy {{ selectedDatabaseDocIds.length }} database records to target workspace"
+    },
+    "views.statistic-center.label_cn_cfc2af7c": {
+      "zh": "更改 BaseUrl",
+      "en": "Change BaseUrl"
+    },
+    "views.statistic-center.label_cn_3772c255": {
+      "zh": "设置公网访问基础地址，所有静态文件短链接将使用此地址作为前缀。",
+      "en": "Set public access base URL. All static file short links will use this as prefix."
+    },
+    "views.statistic-center.label_cn_7ef5cfe5": {
+      "zh": "留空则自动使用当前访问地址。",
+      "en": "Leave empty to auto-detect from current access URL."
+    },
+    "views.statistic-center.placeholder_cn_44765919": {
+      "zh": "如 http://rsatest.vanstk.com:9999",
+      "en": "e.g. http://rsatest.vanstk.com:9999"
+    },
+    "views.statistic-center.label_cn_be5fbbe3": {
+      "zh": "保存",
+      "en": "Save"
+    },
+    "views.statistic-center.label_cn_c3e99070": {
+      "zh": "暂无工作区",
+      "en": "No Workspaces"
+    },
+    "views.statistic-center.label_cn_b26de1f0": {
+      "zh": "上传原始表格",
+      "en": "Upload Original Sheets"
+    },
+    "views.statistic-center.label_cn_bd998eaf": {
+      "zh": "原始表格 ({{ sheets.length }})",
+      "en": "Original Sheets ({{ sheets.length }})"
+    },
+    "views.statistic-center.label_cn_1c64ab34": {
+      "zh": "暂无原始表格",
+      "en": "No Original Sheets"
+    },
+    "views.statistic-center.label_cn_f200c9ab": {
+      "zh": "拆解分析表格 ({{ analyses.length }})",
+      "en": "Analysis Sheets ({{ analyses.length }})"
+    },
+    "views.statistic-center.label_cn_2e9506a3": {
+      "zh": "暂无分析结果",
+      "en": "No Analysis Results"
+    },
+    "views.statistic-center.message_cn_e83a256e": {
+      "zh": "确认",
+      "en": "Confirm"
+    },
+    "views.statistic-center.label_cn_a7e17ae8": {
+      "zh": "开始分析",
+      "en": "Start Analysis"
+    },
+    "views.statistic-center.label_cn_43774d6e": {
+      "zh": "报告 ({{ reports.length }})",
+      "en": "Report ({{ reports.length }})"
+    },
+    "views.statistic-center.label_cn_d81bb206": {
+      "zh": "无",
+      "en": "None"
+    },
+    "views.statistic-center.label_cn_95b351c8": {
+      "zh": "编辑",
+      "en": "Edit"
+    },
+    "views.statistic-center.label_cn_645dbc55": {
+      "zh": "预览",
+      "en": "Preview"
+    },
+    "views.statistic-center.label_cn_dac38a8b": {
+      "zh": "开始生成",
+      "en": "Generate"
+    },
+    "views.statistic-center.message_cn_82f85866": {
+      "zh": "确认克隆",
+      "en": "Clone"
+    },
+    "views.statistic-center.label_cn_f24f895f": {
+      "zh": "'预览'",
+      "en": "'Preview'"
+    },
+    "views.statistic-center.placeholder_cn_6f6b9b2f": {
+      "zh": "加载数据源...",
+      "en": "Loading data sources..."
+    },
+    "views.statistic-center.label_cn_c11322c9": {
+      "zh": "数据源",
+      "en": "Data Sources"
+    },
+    "views.statistic-center.label_cn_e0d421f2": {
+      "zh": "总字数",
+      "en": "Total Characters"
+    },
+    "views.statistic-center.label_cn_df9703ad": {
+      "zh": "Token 估算",
+      "en": "Token Estimate"
+    },
+    "views.statistic-center.label_cn_6931fefc": {
+      "zh": "📊 表格 {{ previewData.source_counts.sheets }}",
+      "en": "[TODO] 📊 表格 {{ previewData.source_counts.sheets }}"
+    },
+    "views.statistic-center.label_cn_0f221d7b": {
+      "zh": "📈 分析 {{ previewData.source_counts.analyses }}",
+      "en": "📈 Analysis {{ previewData.source_counts.analyses }}"
+    },
+    "views.statistic-center.label_cn_30c1c91d": {
+      "zh": "📄 文档 {{ previewData.source_counts.documents }}",
+      "en": "[TODO] 📄 文档 {{ previewData.source_counts.documents }}"
+    },
+    "views.statistic-center.label_cn_9a381399": {
+      "zh": "📁 文件 {{ previewData.source_counts.static_files }}",
+      "en": "📁 File {{ previewData.source_counts.static_files }}"
+    }
+  },
+  "file_strings": {
+    "web/src/views/statistic-center/data-workbench/index.vue": [
+      {
+        "line": 650,
+        "text": "短链接不可用",
+        "key": "views.statistic-center.label_cn_9de9bf4c",
+        "type": "js_string",
+        "attr": "",
+        "context": "if (!url) { message.warning('短链接不可用'); return }"
+      },
+      {
+        "line": 651,
+        "text": "短链接已复制",
+        "key": "views.statistic-center.label_cn_20ad8798",
+        "type": "js_string",
+        "attr": "",
+        "context": "try { await navigator.clipboard.writeText(url); message.success('短链接已复制') }"
+      },
+      {
+        "line": 665,
+        "text": "加载静态文件失败",
+        "key": "views.statistic-center.message_cn_5f476ef2",
+        "type": "js_string",
+        "attr": "",
+        "context": "} catch (e) { message.error('加载静态文件失败') }"
+      },
+      {
+        "line": 684,
+        "text": "请先选择工作区",
+        "key": "views.statistic-center.placeholder_cn_aac7e445",
+        "type": "js_string",
+        "attr": "",
+        "context": "if (!selectedWs.value) { message.warning('请先选择工作区'); return }"
+      },
+      {
+        "line": 698,
+        "text": "上传失败",
+        "key": "views.statistic-center.message_cn_54e5de42",
+        "type": "js_string",
+        "attr": "",
+        "context": "} catch (e) { message.error(e?.response?.data?.msg || '上传失败') }"
+      },
+      {
+        "line": 704,
+        "text": "删除成功",
+        "key": "views.statistic-center.message_cn_0007d170",
+        "type": "js_string",
+        "attr": "",
+        "context": "try { await api.deleteStaticFile({ file_id: file.id }); message.success('删除成功'); await loadStaticFiles() }"
+      },
+      {
+        "line": 705,
+        "text": "删除失败",
+        "key": "views.statistic-center.message_cn_acf0664a",
+        "type": "js_string",
+        "attr": "",
+        "context": "catch (e) { message.error('删除失败') }"
+      },
+      {
+        "line": 709,
+        "text": "请先选择文件",
+        "key": "views.statistic-center.placeholder_cn_3c2412f9",
+        "type": "js_string",
+        "attr": "",
+        "context": "if (!selectedStaticFileIds.value.length) { message.warning('请先选择文件'); return }"
+      },
+      {
+        "line": 712,
+        "text": "批量删除成功",
+        "key": "views.statistic-center.message_cn_eedd70c6",
+        "type": "js_string",
+        "attr": "",
+        "context": "message.success('批量删除成功')"
+      },
+      {
+        "line": 714,
+        "text": "批量删除失败",
+        "key": "views.statistic-center.message_cn_1bac376d",
+        "type": "js_string",
+        "attr": "",
+        "context": "} catch (e) { message.error('批量删除失败') }"
+      },
+      {
+        "line": 723,
+        "text": "静态文件批量导出.zip",
+        "key": "views.statistic-center.label_cn_f7b42666",
+        "type": "js_string",
+        "attr": "",
+        "context": "const a = document.createElement('a'); a.href = url; a.download = '静态文件批量导出.zip'; a.click()"
+      },
+      {
+        "line": 726,
+        "text": "导出失败",
+        "key": "views.statistic-center.message_cn_dd51ab50",
+        "type": "js_string",
+        "attr": "",
+        "context": "} catch (e) { message.error(e?.response?.data?.msg || '导出失败') }"
+      },
+      {
+        "line": 735,
+        "text": "下载失败",
+        "key": "views.statistic-center.message_cn_65e200d3",
+        "type": "js_string",
+        "attr": "",
+        "context": "} catch (e) { message.error('下载失败') }"
+      },
+      {
+        "line": 739,
+        "text": "请先选择图片文件",
+        "key": "views.statistic-center.placeholder_cn_7d69c1a5",
+        "type": "js_string",
+        "attr": "",
+        "context": "if (!selectedStaticFileIds.value.length) { message.warning('请先选择图片文件'); return }"
+      },
+      {
+        "line": 756,
+        "text": "OpenCV处理完成",
+        "key": "views.statistic-center.message_cn_c4ec4878",
+        "type": "js_string",
+        "attr": "",
+        "context": "await runWithProgress(`OpenCV处理 (${cvForm.value.operation})`, () => api.cvProcessStaticFiles({ file_ids: [...selectedSta"
+      },
+      {
+        "line": 757,
+        "text": "OpenCV处理失败",
+        "key": "views.statistic-center.message_cn_fb005598",
+        "type": "js_string",
+        "attr": "",
+        "context": "} catch (e) { message.error(e?.response?.data?.msg || 'OpenCV处理失败') }"
+      },
+      {
+        "line": 769,
+        "text": "请选择AI代理",
+        "key": "views.statistic-center.placeholder_cn_ee488ec6",
+        "type": "js_string",
+        "attr": "",
+        "context": "if (!aiForm.value.ai_proxy_id) { message.warning('请选择AI代理'); return }"
+      },
+      {
+        "line": 772,
+        "text": "AI图片处理",
+        "key": "views.statistic-center.label_cn_a88a39d8",
+        "type": "js_string",
+        "attr": "",
+        "context": "await runWithProgress('AI图片处理', () => api.aiProcessStaticFiles({ file_ids: [...selectedStaticFileIds.value], ai_proxy_id"
+      },
+      {
+        "line": 772,
+        "text": "AI处理完成",
+        "key": "views.statistic-center.message_cn_5f13f399",
+        "type": "js_string",
+        "attr": "",
+        "context": "await runWithProgress('AI图片处理', () => api.aiProcessStaticFiles({ file_ids: [...selectedStaticFileIds.value], ai_proxy_id"
+      },
+      {
+        "line": 773,
+        "text": "AI处理失败",
+        "key": "views.statistic-center.message_cn_9ecb35a3",
+        "type": "js_string",
+        "attr": "",
+        "context": "} catch (e) { message.error(e?.response?.data?.msg || 'AI处理失败') }"
+      },
+      {
+        "line": 780,
+        "text": "OCR文本提取",
+        "key": "views.statistic-center.label_cn_aef2c23a",
+        "type": "js_string",
+        "attr": "",
+        "context": "try { await runWithProgress('OCR文本提取', () => api.ocrExtractStaticFiles({ file_ids: [...selectedStaticFileIds.value], wor"
+      },
+      {
+        "line": 780,
+        "text": "OCR提取完成",
+        "key": "views.statistic-center.message_cn_8c3035a0",
+        "type": "js_string",
+        "attr": "",
+        "context": "try { await runWithProgress('OCR文本提取', () => api.ocrExtractStaticFiles({ file_ids: [...selectedStaticFileIds.value], wor"
+      },
+      {
+        "line": 781,
+        "text": "OCR提取失败",
+        "key": "views.statistic-center.message_cn_13c8c69b",
+        "type": "js_string",
+        "attr": "",
+        "context": "catch (e) { message.error(e?.response?.data?.msg || 'OCR提取失败') }"
+      },
+      {
+        "line": 793,
+        "text": "获取路网素材区域失败",
+        "key": "views.statistic-center.message_cn_bbb8fde2",
+        "type": "js_string",
+        "attr": "",
+        "context": "} catch (e) { message.error('获取路网素材区域失败') }"
+      },
+      {
+        "line": 799,
+        "text": "获取素材列表失败",
+        "key": "views.statistic-center.message_cn_934bcb9c",
+        "type": "js_string",
+        "attr": "",
+        "context": "catch (e) { message.error('获取素材列表失败') }"
+      },
+      {
+        "line": 813,
+        "text": "请选择要导入的素材",
+        "key": "views.statistic-center.placeholder_cn_8af38652",
+        "type": "js_string",
+        "attr": "",
+        "context": "if (!materialSelectedIds.value.length) { message.warning('请选择要导入的素材'); return }"
+      },
+      {
+        "line": 816,
+        "text": "导入失败",
+        "key": "views.statistic-center.message_cn_fddcd7c6",
+        "type": "js_string",
+        "attr": "",
+        "context": "catch (e) { message.error(e?.response?.data?.msg || '导入失败') }"
+      },
+      {
+        "line": 826,
+        "text": "请选择目标工作区",
+        "key": "views.statistic-center.placeholder_cn_946eef8d",
+        "type": "js_string",
+        "attr": "",
+        "context": "if (!staticFileCopyToForm.value.target_workspace_id) { message.warning('请选择目标工作区'); return }"
+      },
+      {
+        "line": 829,
+        "text": "复制失败",
+        "key": "views.statistic-center.message_cn_5154ae17",
+        "type": "js_string",
+        "attr": "",
+        "context": "catch (e) { message.error(e?.response?.data?.msg || '复制失败') }"
+      },
+      {
+        "line": 835,
+        "text": "BaseUrl 已更新",
+        "key": "views.statistic-center.label_cn_df261b91",
+        "type": "js_string",
+        "attr": "",
+        "context": "try { const res = await api.setStaticFileBaseUrl({ base_url: baseUrlForm.value.base_url.trim() }); staticFileBaseUrl.val"
+      },
+      {
+        "line": 836,
+        "text": "更新失败",
+        "key": "views.statistic-center.message_cn_930442e2",
+        "type": "js_string",
+        "attr": "",
+        "context": "catch (e) { message.error(e?.response?.data?.msg || '更新失败') }"
+      },
+      {
+        "line": 890,
+        "text": "请先选择数据",
+        "key": "views.statistic-center.placeholder_cn_f3328c38",
+        "type": "js_string",
+        "attr": "",
+        "context": "if (!selectedDatabaseDocIds.value.length) { message.warning('请先选择数据'); return }"
+      },
+      {
+        "line": 891,
+        "text": "数据库数据批量导出.zip",
+        "key": "views.statistic-center.label_cn_01470c4d",
+        "type": "js_string",
+        "attr": "",
+        "context": "try { const res = await api.batchExportDocuments({ document_ids: [...selectedDatabaseDocIds.value] }); const blob = new "
+      },
+      {
+        "line": 919,
+        "text": "请填写主机和数据库名",
+        "key": "views.statistic-center.label_cn_8242c2cd",
+        "type": "js_string",
+        "attr": "",
+        "context": "if (!mysqlForm.value.host || !mysqlForm.value.database) { message.warning('请填写主机和数据库名'); return }"
+      },
+      {
+        "line": 922,
+        "text": "连接失败",
+        "key": "views.statistic-center.message_cn_0745fc09",
+        "type": "js_string",
+        "attr": "",
+        "context": "catch (e) { message.error(e?.response?.data?.msg || e?.message || '连接失败') }"
+      },
+      {
+        "line": 928,
+        "text": "请至少选择一个表",
+        "key": "views.statistic-center.placeholder_cn_ffd60b41",
+        "type": "js_string",
+        "attr": "",
+        "context": "if (!selected.length) { message.warning('请至少选择一个表'); return }"
+      },
+      {
+        "line": 943,
+        "text": "解析失败",
+        "key": "views.statistic-center.message_cn_5348dcac",
+        "type": "js_string",
+        "attr": "",
+        "context": "catch (e) { message.error(e?.response?.data?.msg || e?.message || '解析失败') }"
+      },
+      {
+        "line": 961,
+        "text": "获取像素账户失败",
+        "key": "views.statistic-center.message_cn_5bbfb780",
+        "type": "js_string",
+        "attr": "",
+        "context": "catch (e) { message.error('获取像素账户失败') }"
+      },
+      {
+        "line": 968,
+        "text": "获取数据表失败",
+        "key": "views.statistic-center.message_cn_dfe3f39d",
+        "type": "js_string",
+        "attr": "",
+        "context": "catch (e) { message.error('获取数据表失败') }"
+      },
+      {
+        "line": 972,
+        "text": "请选择账户和数据表",
+        "key": "views.statistic-center.placeholder_cn_2162302a",
+        "type": "js_string",
+        "attr": "",
+        "context": "if (!pixelForm.value.pixel_account_id || !pixelForm.value.table_name) { message.warning('请选择账户和数据表'); return }"
+      },
+      {
+        "line": 975,
+        "text": "导入成功",
+        "key": "views.statistic-center.message_cn_b6d16a81",
+        "type": "js_string",
+        "attr": "",
+        "context": "try { const res = await api.importPixelTable({ ...pixelForm.value, workspace_id: selectedWs.value.id }); message.success"
+      },
+      {
+        "line": 984,
+        "text": "获取路网区域失败",
+        "key": "views.statistic-center.message_cn_a495eb1d",
+        "type": "js_string",
+        "attr": "",
+        "context": "catch (e) { message.error('获取路网区域失败') }"
+      },
+      {
+        "line": 991,
+        "text": "获取路网列表失败",
+        "key": "views.statistic-center.message_cn_52191929",
+        "type": "js_string",
+        "attr": "",
+        "context": "catch (e) { message.error('获取路网列表失败') }"
+      },
+      {
+        "line": 998,
+        "text": "请选择路网文件",
+        "key": "views.statistic-center.placeholder_cn_79e1b67e",
+        "type": "js_string",
+        "attr": "",
+        "context": "if (!selected.length) { message.warning('请选择路网文件'); return }"
+      },
+      {
+        "line": 1457,
+        "text": "数据库导入数据",
+        "key": "views.statistic-center.label_cn_c274dc20",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span class=\"font-semibold text-base\">数据库导入数据</span>"
+      },
+      {
+        "line": 1465,
+        "text": "删除({{ selectedDatabaseDocIds.length }})",
+        "key": "views.statistic-center.label_cn_001b4405",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #trigger><NButton size=\"small\" type=\"warning\" :disabled=\"!selectedDatabaseDocIds.length\"><TheIcon icon=\"materi"
+      },
+      {
+        "line": 1476,
+        "text": "导入MySQL数据",
+        "key": "views.statistic-center.label_cn_00fb0e78",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton size=\"small\" @click=\"openMySQLModal\"><TheIcon icon=\"material-symbols:cloud-sync\" :size=\"16\" class=\"mr-1\" />导入My"
+      },
+      {
+        "line": 1477,
+        "text": "导入SQLite数据",
+        "key": "views.statistic-center.label_cn_827cdec1",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton size=\"small\" @click=\"openSQLiteModal\"><TheIcon icon=\"material-symbols:upload-file\" :size=\"16\" class=\"mr-1\" />导入"
+      },
+      {
+        "line": 1478,
+        "text": "导入像素数据",
+        "key": "views.statistic-center.label_cn_40909c62",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton size=\"small\" @click=\"openPixelModal\"><TheIcon icon=\"material-symbols:satellite\" :size=\"16\" class=\"mr-1\" />导入像素数"
+      },
+      {
+        "line": 1479,
+        "text": "导入路网数据",
+        "key": "views.statistic-center.label_cn_63b03fa8",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton size=\"small\" @click=\"openRoadNetworkModal\"><TheIcon icon=\"material-symbols:route\" :size=\"16\" class=\"mr-1\" />导入路"
+      },
+      {
+        "line": 1487,
+        "text": "已选 {{ selectedDatabaseDocIds.length }} / {{ databaseDocs.length }}",
+        "key": "views.statistic-center.label_cn_dc1e2959",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span class=\"text-xs text-gray-400\">已选 {{ selectedDatabaseDocIds.length }} / {{ databaseDocs.length }}</span>"
+      },
+      {
+        "line": 1502,
+        "text": "像素平台",
+        "key": "views.statistic-center.label_cn_2374026f",
+        "type": "js_string",
+        "attr": "",
+        "context": "{{ d.import_source === 'mysql' ? 'MySQL' : d.import_source === 'sqlite' ? 'SQLite' : d.import_source === 'pixel' ? '像素平台"
+      },
+      {
+        "line": 1502,
+        "text": "路网",
+        "key": "views.statistic-center.label_cn_75ec0658",
+        "type": "js_string",
+        "attr": "",
+        "context": "{{ d.import_source === 'mysql' ? 'MySQL' : d.import_source === 'sqlite' ? 'SQLite' : d.import_source === 'pixel' ? '像素平台"
+      },
+      {
+        "line": 1508,
+        "text": "源表: {{ d.source_table }}",
+        "key": "views.statistic-center.label_cn_fa20396d",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-if=\"d.source_table\" class=\"text-xs text-gray-400 mt-0.5\">源表: {{ d.source_table }}</div>"
+      },
+      {
+        "line": 1511,
+        "text": "源更新: {{ d.source_last_updated?.slice(0, 10) }}",
+        "key": "views.statistic-center.label_cn_228b17d7",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span v-if=\"d.source_last_updated\">源更新: {{ d.source_last_updated?.slice(0, 10) }}</span>"
+      },
+      {
+        "line": 1516,
+        "text": "下载",
+        "key": "views.statistic-center.label_cn_f26ef914",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NButton size=\"tiny\" quaternary @click=\"api.downloadDocument({ document_id: d.id }).then(r => { const blob = new Blob([r"
+      },
+      {
+        "line": 1516,
+        "text": "下载",
+        "key": "views.statistic-center.label_cn_f26ef914",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NButton size=\"tiny\" quaternary @click=\"api.downloadDocument({ document_id: d.id }).then(r => { const blob = new Blob([r"
+      },
+      {
+        "line": 1528,
+        "text": "暂无数据库导入数据",
+        "key": "views.statistic-center.label_cn_9d9ce242",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-center\"><TheIcon icon=\"material-symbols:database\" :size=\"48\" class=\"mb-2 opacity-30\" /><div class=\"text"
+      },
+      {
+        "line": 1528,
+        "text": "点击上方按钮导入 MySQL / SQLite / 像素平台 / 路网数据",
+        "key": "views.statistic-center.label_cn_8ac56daa",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-center\"><TheIcon icon=\"material-symbols:database\" :size=\"48\" class=\"mb-2 opacity-30\" /><div class=\"text"
+      },
+      {
+        "line": 1528,
+        "text": ">暂无数据库导入数据</div><div class=",
+        "key": "views.statistic-center.label_cn_41a36615",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div class=\"text-center\"><TheIcon icon=\"material-symbols:database\" :size=\"48\" class=\"mb-2 opacity-30\" /><div class=\"text"
+      },
+      {
+        "line": 1540,
+        "text": "原始文档目录",
+        "key": "views.statistic-center.label_cn_70ac56dc",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton size=\"small\" :type=\"staticFileSourceType === 'original' ? 'primary' : 'default'\" @click=\"staticFileSourceType ="
+      },
+      {
+        "line": 1541,
+        "text": "AI分析文档目录",
+        "key": "views.statistic-center.label_cn_907b787c",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton size=\"small\" :type=\"staticFileSourceType === 'ai_analysis' ? 'primary' : 'default'\" @click=\"staticFileSourceTyp"
+      },
+      {
+        "line": 1545,
+        "text": "导出({{ selectedStaticFileIds.length }})",
+        "key": "views.statistic-center.label_cn_00ca8c6a",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton v-if=\"staticFiles.length\" size=\"small\" type=\"primary\" :disabled=\"!selectedStaticFileIds.length\" @click=\"batchEx"
+      },
+      {
+        "line": 1547,
+        "text": "删除({{ selectedStaticFileIds.length }})",
+        "key": "views.statistic-center.label_cn_076d206f",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #trigger><NButton size=\"small\" type=\"warning\" :disabled=\"!selectedStaticFileIds.length\"><TheIcon icon=\"materia"
+      },
+      {
+        "line": 1557,
+        "text": "上传文件到{{ staticFileSourceType === 'original' ? '原始文档' : 'AI分析文档' }}目录",
+        "key": "views.statistic-center.label_cn_accd5b33",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-sm font-semibold text-gray-700\">上传文件到{{ staticFileSourceType === 'original' ? '原始文档' : 'AI分析文档' }}目录</d"
+      },
+      {
+        "line": 1557,
+        "text": "原始文档",
+        "key": "views.statistic-center.label_cn_d3182537",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div class=\"text-sm font-semibold text-gray-700\">上传文件到{{ staticFileSourceType === 'original' ? '原始文档' : 'AI分析文档' }}目录</d"
+      },
+      {
+        "line": 1557,
+        "text": "AI分析文档",
+        "key": "views.statistic-center.label_cn_c57e8ae8",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div class=\"text-sm font-semibold text-gray-700\">上传文件到{{ staticFileSourceType === 'original' ? '原始文档' : 'AI分析文档' }}目录</d"
+      },
+      {
+        "line": 1558,
+        "text": "拖拽文件到此处或点击选择，支持批量上传",
+        "key": "views.statistic-center.label_cn_fef7540f",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-xs text-gray-400 mt-0.5\">拖拽文件到此处或点击选择，支持批量上传</div>"
+      },
+      {
+        "line": 1564,
+        "text": "OpenCV处理",
+        "key": "views.statistic-center.label_cn_cedfaa94",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton size=\"small\" @click=\"openCVModal\" :disabled=\"!selectedStaticFileIds.length\"><TheIcon icon=\"material-symbols:tun"
+      },
+      {
+        "line": 1565,
+        "text": "AI图片优化",
+        "key": "views.statistic-center.label_cn_98264bd9",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton size=\"small\" @click=\"openAIModal\" :disabled=\"!selectedStaticFileIds.length\"><TheIcon icon=\"material-symbols:aut"
+      },
+      {
+        "line": 1566,
+        "text": "OCR提取",
+        "key": "views.statistic-center.label_cn_0ff045c8",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton size=\"small\" @click=\"handleOCRExtract\" :disabled=\"!selectedStaticFileIds.length\"><TheIcon icon=\"material-symbol"
+      },
+      {
+        "line": 1567,
+        "text": "从路网素材导入",
+        "key": "views.statistic-center.label_cn_f747d2cc",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton size=\"small\" @click=\"openMaterialImportModal\"><TheIcon icon=\"material-symbols:drive-folder-upload\" :size=\"16\" c"
+      },
+      {
+        "line": 1568,
+        "text": "复制到",
+        "key": "views.statistic-center.label_cn_a9ac3f71",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton size=\"small\" :disabled=\"!selectedStaticFileIds.length\" @click=\"openStaticFileCopyToModal\"><TheIcon icon=\"materi"
+      },
+      {
+        "line": 1575,
+        "text": "已选 {{ selectedStaticFileIds.length }} / {{ staticFiles.length }}",
+        "key": "views.statistic-center.label_cn_5292d9b6",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span class=\"text-xs text-gray-400\">已选 {{ selectedStaticFileIds.length }} / {{ staticFiles.length }}</span>"
+      },
+      {
+        "line": 1594,
+        "text": "复制短链接",
+        "key": "views.statistic-center.label_cn_0ed3d703",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NButton size=\"tiny\" quaternary @click=\"copyShortLink(f)\" title=\"复制短链接\"><TheIcon icon=\"material-symbols:link\" :size=\"16\""
+      },
+      {
+        "line": 1594,
+        "text": "复制短链接",
+        "key": "views.statistic-center.label_cn_0ed3d703",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NButton size=\"tiny\" quaternary @click=\"copyShortLink(f)\" title=\"复制短链接\"><TheIcon icon=\"material-symbols:link\" :size=\"16\""
+      },
+      {
+        "line": 1602,
+        "text": "暂无文件",
+        "key": "views.statistic-center.label_cn_4b78b2cb",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-center\"><TheIcon icon=\"material-symbols:folder-open\" :size=\"48\" class=\"mb-2 opacity-30\" /><div class=\"t"
+      },
+      {
+        "line": 1602,
+        "text": ">暂无文件</div><div class=",
+        "key": "views.statistic-center.label_cn_a15b0de1",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div class=\"text-center\"><TheIcon icon=\"material-symbols:folder-open\" :size=\"48\" class=\"mb-2 opacity-30\" /><div class=\"t"
+      },
+      {
+        "line": 1615,
+        "text": "新标签页打开",
+        "key": "views.statistic-center.label_cn_80fb2db8",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NButton v-if=\"selectedStaticFile.is_image\" size=\"tiny\" quaternary title=\"新标签页打开\" @click=\"window.open(`/api/sf/${selecte"
+      },
+      {
+        "line": 1615,
+        "text": "新标签页打开",
+        "key": "views.statistic-center.label_cn_80fb2db8",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NButton v-if=\"selectedStaticFile.is_image\" size=\"tiny\" quaternary title=\"新标签页打开\" @click=\"window.open(`/api/sf/${selecte"
+      },
+      {
+        "line": 1616,
+        "text": "关闭预览",
+        "key": "views.statistic-center.label_cn_2f3a89be",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NButton size=\"tiny\" quaternary @click=\"selectedStaticFile = null\" title=\"关闭预览\"><TheIcon icon=\"material-symbols:close\" :"
+      },
+      {
+        "line": 1616,
+        "text": "关闭预览",
+        "key": "views.statistic-center.label_cn_2f3a89be",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NButton size=\"tiny\" quaternary @click=\"selectedStaticFile = null\" title=\"关闭预览\"><TheIcon icon=\"material-symbols:close\" :"
+      },
+      {
+        "line": 1625,
+        "text": "文件",
+        "key": "views.statistic-center.label_cn_2a0c4740",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div v-else class=\"flex flex-col items-center justify-center py-10 border-b border-gray-100 bg-gray-50/30\"><div class=\"w"
+      },
+      {
+        "line": 1628,
+        "text": "基本属性",
+        "key": "views.statistic-center.label_cn_43a262a5",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2.5\">基本属性</div>"
+      },
+      {
+        "line": 1630,
+        "text": "名称",
+        "key": "views.statistic-center.label_cn_d7ec2d3f",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:description\" :size=\"14\" class=\"text-gray-400 flex-s"
+      },
+      {
+        "line": 1630,
+        "text": ">名称</span><span class=",
+        "key": "views.statistic-center.label_cn_09d3931b",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:description\" :size=\"14\" class=\"text-gray-400 flex-s"
+      },
+      {
+        "line": 1631,
+        "text": "大小",
+        "key": "views.statistic-center.label_cn_58f96667",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:database\" :size=\"14\" class=\"text-gray-400 flex-shri"
+      },
+      {
+        "line": 1631,
+        "text": ">大小</span><span class=",
+        "key": "views.statistic-center.label_cn_8b61a690",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:database\" :size=\"14\" class=\"text-gray-400 flex-shri"
+      },
+      {
+        "line": 1632,
+        "text": "分辨率",
+        "key": "views.statistic-center.label_cn_874a5816",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-if=\"selectedStaticFile.is_image\" class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:aspect-ratio\" :s"
+      },
+      {
+        "line": 1632,
+        "text": ">分辨率</span><span class=",
+        "key": "views.statistic-center.label_cn_82db4501",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div v-if=\"selectedStaticFile.is_image\" class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:aspect-ratio\" :s"
+      },
+      {
+        "line": 1633,
+        "text": "格式",
+        "key": "views.statistic-center.label_cn_e3127cc1",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-if=\"selectedStaticFile.format_type\" class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:image\" :size="
+      },
+      {
+        "line": 1633,
+        "text": ">格式</span><span class=",
+        "key": "views.statistic-center.label_cn_61fa2e33",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div v-if=\"selectedStaticFile.format_type\" class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:image\" :size="
+      },
+      {
+        "line": 1634,
+        "text": "色彩",
+        "key": "views.statistic-center.label_cn_88b1d5ce",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-if=\"selectedStaticFile.color_mode\" class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:palette\" :size"
+      },
+      {
+        "line": 1634,
+        "text": ">色彩</span><span class=",
+        "key": "views.statistic-center.label_cn_964998e8",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div v-if=\"selectedStaticFile.color_mode\" class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:palette\" :size"
+      },
+      {
+        "line": 1635,
+        "text": "位深",
+        "key": "views.statistic-center.label_cn_8e660983",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-if=\"selectedStaticFile.bit_depth\" class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:layers\" :size=\""
+      },
+      {
+        "line": 1635,
+        "text": ">位深</span><span class=",
+        "key": "views.statistic-center.label_cn_de4b8415",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div v-if=\"selectedStaticFile.bit_depth\" class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:layers\" :size=\""
+      },
+      {
+        "line": 1637,
+        "text": "来源",
+        "key": "views.statistic-center.label_cn_26ca20b1",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-if=\"selectedStaticFile.source\" class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:upload\" :size=\"14\""
+      },
+      {
+        "line": 1637,
+        "text": ">来源</span><span class=",
+        "key": "views.statistic-center.label_cn_0fcac549",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div v-if=\"selectedStaticFile.source\" class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:upload\" :size=\"14\""
+      },
+      {
+        "line": 1638,
+        "text": "时间",
+        "key": "views.statistic-center.label_cn_19fcb9eb",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:calendar-today\" :size=\"14\" class=\"text-gray-400 fle"
+      },
+      {
+        "line": 1638,
+        "text": ">时间</span><span class=",
+        "key": "views.statistic-center.label_cn_43444284",
+        "type": "js_string",
+        "attr": "",
+        "context": "<div class=\"flex items-center gap-2\"><TheIcon icon=\"material-symbols:calendar-today\" :size=\"14\" class=\"text-gray-400 fle"
+      },
+      {
+        "line": 1642,
+        "text": "短链接（公开访问）",
+        "key": "views.statistic-center.label_cn_738f3dc4",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2\">短链接（公开访问）</div>"
+      },
+      {
+        "line": 1646,
+        "text": "EXIF 信息",
+        "key": "views.statistic-center.label_cn_5a1d8e9f",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2\">EXIF 信息</div>"
+      },
+      {
+        "line": 1652,
+        "text": "元数据",
+        "key": "views.statistic-center.label_cn_34681d7f",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2\">元数据</div>"
+      },
+      {
+        "line": 1667,
+        "text": "OpenCV 图片处理",
+        "key": "views.statistic-center.label_cn_65060ed5",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NModal v-model:show=\"showCVModal\" title=\"OpenCV 图片处理\" preset=\"card\" style=\"width: 650px\">"
+      },
+      {
+        "line": 1667,
+        "text": "OpenCV 图片处理",
+        "key": "views.statistic-center.label_cn_65060ed5",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NModal v-model:show=\"showCVModal\" title=\"OpenCV 图片处理\" preset=\"card\" style=\"width: 650px\">"
+      },
+      {
+        "line": 1669,
+        "text": "操作类型",
+        "key": "views.statistic-center.label_cn_de9cc3dd",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"操作类型\" required><NSelect :value=\"cvForm.operation\" :options=\"Object.keys(cvOperations).map(k => ({ labe"
+      },
+      {
+        "line": 1669,
+        "text": "操作类型",
+        "key": "views.statistic-center.label_cn_de9cc3dd",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"操作类型\" required><NSelect :value=\"cvForm.operation\" :options=\"Object.keys(cvOperations).map(k => ({ labe"
+      },
+      {
+        "line": 1671,
+        "text": "宽度 (px)",
+        "key": "views.statistic-center.label_cn_d66218b0",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"宽度 (px)\" required><NInputNumber :value=\"cvForm.params.width || 800\" :min=\"1\" :max=\"8000\" @update:value"
+      },
+      {
+        "line": 1671,
+        "text": "宽度 (px)",
+        "key": "views.statistic-center.label_cn_d66218b0",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"宽度 (px)\" required><NInputNumber :value=\"cvForm.params.width || 800\" :min=\"1\" :max=\"8000\" @update:value"
+      },
+      {
+        "line": 1672,
+        "text": "高度 (px, 0=等比)",
+        "key": "views.statistic-center.label_cn_026c0953",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"高度 (px, 0=等比)\"><NInputNumber :value=\"cvForm.params.height || 0\" :min=\"0\" :max=\"8000\" @update:value=\"v "
+      },
+      {
+        "line": 1672,
+        "text": "高度 (px, 0=等比)",
+        "key": "views.statistic-center.label_cn_026c0953",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"高度 (px, 0=等比)\"><NInputNumber :value=\"cvForm.params.height || 0\" :min=\"0\" :max=\"8000\" @update:value=\"v "
+      },
+      {
+        "line": 1675,
+        "text": "角度 (度)",
+        "key": "views.statistic-center.label_cn_0fdb4804",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"角度 (度)\" required><NInputNumber :value=\"cvForm.params.angle || 90\" :min=\"-360\" :max=\"360\" @update:value"
+      },
+      {
+        "line": 1675,
+        "text": "角度 (度)",
+        "key": "views.statistic-center.label_cn_0fdb4804",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"角度 (度)\" required><NInputNumber :value=\"cvForm.params.angle || 90\" :min=\"-360\" :max=\"360\" @update:value"
+      },
+      {
+        "line": 1676,
+        "text": "缩放",
+        "key": "views.statistic-center.label_cn_05853d9c",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"缩放\"><NInputNumber :value=\"cvForm.params.scale || 1.0\" :min=\"0.1\" :max=\"3\" :step=\"0.1\" @update:value=\"v"
+      },
+      {
+        "line": 1676,
+        "text": "缩放",
+        "key": "views.statistic-center.label_cn_05853d9c",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"缩放\"><NInputNumber :value=\"cvForm.params.scale || 1.0\" :min=\"0.1\" :max=\"3\" :step=\"0.1\" @update:value=\"v"
+      },
+      {
+        "line": 1679,
+        "text": "X 起点",
+        "key": "views.statistic-center.label_cn_ac7c8f8c",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"X 起点\"><NInputNumber :value=\"cvForm.params.x || 0\" :min=\"0\" @update:value=\"v => updateCVParam('x', v)\" "
+      },
+      {
+        "line": 1679,
+        "text": "X 起点",
+        "key": "views.statistic-center.label_cn_ac7c8f8c",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"X 起点\"><NInputNumber :value=\"cvForm.params.x || 0\" :min=\"0\" @update:value=\"v => updateCVParam('x', v)\" "
+      },
+      {
+        "line": 1680,
+        "text": "Y 起点",
+        "key": "views.statistic-center.label_cn_8d50f63f",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"Y 起点\"><NInputNumber :value=\"cvForm.params.y || 0\" :min=\"0\" @update:value=\"v => updateCVParam('y', v)\" "
+      },
+      {
+        "line": 1680,
+        "text": "Y 起点",
+        "key": "views.statistic-center.label_cn_8d50f63f",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"Y 起点\"><NInputNumber :value=\"cvForm.params.y || 0\" :min=\"0\" @update:value=\"v => updateCVParam('y', v)\" "
+      },
+      {
+        "line": 1681,
+        "text": "宽度",
+        "key": "views.statistic-center.label_cn_c2847901",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"宽度\" required><NInputNumber :value=\"cvForm.params.width || 200\" :min=\"1\" @update:value=\"v => updateCVPa"
+      },
+      {
+        "line": 1681,
+        "text": "宽度",
+        "key": "views.statistic-center.label_cn_c2847901",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"宽度\" required><NInputNumber :value=\"cvForm.params.width || 200\" :min=\"1\" @update:value=\"v => updateCVPa"
+      },
+      {
+        "line": 1682,
+        "text": "高度",
+        "key": "views.statistic-center.label_cn_c1df04ee",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"高度\" required><NInputNumber :value=\"cvForm.params.height || 200\" :min=\"1\" @update:value=\"v => updateCVP"
+      },
+      {
+        "line": 1682,
+        "text": "高度",
+        "key": "views.statistic-center.label_cn_c1df04ee",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"高度\" required><NInputNumber :value=\"cvForm.params.height || 200\" :min=\"1\" @update:value=\"v => updateCVP"
+      },
+      {
+        "line": 1685,
+        "text": "垂直翻转 (0)",
+        "key": "views.statistic-center.label_cn_9b79c744",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"翻转方向\"><NSelect :value=\"cvForm.params.direction ?? 1\" :options=\"[{label:'垂直翻转 (0)',value:0},{label:'水平翻"
+      },
+      {
+        "line": 1685,
+        "text": "水平翻转 (1)",
+        "key": "views.statistic-center.label_cn_1be8c30f",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"翻转方向\"><NSelect :value=\"cvForm.params.direction ?? 1\" :options=\"[{label:'垂直翻转 (0)',value:0},{label:'水平翻"
+      },
+      {
+        "line": 1685,
+        "text": "两者 (-1)",
+        "key": "views.statistic-center.label_cn_c387fb43",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"翻转方向\"><NSelect :value=\"cvForm.params.direction ?? 1\" :options=\"[{label:'垂直翻转 (0)',value:0},{label:'水平翻"
+      },
+      {
+        "line": 1685,
+        "text": "翻转方向",
+        "key": "views.statistic-center.label_cn_e4e5b3af",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"翻转方向\"><NSelect :value=\"cvForm.params.direction ?? 1\" :options=\"[{label:'垂直翻转 (0)',value:0},{label:'水平翻"
+      },
+      {
+        "line": 1685,
+        "text": "[{label:'垂直翻转 (0)',value:0},{label:'水平翻转 (1)',value:1},{label:'两者 (-1)',value:-1}]",
+        "key": "views.statistic-center.label_cn_755be84e",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"翻转方向\"><NSelect :value=\"cvForm.params.direction ?? 1\" :options=\"[{label:'垂直翻转 (0)',value:0},{label:'水平翻"
+      },
+      {
+        "line": 1685,
+        "text": "翻转方向",
+        "key": "views.statistic-center.label_cn_e4e5b3af",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"翻转方向\"><NSelect :value=\"cvForm.params.direction ?? 1\" :options=\"[{label:'垂直翻转 (0)',value:0},{label:'水平翻"
+      },
+      {
+        "line": 1688,
+        "text": "上",
+        "key": "views.statistic-center.label_cn_af767b7e",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"上\"><NInputNumber :value=\"cvForm.params.top || 10\" :min=\"0\" @update:value=\"v => updateCVParam('top', v)"
+      },
+      {
+        "line": 1688,
+        "text": "上",
+        "key": "views.statistic-center.label_cn_af767b7e",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"上\"><NInputNumber :value=\"cvForm.params.top || 10\" :min=\"0\" @update:value=\"v => updateCVParam('top', v)"
+      },
+      {
+        "line": 1689,
+        "text": "下",
+        "key": "views.statistic-center.label_cn_3850a186",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"下\"><NInputNumber :value=\"cvForm.params.bottom || 10\" :min=\"0\" @update:value=\"v => updateCVParam('botto"
+      },
+      {
+        "line": 1689,
+        "text": "下",
+        "key": "views.statistic-center.label_cn_3850a186",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"下\"><NInputNumber :value=\"cvForm.params.bottom || 10\" :min=\"0\" @update:value=\"v => updateCVParam('botto"
+      },
+      {
+        "line": 1690,
+        "text": "左",
+        "key": "views.statistic-center.label_cn_d2aff141",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"左\"><NInputNumber :value=\"cvForm.params.left || 10\" :min=\"0\" @update:value=\"v => updateCVParam('left', "
+      },
+      {
+        "line": 1690,
+        "text": "左",
+        "key": "views.statistic-center.label_cn_d2aff141",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"左\"><NInputNumber :value=\"cvForm.params.left || 10\" :min=\"0\" @update:value=\"v => updateCVParam('left', "
+      },
+      {
+        "line": 1691,
+        "text": "右",
+        "key": "views.statistic-center.label_cn_4d9c32c2",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"右\"><NInputNumber :value=\"cvForm.params.right || 10\" :min=\"0\" @update:value=\"v => updateCVParam('right'"
+      },
+      {
+        "line": 1691,
+        "text": "右",
+        "key": "views.statistic-center.label_cn_4d9c32c2",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"右\"><NInputNumber :value=\"cvForm.params.right || 10\" :min=\"0\" @update:value=\"v => updateCVParam('right'"
+      },
+      {
+        "line": 1692,
+        "text": "颜色 (Hex)",
+        "key": "views.statistic-center.label_cn_b7ef3e5b",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"颜色 (Hex)\"><NInput :value=\"cvForm.params.color || '#000000'\" @update:value=\"v => updateCVParam('color',"
+      },
+      {
+        "line": 1692,
+        "text": "颜色 (Hex)",
+        "key": "views.statistic-center.label_cn_b7ef3e5b",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"颜色 (Hex)\"><NInput :value=\"cvForm.params.color || '#000000'\" @update:value=\"v => updateCVParam('color',"
+      },
+      {
+        "line": 1695,
+        "text": "1=亮)\">",
+        "key": "views.statistic-center.label_cn_ea43639d",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NFormItem label=\"亮度 (0=暗, 1=原图, >1=亮)\"><NSlider :value=\"cvForm.params.value ?? 1\" :min=\"0\" :max=\"3\" :step=\"0.1\" @update"
+      },
+      {
+        "line": 1695,
+        "text": "亮度 (0=暗, 1=原图, >1=亮)",
+        "key": "views.statistic-center.label_cn_74da6ec4",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"亮度 (0=暗, 1=原图, >1=亮)\"><NSlider :value=\"cvForm.params.value ?? 1\" :min=\"0\" :max=\"3\" :step=\"0.1\" @update"
+      },
+      {
+        "line": 1695,
+        "text": "亮度 (0=暗, 1=原图, >1=亮)",
+        "key": "views.statistic-center.label_cn_74da6ec4",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"亮度 (0=暗, 1=原图, >1=亮)\"><NSlider :value=\"cvForm.params.value ?? 1\" :min=\"0\" :max=\"3\" :step=\"0.1\" @update"
+      },
+      {
+        "line": 1698,
+        "text": "1=高对比)\">",
+        "key": "views.statistic-center.label_cn_0f58f4af",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NFormItem label=\"对比度 (0=灰, 1=原图, >1=高对比)\"><NSlider :value=\"cvForm.params.value ?? 1\" :min=\"0\" :max=\"5\" :step=\"0.1\" @upd"
+      },
+      {
+        "line": 1698,
+        "text": "对比度 (0=灰, 1=原图, >1=高对比)",
+        "key": "views.statistic-center.label_cn_272bec28",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"对比度 (0=灰, 1=原图, >1=高对比)\"><NSlider :value=\"cvForm.params.value ?? 1\" :min=\"0\" :max=\"5\" :step=\"0.1\" @upd"
+      },
+      {
+        "line": 1698,
+        "text": "对比度 (0=灰, 1=原图, >1=高对比)",
+        "key": "views.statistic-center.label_cn_272bec28",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"对比度 (0=灰, 1=原图, >1=高对比)\"><NSlider :value=\"cvForm.params.value ?? 1\" :min=\"0\" :max=\"5\" :step=\"0.1\" @upd"
+      },
+      {
+        "line": 1701,
+        "text": "灰度(GRAY)",
+        "key": "views.statistic-center.label_cn_20d2311a",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"目标色彩空间\"><NSelect :value=\"cvForm.params.target || 'GRAY'\" :options=\"[{label:'灰度(GRAY)',value:'GRAY'},{l"
+      },
+      {
+        "line": 1701,
+        "text": "目标色彩空间",
+        "key": "views.statistic-center.label_cn_7c9e228a",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"目标色彩空间\"><NSelect :value=\"cvForm.params.target || 'GRAY'\" :options=\"[{label:'灰度(GRAY)',value:'GRAY'},{l"
+      },
+      {
+        "line": 1701,
+        "text": "[{label:'灰度(GRAY)',value:'GRAY'},{label:'RGB',value:'RGB'},{label:'HSV',value:'HSV'},{label:'LAB',value:'LAB'}]",
+        "key": "views.statistic-center.label_cn_54038583",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"目标色彩空间\"><NSelect :value=\"cvForm.params.target || 'GRAY'\" :options=\"[{label:'灰度(GRAY)',value:'GRAY'},{l"
+      },
+      {
+        "line": 1701,
+        "text": "目标色彩空间",
+        "key": "views.statistic-center.label_cn_7c9e228a",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"目标色彩空间\"><NSelect :value=\"cvForm.params.target || 'GRAY'\" :options=\"[{label:'灰度(GRAY)',value:'GRAY'},{l"
+      },
+      {
+        "line": 1704,
+        "text": "高斯(gaussian)",
+        "key": "views.statistic-center.label_cn_44188480",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"模糊类型\"><NSelect :value=\"cvForm.params.type || 'gaussian'\" :options=\"[{label:'高斯(gaussian)',value:'gauss"
+      },
+      {
+        "line": 1704,
+        "text": "中值(median)",
+        "key": "views.statistic-center.label_cn_09a69e28",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"模糊类型\"><NSelect :value=\"cvForm.params.type || 'gaussian'\" :options=\"[{label:'高斯(gaussian)',value:'gauss"
+      },
+      {
+        "line": 1704,
+        "text": "双边(bilateral)",
+        "key": "views.statistic-center.label_cn_dedc433a",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"模糊类型\"><NSelect :value=\"cvForm.params.type || 'gaussian'\" :options=\"[{label:'高斯(gaussian)',value:'gauss"
+      },
+      {
+        "line": 1704,
+        "text": "模糊类型",
+        "key": "views.statistic-center.label_cn_16f23db3",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"模糊类型\"><NSelect :value=\"cvForm.params.type || 'gaussian'\" :options=\"[{label:'高斯(gaussian)',value:'gauss"
+      },
+      {
+        "line": 1704,
+        "text": "[{label:'高斯(gaussian)',value:'gaussian'},{label:'中值(median)',value:'median'},{label:'双边(bilateral)',value:'bilateral'}]",
+        "key": "views.statistic-center.label_cn_dfdba43e",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"模糊类型\"><NSelect :value=\"cvForm.params.type || 'gaussian'\" :options=\"[{label:'高斯(gaussian)',value:'gauss"
+      },
+      {
+        "line": 1704,
+        "text": "模糊类型",
+        "key": "views.statistic-center.label_cn_16f23db3",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"模糊类型\"><NSelect :value=\"cvForm.params.type || 'gaussian'\" :options=\"[{label:'高斯(gaussian)',value:'gauss"
+      },
+      {
+        "line": 1705,
+        "text": "核大小 (奇数)",
+        "key": "views.statistic-center.label_cn_26a9c662",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"核大小 (奇数)\"><NInputNumber :value=\"cvForm.params.kernel_size || 5\" :min=\"1\" :max=\"31\" @update:value=\"v =>"
+      },
+      {
+        "line": 1705,
+        "text": "核大小 (奇数)",
+        "key": "views.statistic-center.label_cn_26a9c662",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"核大小 (奇数)\"><NInputNumber :value=\"cvForm.params.kernel_size || 5\" :min=\"1\" :max=\"31\" @update:value=\"v =>"
+      },
+      {
+        "line": 1708,
+        "text": "腐蚀(erode)",
+        "key": "views.statistic-center.label_cn_f5f8588f",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"操作\"><NSelect :value=\"cvForm.params.operation || 'erode'\" :options=\"[{label:'腐蚀(erode)',value:'erode'},"
+      },
+      {
+        "line": 1708,
+        "text": "膨胀(dilate)",
+        "key": "views.statistic-center.label_cn_7c7e4736",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"操作\"><NSelect :value=\"cvForm.params.operation || 'erode'\" :options=\"[{label:'腐蚀(erode)',value:'erode'},"
+      },
+      {
+        "line": 1708,
+        "text": "开(open)",
+        "key": "views.statistic-center.label_cn_89d891c7",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"操作\"><NSelect :value=\"cvForm.params.operation || 'erode'\" :options=\"[{label:'腐蚀(erode)',value:'erode'},"
+      },
+      {
+        "line": 1708,
+        "text": "闭(close)",
+        "key": "views.statistic-center.label_cn_1a8bdc3f",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"操作\"><NSelect :value=\"cvForm.params.operation || 'erode'\" :options=\"[{label:'腐蚀(erode)',value:'erode'},"
+      },
+      {
+        "line": 1708,
+        "text": "操作",
+        "key": "views.statistic-center.label_cn_2b6bc0f2",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"操作\"><NSelect :value=\"cvForm.params.operation || 'erode'\" :options=\"[{label:'腐蚀(erode)',value:'erode'},"
+      },
+      {
+        "line": 1708,
+        "text": "[{label:'腐蚀(erode)',value:'erode'},{label:'膨胀(dilate)',value:'dilate'},{label:'开(open)',value:'open'},{label:'闭(close)',value:'close'}]",
+        "key": "views.statistic-center.label_cn_76c4cdb6",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"操作\"><NSelect :value=\"cvForm.params.operation || 'erode'\" :options=\"[{label:'腐蚀(erode)',value:'erode'},"
+      },
+      {
+        "line": 1708,
+        "text": "操作",
+        "key": "views.statistic-center.label_cn_2b6bc0f2",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"操作\"><NSelect :value=\"cvForm.params.operation || 'erode'\" :options=\"[{label:'腐蚀(erode)',value:'erode'},"
+      },
+      {
+        "line": 1709,
+        "text": "核大小",
+        "key": "views.statistic-center.label_cn_c5237285",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"核大小\"><NInputNumber :value=\"cvForm.params.kernel_size || 3\" :min=\"1\" :max=\"15\" @update:value=\"v => upda"
+      },
+      {
+        "line": 1709,
+        "text": "核大小",
+        "key": "views.statistic-center.label_cn_c5237285",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"核大小\"><NInputNumber :value=\"cvForm.params.kernel_size || 3\" :min=\"1\" :max=\"15\" @update:value=\"v => upda"
+      },
+      {
+        "line": 1710,
+        "text": "迭代次数",
+        "key": "views.statistic-center.label_cn_0877fae0",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"迭代次数\"><NInputNumber :value=\"cvForm.params.iterations || 1\" :min=\"1\" :max=\"10\" @update:value=\"v => upda"
+      },
+      {
+        "line": 1710,
+        "text": "迭代次数",
+        "key": "views.statistic-center.label_cn_0877fae0",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"迭代次数\"><NInputNumber :value=\"cvForm.params.iterations || 1\" :min=\"1\" :max=\"10\" @update:value=\"v => upda"
+      },
+      {
+        "line": 1713,
+        "text": "非局部均值(nlmeans)",
+        "key": "views.statistic-center.label_cn_ae605ee1",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"方法\"><NSelect :value=\"cvForm.params.method || 'bilateral'\" :options=\"[{label:'双边(bilateral)',value:'bil"
+      },
+      {
+        "line": 1713,
+        "text": "方法",
+        "key": "views.statistic-center.label_cn_ea340b9d",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"方法\"><NSelect :value=\"cvForm.params.method || 'bilateral'\" :options=\"[{label:'双边(bilateral)',value:'bil"
+      },
+      {
+        "line": 1713,
+        "text": "[{label:'双边(bilateral)',value:'bilateral'},{label:'非局部均值(nlmeans)',value:'nlmeans'}]",
+        "key": "views.statistic-center.label_cn_4897e548",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"方法\"><NSelect :value=\"cvForm.params.method || 'bilateral'\" :options=\"[{label:'双边(bilateral)',value:'bil"
+      },
+      {
+        "line": 1713,
+        "text": "方法",
+        "key": "views.statistic-center.label_cn_ea340b9d",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"方法\"><NSelect :value=\"cvForm.params.method || 'bilateral'\" :options=\"[{label:'双边(bilateral)',value:'bil"
+      },
+      {
+        "line": 1714,
+        "text": "滤波强度 (h)",
+        "key": "views.statistic-center.label_cn_4aa9877e",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"滤波强度 (h)\"><NInputNumber :value=\"cvForm.params.h || 10\" :min=\"1\" :max=\"100\" @update:value=\"v => updateC"
+      },
+      {
+        "line": 1714,
+        "text": "滤波强度 (h)",
+        "key": "views.statistic-center.label_cn_4aa9877e",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"滤波强度 (h)\"><NInputNumber :value=\"cvForm.params.h || 10\" :min=\"1\" :max=\"100\" @update:value=\"v => updateC"
+      },
+      {
+        "line": 1717,
+        "text": "全局(global)",
+        "key": "views.statistic-center.label_cn_70db0487",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"方法\"><NSelect :value=\"cvForm.params.method || 'global'\" :options=\"[{label:'全局(global)',value:'global'},"
+      },
+      {
+        "line": 1717,
+        "text": "[{label:'全局(global)',value:'global'},{label:'CLAHE',value:'clahe'}]",
+        "key": "views.statistic-center.label_cn_6f1acd0b",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"方法\"><NSelect :value=\"cvForm.params.method || 'global'\" :options=\"[{label:'全局(global)',value:'global'},"
+      },
+      {
+        "line": 1718,
+        "text": "\" label=\"裁剪限制\"><NInputNumber :value=\"cvForm.params.clip_limit || 2.0\" :min=\"0.1\" :max=\"10\" :step=\"0.1\" @update:value=\"v => updateCVParam(",
+        "key": "views.statistic-center.label_cn_fb6315e2",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem v-if=\"cvForm.params.method === 'clahe'\" label=\"裁剪限制\"><NInputNumber :value=\"cvForm.params.clip_limit || 2.0\" :"
+      },
+      {
+        "line": 1718,
+        "text": "裁剪限制",
+        "key": "views.statistic-center.label_cn_23f2e5f1",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem v-if=\"cvForm.params.method === 'clahe'\" label=\"裁剪限制\"><NInputNumber :value=\"cvForm.params.clip_limit || 2.0\" :"
+      },
+      {
+        "line": 1718,
+        "text": "裁剪限制",
+        "key": "views.statistic-center.label_cn_23f2e5f1",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem v-if=\"cvForm.params.method === 'clahe'\" label=\"裁剪限制\"><NInputNumber :value=\"cvForm.params.clip_limit || 2.0\" :"
+      },
+      {
+        "line": 1719,
+        "text": "\" label=\"网格大小\"><NInputNumber :value=\"cvForm.params.tile_size || 8\" :min=\"2\" :max=\"32\" @update:value=\"v => updateCVParam(",
+        "key": "views.statistic-center.label_cn_3cc27f9f",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem v-if=\"cvForm.params.method === 'clahe'\" label=\"网格大小\"><NInputNumber :value=\"cvForm.params.tile_size || 8\" :min"
+      },
+      {
+        "line": 1719,
+        "text": "网格大小",
+        "key": "views.statistic-center.label_cn_405bbef3",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem v-if=\"cvForm.params.method === 'clahe'\" label=\"网格大小\"><NInputNumber :value=\"cvForm.params.tile_size || 8\" :min"
+      },
+      {
+        "line": 1719,
+        "text": "网格大小",
+        "key": "views.statistic-center.label_cn_405bbef3",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem v-if=\"cvForm.params.method === 'clahe'\" label=\"网格大小\"><NInputNumber :value=\"cvForm.params.tile_size || 8\" :min"
+      },
+      {
+        "line": 1722,
+        "text": "阈值(threshold)",
+        "key": "views.statistic-center.label_cn_15f24ac0",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"方法\"><NSelect :value=\"cvForm.params.method || 'grabcut'\" :options=\"[{label:'GrabCut',value:'grabcut'},{"
+      },
+      {
+        "line": 1722,
+        "text": "[{label:'GrabCut',value:'grabcut'},{label:'阈值(threshold)',value:'threshold'}]",
+        "key": "views.statistic-center.label_cn_ff6a9ca5",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"方法\"><NSelect :value=\"cvForm.params.method || 'grabcut'\" :options=\"[{label:'GrabCut',value:'grabcut'},{"
+      },
+      {
+        "line": 1723,
+        "text": "边距",
+        "key": "views.statistic-center.label_cn_e8ed49e9",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"边距\"><NInputNumber :value=\"cvForm.params.margin || 10\" :min=\"0\" :max=\"100\" @update:value=\"v => updateCV"
+      },
+      {
+        "line": 1723,
+        "text": "边距",
+        "key": "views.statistic-center.label_cn_e8ed49e9",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"边距\"><NInputNumber :value=\"cvForm.params.margin || 10\" :min=\"0\" :max=\"100\" @update:value=\"v => updateCV"
+      },
+      {
+        "line": 1727,
+        "text": "取消",
+        "key": "views.statistic-center.label_cn_625fb26b",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #footer><NSpace justify=\"end\"><NButton @click=\"showCVModal = false\">取消</NButton><NButton type=\"primary\" :loadi"
+      },
+      {
+        "line": 1727,
+        "text": "处理 ({{ selectedStaticFileIds.length }} 张)",
+        "key": "views.statistic-center.label_cn_931f6f67",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #footer><NSpace justify=\"end\"><NButton @click=\"showCVModal = false\">取消</NButton><NButton type=\"primary\" :loadi"
+      },
+      {
+        "line": 1727,
+        "text": ">取消</NButton><NButton type=",
+        "key": "views.statistic-center.label_cn_e3e527c2",
+        "type": "js_string",
+        "attr": "",
+        "context": "<template #footer><NSpace justify=\"end\"><NButton @click=\"showCVModal = false\">取消</NButton><NButton type=\"primary\" :loadi"
+      },
+      {
+        "line": 1731,
+        "text": "AI 图片优化",
+        "key": "views.statistic-center.label_cn_5748192d",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NModal v-model:show=\"showAIModal\" title=\"AI 图片优化\" preset=\"card\" style=\"width: 560px\">"
+      },
+      {
+        "line": 1731,
+        "text": "AI 图片优化",
+        "key": "views.statistic-center.label_cn_5748192d",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NModal v-model:show=\"showAIModal\" title=\"AI 图片优化\" preset=\"card\" style=\"width: 560px\">"
+      },
+      {
+        "line": 1733,
+        "text": "AI 代理",
+        "key": "views.statistic-center.label_cn_9697e5cf",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"AI 代理\" required><NSelect v-model:value=\"aiForm.ai_proxy_id\" :options=\"proxyOptions\" placeholder=\"选择AI代"
+      },
+      {
+        "line": 1733,
+        "text": "选择AI代理",
+        "key": "views.statistic-center.label_cn_523369d2",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"AI 代理\" required><NSelect v-model:value=\"aiForm.ai_proxy_id\" :options=\"proxyOptions\" placeholder=\"选择AI代"
+      },
+      {
+        "line": 1733,
+        "text": "AI 代理",
+        "key": "views.statistic-center.label_cn_9697e5cf",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"AI 代理\" required><NSelect v-model:value=\"aiForm.ai_proxy_id\" :options=\"proxyOptions\" placeholder=\"选择AI代"
+      },
+      {
+        "line": 1733,
+        "text": "选择AI代理",
+        "key": "views.statistic-center.label_cn_523369d2",
+        "type": "template_attr",
+        "attr": "placeholder",
+        "context": "<NFormItem label=\"AI 代理\" required><NSelect v-model:value=\"aiForm.ai_proxy_id\" :options=\"proxyOptions\" placeholder=\"选择AI代"
+      },
+      {
+        "line": 1734,
+        "text": "Skill（可选）",
+        "key": "views.statistic-center.label_cn_c7dd72e6",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"Skill（可选）\"><NSelect v-model:value=\"aiForm.skill_id\" :options=\"skillOptions\" placeholder=\"选择预设Skill\" cl"
+      },
+      {
+        "line": 1734,
+        "text": "选择预设Skill",
+        "key": "views.statistic-center.label_cn_1b115fe6",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"Skill（可选）\"><NSelect v-model:value=\"aiForm.skill_id\" :options=\"skillOptions\" placeholder=\"选择预设Skill\" cl"
+      },
+      {
+        "line": 1734,
+        "text": "Skill（可选）",
+        "key": "views.statistic-center.label_cn_c7dd72e6",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"Skill（可选）\"><NSelect v-model:value=\"aiForm.skill_id\" :options=\"skillOptions\" placeholder=\"选择预设Skill\" cl"
+      },
+      {
+        "line": 1734,
+        "text": "选择预设Skill",
+        "key": "views.statistic-center.label_cn_1b115fe6",
+        "type": "template_attr",
+        "attr": "placeholder",
+        "context": "<NFormItem label=\"Skill（可选）\"><NSelect v-model:value=\"aiForm.skill_id\" :options=\"skillOptions\" placeholder=\"选择预设Skill\" cl"
+      },
+      {
+        "line": 1735,
+        "text": "提示词",
+        "key": "views.statistic-center.label_cn_47b7af95",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"提示词\"><NInput v-model:value=\"aiForm.prompt\" type=\"textarea\" placeholder=\"输入处理提示词，或选择 Skill 自动填充\" /></NF"
+      },
+      {
+        "line": 1735,
+        "text": "输入处理提示词，或选择 Skill 自动填充",
+        "key": "views.statistic-center.placeholder_cn_9e8f7099",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"提示词\"><NInput v-model:value=\"aiForm.prompt\" type=\"textarea\" placeholder=\"输入处理提示词，或选择 Skill 自动填充\" /></NF"
+      },
+      {
+        "line": 1735,
+        "text": "提示词",
+        "key": "views.statistic-center.label_cn_47b7af95",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"提示词\"><NInput v-model:value=\"aiForm.prompt\" type=\"textarea\" placeholder=\"输入处理提示词，或选择 Skill 自动填充\" /></NF"
+      },
+      {
+        "line": 1735,
+        "text": "输入处理提示词，或选择 Skill 自动填充",
+        "key": "views.statistic-center.placeholder_cn_9e8f7099",
+        "type": "template_attr",
+        "attr": "placeholder",
+        "context": "<NFormItem label=\"提示词\"><NInput v-model:value=\"aiForm.prompt\" type=\"textarea\" placeholder=\"输入处理提示词，或选择 Skill 自动填充\" /></NF"
+      },
+      {
+        "line": 1737,
+        "text": "AI 优化 ({{ selectedStaticFileIds.length }} 张)",
+        "key": "views.statistic-center.label_cn_d028fa5e",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #footer><NSpace justify=\"end\"><NButton @click=\"showAIModal = false\">取消</NButton><NButton type=\"primary\" :loadi"
+      },
+      {
+        "line": 1741,
+        "text": "从路网素材导入",
+        "key": "views.statistic-center.label_cn_f747d2cc",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NModal v-model:show=\"showMaterialImportModal\" title=\"从路网素材导入\" preset=\"card\" style=\"width: 700px; max-height: 80vh\">"
+      },
+      {
+        "line": 1741,
+        "text": "从路网素材导入",
+        "key": "views.statistic-center.label_cn_f747d2cc",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NModal v-model:show=\"showMaterialImportModal\" title=\"从路网素材导入\" preset=\"card\" style=\"width: 700px; max-height: 80vh\">"
+      },
+      {
+        "line": 1743,
+        "text": "全部区域",
+        "key": "views.statistic-center.label_cn_5bf32f76",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NBreadcrumbItem><span class=\"cursor-pointer text-blue-500\" @click=\"onMaterialBreadcrumbClick(0)\">全部区域</span></NBreadcru"
+      },
+      {
+        "line": 1752,
+        "text": "暂无路网素材区域",
+        "key": "views.statistic-center.label_cn_12809aa9",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-if=\"!materialCurrentList.length\" class=\"text-center text-gray-400 py-8\">暂无路网素材区域</div>"
+      },
+      {
+        "line": 1757,
+        "text": "全选 (已选 {{ materialSelectedIds.length }} / {{ materialCurrentList.length }})",
+        "key": "views.statistic-center.label_cn_1ab8884c",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span class=\"text-xs text-gray-400\">全选 (已选 {{ materialSelectedIds.length }} / {{ materialCurrentList.length }})</span>"
+      },
+      {
+        "line": 1762,
+        "text": "该区域暂无素材",
+        "key": "views.statistic-center.message_cn_26e9154b",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-if=\"!materialCurrentList.length\" class=\"text-center text-gray-400 py-8\">该区域暂无素材</div>"
+      },
+      {
+        "line": 1765,
+        "text": "导入 ({{ materialSelectedIds.length }})",
+        "key": "views.statistic-center.label_cn_95addf75",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #footer><NSpace justify=\"end\"><NButton @click=\"showMaterialImportModal = false\">取消</NButton><NButton type=\"pri"
+      },
+      {
+        "line": 1769,
+        "text": "复制文件到工作区",
+        "key": "views.statistic-center.label_cn_86919bd3",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NModal v-model:show=\"showStaticFileCopyToModal\" title=\"复制文件到工作区\" preset=\"card\" style=\"width: 480px\">"
+      },
+      {
+        "line": 1769,
+        "text": "复制文件到工作区",
+        "key": "views.statistic-center.label_cn_86919bd3",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NModal v-model:show=\"showStaticFileCopyToModal\" title=\"复制文件到工作区\" preset=\"card\" style=\"width: 480px\">"
+      },
+      {
+        "line": 1770,
+        "text": "将选中的 {{ selectedStaticFileIds.length }} 个文件复制到另一工作区。",
+        "key": "views.statistic-center.label_cn_03a86f02",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-sm text-gray-500 mb-4\">将选中的 {{ selectedStaticFileIds.length }} 个文件复制到另一工作区。<br/>仅创建数据库记录指向同一文件，不拷贝物理文件。"
+      },
+      {
+        "line": 1770,
+        "text": "仅创建数据库记录指向同一文件，不拷贝物理文件。",
+        "key": "views.statistic-center.label_cn_5bdbbae6",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-sm text-gray-500 mb-4\">将选中的 {{ selectedStaticFileIds.length }} 个文件复制到另一工作区。<br/>仅创建数据库记录指向同一文件，不拷贝物理文件。"
+      },
+      {
+        "line": 1771,
+        "text": "目标工作区",
+        "key": "views.statistic-center.label_cn_9269a338",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NForm label-placement=\"top\"><NFormItem label=\"目标工作区\" required><NSelect v-model:value=\"staticFileCopyToForm.target_works"
+      },
+      {
+        "line": 1771,
+        "text": "选择目标工作区",
+        "key": "views.statistic-center.label_cn_96d6caf0",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NForm label-placement=\"top\"><NFormItem label=\"目标工作区\" required><NSelect v-model:value=\"staticFileCopyToForm.target_works"
+      },
+      {
+        "line": 1771,
+        "text": "目标工作区",
+        "key": "views.statistic-center.label_cn_9269a338",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NForm label-placement=\"top\"><NFormItem label=\"目标工作区\" required><NSelect v-model:value=\"staticFileCopyToForm.target_works"
+      },
+      {
+        "line": 1771,
+        "text": "选择目标工作区",
+        "key": "views.statistic-center.label_cn_96d6caf0",
+        "type": "template_attr",
+        "attr": "placeholder",
+        "context": "<NForm label-placement=\"top\"><NFormItem label=\"目标工作区\" required><NSelect v-model:value=\"staticFileCopyToForm.target_works"
+      },
+      {
+        "line": 1772,
+        "text": "确认复制",
+        "key": "views.statistic-center.message_cn_d987a67e",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #footer><NSpace justify=\"end\"><NButton @click=\"showStaticFileCopyToModal = false\">取消</NButton><NButton type=\"p"
+      },
+      {
+        "line": 1776,
+        "text": "导入 MySQL 数据",
+        "key": "views.statistic-center.label_cn_16b3e029",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NModal v-model:show=\"showMySQLModal\" title=\"导入 MySQL 数据\" preset=\"card\" style=\"width: 600px\">"
+      },
+      {
+        "line": 1776,
+        "text": "导入 MySQL 数据",
+        "key": "views.statistic-center.label_cn_16b3e029",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NModal v-model:show=\"showMySQLModal\" title=\"导入 MySQL 数据\" preset=\"card\" style=\"width: 600px\">"
+      },
+      {
+        "line": 1779,
+        "text": "主机地址",
+        "key": "views.statistic-center.label_cn_aeb5271e",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"主机地址\" required><NInput v-model:value=\"mysqlForm.host\" placeholder=\"127.0.0.1\" /></NFormItem>"
+      },
+      {
+        "line": 1779,
+        "text": "主机地址",
+        "key": "views.statistic-center.label_cn_aeb5271e",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"主机地址\" required><NInput v-model:value=\"mysqlForm.host\" placeholder=\"127.0.0.1\" /></NFormItem>"
+      },
+      {
+        "line": 1780,
+        "text": "端口",
+        "key": "views.statistic-center.label_cn_c76cfefe",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"端口\" required><NInputNumber v-model:value=\"mysqlForm.port\" :min=\"1\" :max=\"65535\" /></NFormItem>"
+      },
+      {
+        "line": 1780,
+        "text": "端口",
+        "key": "views.statistic-center.label_cn_c76cfefe",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"端口\" required><NInputNumber v-model:value=\"mysqlForm.port\" :min=\"1\" :max=\"65535\" /></NFormItem>"
+      },
+      {
+        "line": 1783,
+        "text": "用户名",
+        "key": "views.statistic-center.label_cn_819767ad",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"用户名\"><NInput v-model:value=\"mysqlForm.user\" placeholder=\"root\" /></NFormItem>"
+      },
+      {
+        "line": 1783,
+        "text": "用户名",
+        "key": "views.statistic-center.label_cn_819767ad",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"用户名\"><NInput v-model:value=\"mysqlForm.user\" placeholder=\"root\" /></NFormItem>"
+      },
+      {
+        "line": 1784,
+        "text": "密码",
+        "key": "views.statistic-center.label_cn_a8105204",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"密码\"><NInput v-model:value=\"mysqlForm.password\" type=\"password\" placeholder=\"密码\" /></NFormItem>"
+      },
+      {
+        "line": 1784,
+        "text": "密码",
+        "key": "views.statistic-center.label_cn_a8105204",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"密码\"><NInput v-model:value=\"mysqlForm.password\" type=\"password\" placeholder=\"密码\" /></NFormItem>"
+      },
+      {
+        "line": 1786,
+        "text": "数据库名",
+        "key": "views.statistic-center.label_cn_5ccbbd01",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"数据库名\" required><NInput v-model:value=\"mysqlForm.database\" placeholder=\"数据库名称\" /></NFormItem>"
+      },
+      {
+        "line": 1786,
+        "text": "数据库名称",
+        "key": "views.statistic-center.label_cn_d5f399b9",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"数据库名\" required><NInput v-model:value=\"mysqlForm.database\" placeholder=\"数据库名称\" /></NFormItem>"
+      },
+      {
+        "line": 1786,
+        "text": "数据库名",
+        "key": "views.statistic-center.label_cn_5ccbbd01",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"数据库名\" required><NInput v-model:value=\"mysqlForm.database\" placeholder=\"数据库名称\" /></NFormItem>"
+      },
+      {
+        "line": 1786,
+        "text": "数据库名称",
+        "key": "views.statistic-center.label_cn_d5f399b9",
+        "type": "template_attr",
+        "attr": "placeholder",
+        "context": "<NFormItem label=\"数据库名\" required><NInput v-model:value=\"mysqlForm.database\" placeholder=\"数据库名称\" /></NFormItem>"
+      },
+      {
+        "line": 1787,
+        "text": "重新连接",
+        "key": "views.statistic-center.label_cn_671bfe2f",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NButton size=\"small\" @click=\"testMySQL\" :loading=\"mysqlTesting\" :disabled=\"!mysqlForm.host || !mysqlForm.database\">{{ m"
+      },
+      {
+        "line": 1787,
+        "text": "测试连接",
+        "key": "views.statistic-center.label_cn_69e74756",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NButton size=\"small\" @click=\"testMySQL\" :loading=\"mysqlTesting\" :disabled=\"!mysqlForm.host || !mysqlForm.database\">{{ m"
+      },
+      {
+        "line": 1789,
+        "text": "选择要导入的表（可多选）：",
+        "key": "views.statistic-center.label_cn_560d54bd",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-sm text-gray-500 mb-2\">选择要导入的表（可多选）：</div>"
+      },
+      {
+        "line": 1795,
+        "text": "~{{ t.estimated_rows?.toLocaleString() }} 行",
+        "key": "views.statistic-center.label_cn_a98cbf80",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span v-if=\"t.estimated_rows\" class=\"text-xs text-gray-400 ml-auto\">~{{ t.estimated_rows?.toLocaleString() }} 行</span>"
+      },
+      {
+        "line": 1800,
+        "text": "t.selected)\" :loading=\"dbLoading\" @click=\"importMySQL\">导入 ({{ mysqlTables.filter(t => t.selected).length }})",
+        "key": "views.statistic-center.label_cn_d20edab2",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #footer><NSpace justify=\"end\"><NButton @click=\"showMySQLModal = false\">取消</NButton><NButton type=\"primary\" :di"
+      },
+      {
+        "line": 1804,
+        "text": "导入 SQLite 数据",
+        "key": "views.statistic-center.label_cn_e2846471",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NModal v-model:show=\"showSQLiteModal\" title=\"导入 SQLite 数据\" preset=\"card\" style=\"width: 600px\">"
+      },
+      {
+        "line": 1804,
+        "text": "导入 SQLite 数据",
+        "key": "views.statistic-center.label_cn_e2846471",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NModal v-model:show=\"showSQLiteModal\" title=\"导入 SQLite 数据\" preset=\"card\" style=\"width: 600px\">"
+      },
+      {
+        "line": 1807,
+        "text": "上传 SQLite 文件",
+        "key": "views.statistic-center.label_cn_d895f612",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NButton :loading=\"sqliteUploading\"><TheIcon icon=\"material-symbols:upload\" :size=\"18\" class=\"mr-1\" />{{ sqliteFileName "
+      },
+      {
+        "line": 1819,
+        "text": "t.selected)\" :loading=\"dbLoading\" @click=\"importSQLite\">导入 ({{ sqliteTables.filter(t => t.selected).length }})",
+        "key": "views.statistic-center.label_cn_d7b2adbf",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #footer><NSpace justify=\"end\"><NButton @click=\"showSQLiteModal = false\">取消</NButton><NButton type=\"primary\" :d"
+      },
+      {
+        "line": 1823,
+        "text": "导入像素数据",
+        "key": "views.statistic-center.label_cn_40909c62",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NModal v-model:show=\"showPixelModal\" title=\"导入像素数据\" preset=\"card\" style=\"width: 500px\">"
+      },
+      {
+        "line": 1823,
+        "text": "导入像素数据",
+        "key": "views.statistic-center.label_cn_40909c62",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NModal v-model:show=\"showPixelModal\" title=\"导入像素数据\" preset=\"card\" style=\"width: 500px\">"
+      },
+      {
+        "line": 1825,
+        "text": "像素账户",
+        "key": "views.statistic-center.label_cn_e034af06",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"像素账户\" required><NSelect v-model:value=\"pixelForm.pixel_account_id\" :options=\"pixelAccounts\" placeholde"
+      },
+      {
+        "line": 1825,
+        "text": "选择像素账户",
+        "key": "views.statistic-center.label_cn_9692c535",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"像素账户\" required><NSelect v-model:value=\"pixelForm.pixel_account_id\" :options=\"pixelAccounts\" placeholde"
+      },
+      {
+        "line": 1825,
+        "text": "像素账户",
+        "key": "views.statistic-center.label_cn_e034af06",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"像素账户\" required><NSelect v-model:value=\"pixelForm.pixel_account_id\" :options=\"pixelAccounts\" placeholde"
+      },
+      {
+        "line": 1825,
+        "text": "选择像素账户",
+        "key": "views.statistic-center.label_cn_9692c535",
+        "type": "template_attr",
+        "attr": "placeholder",
+        "context": "<NFormItem label=\"像素账户\" required><NSelect v-model:value=\"pixelForm.pixel_account_id\" :options=\"pixelAccounts\" placeholde"
+      },
+      {
+        "line": 1826,
+        "text": "数据表",
+        "key": "views.statistic-center.label_cn_e9273484",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem v-if=\"pixelTables.length\" label=\"数据表\"><NSelect v-model:value=\"pixelForm.table_name\" :options=\"pixelTables\" pl"
+      },
+      {
+        "line": 1826,
+        "text": "选择数据表",
+        "key": "views.statistic-center.label_cn_1acf0346",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem v-if=\"pixelTables.length\" label=\"数据表\"><NSelect v-model:value=\"pixelForm.table_name\" :options=\"pixelTables\" pl"
+      },
+      {
+        "line": 1826,
+        "text": "数据表",
+        "key": "views.statistic-center.label_cn_e9273484",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem v-if=\"pixelTables.length\" label=\"数据表\"><NSelect v-model:value=\"pixelForm.table_name\" :options=\"pixelTables\" pl"
+      },
+      {
+        "line": 1826,
+        "text": "选择数据表",
+        "key": "views.statistic-center.label_cn_1acf0346",
+        "type": "template_attr",
+        "attr": "placeholder",
+        "context": "<NFormItem v-if=\"pixelTables.length\" label=\"数据表\"><NSelect v-model:value=\"pixelForm.table_name\" :options=\"pixelTables\" pl"
+      },
+      {
+        "line": 1828,
+        "text": "导入",
+        "key": "views.statistic-center.label_cn_8d9a071e",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #footer><NSpace justify=\"end\"><NButton @click=\"showPixelModal = false\">取消</NButton><NButton type=\"primary\" :di"
+      },
+      {
+        "line": 1832,
+        "text": "导入路网数据",
+        "key": "views.statistic-center.label_cn_63b03fa8",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NModal v-model:show=\"showRoadNetworkModal\" title=\"导入路网数据\" preset=\"card\" style=\"width: 680px; max-height: 85vh\">"
+      },
+      {
+        "line": 1832,
+        "text": "导入路网数据",
+        "key": "views.statistic-center.label_cn_63b03fa8",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NModal v-model:show=\"showRoadNetworkModal\" title=\"导入路网数据\" preset=\"card\" style=\"width: 680px; max-height: 85vh\">"
+      },
+      {
+        "line": 1834,
+        "text": "选择区域",
+        "key": "views.statistic-center.label_cn_97d03d46",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NFormItem label=\"选择区域\" required>"
+      },
+      {
+        "line": 1834,
+        "text": "选择区域",
+        "key": "views.statistic-center.label_cn_97d03d46",
+        "type": "template_attr",
+        "attr": "label",
+        "context": "<NFormItem label=\"选择区域\" required>"
+      },
+      {
+        "line": 1835,
+        "text": "选择国家 / 行政区 / 城市",
+        "key": "views.statistic-center.label_cn_b65a096f",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NSelect v-model:value=\"roadNetworkForm.region_id\" :options=\"roadNetworkRegions\" placeholder=\"选择国家 / 行政区 / 城市\" filterabl"
+      },
+      {
+        "line": 1835,
+        "text": "选择国家 / 行政区 / 城市",
+        "key": "views.statistic-center.label_cn_b65a096f",
+        "type": "template_attr",
+        "attr": "placeholder",
+        "context": "<NSelect v-model:value=\"roadNetworkForm.region_id\" :options=\"roadNetworkRegions\" placeholder=\"选择国家 / 行政区 / 城市\" filterabl"
+      },
+      {
+        "line": 1836,
+        "text": "请先选择区域以加载该区域下的路网文件",
+        "key": "views.statistic-center.placeholder_cn_7d7c8426",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #action>请先选择区域以加载该区域下的路网文件</template>"
+      },
+      {
+        "line": 1843,
+        "text": "选择区域后加载路网文件",
+        "key": "views.statistic-center.label_cn_2eaae997",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-base font-medium text-gray-500\">选择区域后加载路网文件</div>"
+      },
+      {
+        "line": 1844,
+        "text": "支持导入路网拓扑统计信息（节点数 / 边数 / 道路等级分布等）",
+        "key": "views.statistic-center.label_cn_aa6aa60d",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-sm mt-1\">支持导入路网拓扑统计信息（节点数 / 边数 / 道路等级分布等）</div>"
+      },
+      {
+        "line": 1849,
+        "text": "加载路网文件列表...",
+        "key": "views.statistic-center.placeholder_cn_a9da3576",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NSpin size=\"small\" /><span class=\"ml-2 text-sm\">加载路网文件列表...</span>"
+      },
+      {
+        "line": 1867,
+        "text": "已全选",
+        "key": "views.statistic-center.label_cn_dfb9060b",
+        "type": "js_string",
+        "attr": "",
+        "context": "{{ roadNetworks.filter(n => n.selected).length ? roadNetworks.every(n => n.selected) ? '已全选' : '部分选中' : '未选择' }}"
+      },
+      {
+        "line": 1867,
+        "text": "部分选中",
+        "key": "views.statistic-center.label_cn_ec68176e",
+        "type": "js_string",
+        "attr": "",
+        "context": "{{ roadNetworks.filter(n => n.selected).length ? roadNetworks.every(n => n.selected) ? '已全选' : '部分选中' : '未选择' }}"
+      },
+      {
+        "line": 1867,
+        "text": "未选择",
+        "key": "views.statistic-center.label_cn_f0409ecf",
+        "type": "js_string",
+        "attr": "",
+        "context": "{{ roadNetworks.filter(n => n.selected).length ? roadNetworks.every(n => n.selected) ? '已全选' : '部分选中' : '未选择' }}"
+      },
+      {
+        "line": 1890,
+        "text": "地名模式",
+        "key": "views.statistic-center.label_cn_d06a491f",
+        "type": "js_string",
+        "attr": "",
+        "context": "{{ n.download_mode === 'name' ? '地名模式' : '边界模式' }}"
+      },
+      {
+        "line": 1890,
+        "text": "边界模式",
+        "key": "views.statistic-center.label_cn_1ded98db",
+        "type": "js_string",
+        "attr": "",
+        "context": "{{ n.download_mode === 'name' ? '地名模式' : '边界模式' }}"
+      },
+      {
+        "line": 1928,
+        "text": "复制到工作区",
+        "key": "views.statistic-center.label_cn_2008c3ff",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NModal v-model:show=\"showCopyToModal\" title=\"复制到工作区\" preset=\"card\" style=\"width: 480px\">"
+      },
+      {
+        "line": 1928,
+        "text": "复制到工作区",
+        "key": "views.statistic-center.label_cn_2008c3ff",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NModal v-model:show=\"showCopyToModal\" title=\"复制到工作区\" preset=\"card\" style=\"width: 480px\">"
+      },
+      {
+        "line": 1929,
+        "text": "将复制 {{ selectedDatabaseDocIds.length }} 项数据库导入数据到目标工作区",
+        "key": "views.statistic-center.label_cn_f232c3e8",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-sm text-gray-500 mb-4\">将复制 {{ selectedDatabaseDocIds.length }} 项数据库导入数据到目标工作区</div>"
+      },
+      {
+        "line": 1935,
+        "text": "更改 BaseUrl",
+        "key": "views.statistic-center.label_cn_cfc2af7c",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NModal v-model:show=\"showBaseUrlModal\" title=\"更改 BaseUrl\" preset=\"card\" style=\"width: 520px\">"
+      },
+      {
+        "line": 1935,
+        "text": "更改 BaseUrl",
+        "key": "views.statistic-center.label_cn_cfc2af7c",
+        "type": "template_attr",
+        "attr": "title",
+        "context": "<NModal v-model:show=\"showBaseUrlModal\" title=\"更改 BaseUrl\" preset=\"card\" style=\"width: 520px\">"
+      },
+      {
+        "line": 1936,
+        "text": "设置公网访问基础地址，所有静态文件短链接将使用此地址作为前缀。",
+        "key": "views.statistic-center.label_cn_3772c255",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-sm text-gray-500 mb-4\">设置公网访问基础地址，所有静态文件短链接将使用此地址作为前缀。<br/>留空则自动使用当前访问地址。</div>"
+      },
+      {
+        "line": 1936,
+        "text": "留空则自动使用当前访问地址。",
+        "key": "views.statistic-center.label_cn_7ef5cfe5",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-sm text-gray-500 mb-4\">设置公网访问基础地址，所有静态文件短链接将使用此地址作为前缀。<br/>留空则自动使用当前访问地址。</div>"
+      },
+      {
+        "line": 1937,
+        "text": "如 http://rsatest.vanstk.com:9999",
+        "key": "views.statistic-center.placeholder_cn_44765919",
+        "type": "js_string",
+        "attr": "",
+        "context": "<NForm label-placement=\"top\"><NFormItem label=\"BaseUrl\"><NInput v-model:value=\"baseUrlForm.base_url\" placeholder=\"如 http"
+      },
+      {
+        "line": 1937,
+        "text": "如 http://rsatest.vanstk.com:9999",
+        "key": "views.statistic-center.placeholder_cn_44765919",
+        "type": "template_attr",
+        "attr": "placeholder",
+        "context": "<NForm label-placement=\"top\"><NFormItem label=\"BaseUrl\"><NInput v-model:value=\"baseUrlForm.base_url\" placeholder=\"如 http"
+      },
+      {
+        "line": 1938,
+        "text": "保存",
+        "key": "views.statistic-center.label_cn_be5fbbe3",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #footer><NSpace justify=\"end\"><NButton @click=\"showBaseUrlModal = false\">取消</NButton><NButton type=\"primary\" @"
+      }
+    ],
+    "web/src/views/statistic-center/excel-data/index.vue": [
+      {
+        "line": 337,
+        "text": "暂无工作区",
+        "key": "views.statistic-center.label_cn_c3e99070",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-if=\"!workspaces.length\" class=\"text-center text-gray-400 py-10\">暂无工作区</div>"
+      },
+      {
+        "line": 372,
+        "text": "上传原始表格",
+        "key": "views.statistic-center.label_cn_b26de1f0",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span class=\"font-medium\">上传原始表格</span>"
+      },
+      {
+        "line": 383,
+        "text": "原始表格 ({{ sheets.length }})",
+        "key": "views.statistic-center.label_cn_bd998eaf",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"font-medium mb-2\">原始表格 ({{ sheets.length }})</div>"
+      },
+      {
+        "line": 411,
+        "text": "暂无原始表格",
+        "key": "views.statistic-center.label_cn_1c64ab34",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-else class=\"text-gray-400 text-sm py-4 text-center\">暂无原始表格</div>"
+      },
+      {
+        "line": 425,
+        "text": "拆解分析表格 ({{ analyses.length }})",
+        "key": "views.statistic-center.label_cn_f200c9ab",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span class=\"font-medium\">拆解分析表格 ({{ analyses.length }})</span>"
+      },
+      {
+        "line": 484,
+        "text": "暂无分析结果",
+        "key": "views.statistic-center.label_cn_2e9506a3",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-else class=\"text-gray-400 text-sm py-4 text-center\">暂无分析结果</div>"
+      },
+      {
+        "line": 506,
+        "text": "取消",
+        "key": "views.statistic-center.label_cn_625fb26b",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton @click=\"showWsModal = false\">取消</NButton>"
+      },
+      {
+        "line": 507,
+        "text": "确认",
+        "key": "views.statistic-center.message_cn_e83a256e",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton type=\"primary\" @click=\"handleWsSubmit\">确认</NButton>"
+      },
+      {
+        "line": 531,
+        "text": "开始分析",
+        "key": "views.statistic-center.label_cn_a7e17ae8",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton type=\"primary\" :loading=\"loading\" @click=\"handleAnalyzeSubmit\">开始分析</NButton>"
+      }
+    ],
+    "web/src/views/statistic-center/report/index.vue": [
+      {
+        "line": 296,
+        "text": "暂无工作区",
+        "key": "views.statistic-center.label_cn_c3e99070",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-if=\"!workspaces.length\" class=\"text-center text-gray-400 py-10\">暂无工作区</div>"
+      },
+      {
+        "line": 300,
+        "text": "报告 ({{ reports.length }})",
+        "key": "views.statistic-center.label_cn_43774d6e",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div class=\"text-sm font-medium text-gray-500 mb-1\">报告 ({{ reports.length }})</div>"
+      },
+      {
+        "line": 313,
+        "text": "无",
+        "key": "views.statistic-center.label_cn_d81bb206",
+        "type": "template_text",
+        "attr": "",
+        "context": "<div v-if=\"!reports.length\" class=\"text-xs text-gray-400 py-2 text-center\">无</div>"
+      },
+      {
+        "line": 331,
+        "text": "编辑",
+        "key": "views.statistic-center.label_cn_95b351c8",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #checked>编辑</template>"
+      },
+      {
+        "line": 332,
+        "text": "预览",
+        "key": "views.statistic-center.label_cn_645dbc55",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #unchecked>预览</template>"
+      },
+      {
+        "line": 411,
+        "text": "取消",
+        "key": "views.statistic-center.label_cn_625fb26b",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton @click=\"showGenerateModal = false\">取消</NButton>"
+      },
+      {
+        "line": 412,
+        "text": "开始生成",
+        "key": "views.statistic-center.label_cn_dac38a8b",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton type=\"primary\" @click=\"handleGenerate\">开始生成</NButton>"
+      },
+      {
+        "line": 428,
+        "text": "确认克隆",
+        "key": "views.statistic-center.message_cn_82f85866",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton type=\"primary\" @click=\"handleClone\">确认克隆</NButton>"
+      }
+    ],
+    "web/src/views/statistic-center/doc-workbench/index.vue": [
+      {
+        "line": 531,
+        "text": "编辑",
+        "key": "views.statistic-center.label_cn_95b351c8",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #checked>编辑</template>"
+      },
+      {
+        "line": 532,
+        "text": "预览",
+        "key": "views.statistic-center.label_cn_645dbc55",
+        "type": "template_text",
+        "attr": "",
+        "context": "<template #unchecked>预览</template>"
+      },
+      {
+        "line": 570,
+        "text": "预览",
+        "key": "views.statistic-center.label_cn_645dbc55",
+        "type": "js_string",
+        "attr": "",
+        "context": ":title=\"'预览'\""
+      },
+      {
+        "line": 570,
+        "text": "'预览'",
+        "key": "views.statistic-center.label_cn_f24f895f",
+        "type": "js_string",
+        "attr": "",
+        "context": ":title=\"'预览'\""
+      },
+      {
+        "line": 570,
+        "text": "'预览'",
+        "key": "views.statistic-center.label_cn_f24f895f",
+        "type": "template_attr",
+        "attr": "title",
+        "context": ":title=\"'预览'\""
+      },
+      {
+        "line": 602,
+        "text": "加载数据源...",
+        "key": "views.statistic-center.placeholder_cn_6f6b9b2f",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NSpin size=\"small\" /><span class=\"ml-2 text-sm text-gray-400\">加载数据源...</span>"
+      },
+      {
+        "line": 674,
+        "text": "数据源",
+        "key": "views.statistic-center.label_cn_c11322c9",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span class=\"preview-stat__label\">数据源</span>"
+      },
+      {
+        "line": 678,
+        "text": "总字数",
+        "key": "views.statistic-center.label_cn_e0d421f2",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span class=\"preview-stat__label\">总字数</span>"
+      },
+      {
+        "line": 682,
+        "text": "Token 估算",
+        "key": "views.statistic-center.label_cn_df9703ad",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span class=\"preview-stat__label\">Token 估算</span>"
+      },
+      {
+        "line": 686,
+        "text": "📊 表格 {{ previewData.source_counts.sheets }}",
+        "key": "views.statistic-center.label_cn_6931fefc",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span v-if=\"previewData.source_counts?.sheets\">📊 表格 {{ previewData.source_counts.sheets }} </span>"
+      },
+      {
+        "line": 687,
+        "text": "📈 分析 {{ previewData.source_counts.analyses }}",
+        "key": "views.statistic-center.label_cn_0f221d7b",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span v-if=\"previewData.source_counts?.analyses\">📈 分析 {{ previewData.source_counts.analyses }} </span>"
+      },
+      {
+        "line": 688,
+        "text": "📄 文档 {{ previewData.source_counts.documents }}",
+        "key": "views.statistic-center.label_cn_30c1c91d",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span v-if=\"previewData.source_counts?.documents\">📄 文档 {{ previewData.source_counts.documents }} </span>"
+      },
+      {
+        "line": 689,
+        "text": "📁 文件 {{ previewData.source_counts.static_files }}",
+        "key": "views.statistic-center.label_cn_9a381399",
+        "type": "template_text",
+        "attr": "",
+        "context": "<span v-if=\"previewData.source_counts?.static_files\">📁 文件 {{ previewData.source_counts.static_files }} </span>"
+      },
+      {
+        "line": 738,
+        "text": "取消",
+        "key": "views.statistic-center.label_cn_625fb26b",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton size=\"large\" @click=\"showGenerateModal = false\">取消</NButton>"
+      },
+      {
+        "line": 757,
+        "text": "确认克隆",
+        "key": "views.statistic-center.message_cn_82f85866",
+        "type": "template_text",
+        "attr": "",
+        "context": "<NButton type=\"primary\" @click=\"handleClone\">确认克隆</NButton>"
+      }
+    ]
+  }
+}
