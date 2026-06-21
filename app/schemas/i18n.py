@@ -79,3 +79,14 @@ class HardcodedReplaceRequest(BaseModel):
 class ScanAndAddRequest(BaseModel):
     """扫描前端硬编码中文，AI 生成 key 并追加到 cn.json"""
     ai_proxy_name: str = Field(..., description="AI 代理名称")
+
+
+class ProcessScanRequest(BaseModel):
+    """接收前端 AST 扫描结果，AI 生成 key 并追加到 cn.json"""
+    ai_proxy_name: str = Field(..., description="AI 代理名称")
+    items: List[dict] = Field(..., description="扫描结果列表，每项含 {file, line, text}")
+
+
+class I18nBatchDeleteRequest(BaseModel):
+    """批量删除国际化字段"""
+    keys: List[str] = Field(..., description="要删除的字段 key 列表")

@@ -604,8 +604,13 @@ class I18nController:
         results = []
         chinese_re = re.compile(r"[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]+")
 
+        # 已收录的源文本池：仅从 cn.json（源语言）取值，不参考翻译文件
+        # 因为 en/tr 等翻译文件中可能含有中文作为翻译值（如 zh-CN→en 的对照），
+        # 若用全部 locale 的值池会误过滤掉尚未收录到 cn.json 的中文 UI 文本。
         existing_texts = set()
-        for loc in self._get_locales():
+        _locales = self._get_locales()
+        _source_locales = ["cn"] if "cn" in _locales else (_locales[:1] if _locales else [])
+        for loc in _source_locales:
             data = self._load_locale(loc)
             for _k, v, _t in self._flatten(data):
                 if isinstance(v, str) and v.strip():
@@ -650,21 +655,41 @@ class I18nController:
                     results.append({"file": rel_path, "line": line_no, "text": text, "prefix": prefix})
 
             # —— 跨行 HTML 文本内容扫描（>中文< 可能跨行）——
-            # 用 DOTALL 匹配跨越多行的 HTML 文本节点
-            for m in re.finditer(r">\s*([^<]*[\u4e00-\u9fff][^<]*)<", content, re.DOTALL):
-                t = m.group(1).strip()
-                # 清理换行和多余空白
-                t = re.sub(r"\s+", "", t)
-                if not chinese_re.search(t) or len(t) < 1:
-                    continue
-                if t in existing_texts:
-                    continue
-                if (t, rel_path) in seen_in_file:
-                    continue
-                seen_in_file.add((t, rel_path))
-                # 估算行号：数换行符到匹配位置
-                approx_line = content[:m.start()].count("\n") + 1
-                results.append({"file": rel_path, "line": approx_line, "text": t, "prefix": prefix})
+            # 仅扫描 <template> 区域，避免误抓 <script>/<style> 内容
+            # 按嵌套深度匹配外层 <template>...</template>（避免内部 <template #slot> 干扰）
+            tmpl_start = None
+            tmpl_end = None
+            depth = 0
+            for m in re.finditer(r"</?template[^>]*>", content):
+                tag = m.group()
+                if tag == "<template>":
+                    if depth == 0:
+                        tmpl_start = m.end()  # 正文起始 = <template> 之后
+                    depth += 1
+                elif tag == "</template>":
+                    depth -= 1
+                    if depth == 0:
+                        tmpl_end = m.start()
+                        break
+            if tmpl_start is not None and tmpl_end is not None:
+                tmpl_body = content[tmpl_start:tmpl_end]
+                # 剥离 {{ }} 后扫描，避免误抓模板表达式中的代码
+                tmpl_clean = re.sub(r"\{\{[^}]*\}\}", " ", tmpl_body)
+                for m in re.finditer(r"(?<!=)>\s*([^<]*[\u4e00-\u9fff][^<]*)<", tmpl_clean, re.DOTALL):
+                    t = m.group(1).strip()
+                    # 规范化空白：合并连续空白为单个空格
+                    t = re.sub(r"\s+", " ", t).strip()
+                    if not chinese_re.search(t) or len(t) < 1:
+                        continue
+                    if t in existing_texts:
+                        continue
+                    if (t, rel_path) in seen_in_file:
+                        continue
+                    seen_in_file.add((t, rel_path))
+                    # 行号：template 正文起始偏移 + 子串内偏移
+                    abs_pos = tmpl_start + m.start()
+                    approx_line = content[:abs_pos].count("\n") + 1
+                    results.append({"file": rel_path, "line": approx_line, "text": t, "prefix": prefix})
         return results
 
     def _extract_chinese_strings(self, line: str, chinese_re) -> List[str]:
@@ -674,7 +699,8 @@ class I18nController:
         no_mustache = re.sub(r"\{\{[^}]*\}\}", " ", line)
 
         # 模式1：单/双引号包裹的字符串
-        for m in re.finditer(r"""(["'])((?:(?!\1).)*?[\u4e00-\u9fff](?:(?!\1).)*?)\1""", no_mustache):
+        # [^<>] 限定不跨越 HTML 标签边界，避免在无换行长行中误匹配属性值
+        for m in re.finditer(r"""(["'])((?:(?!\1)[^<>])*?[\u4e00-\u9fff](?:(?!\1)[^<>])*?)\1""", no_mustache):
             t = m.group(2).strip()
             if chinese_re.search(t) and len(t) >= 1:
                 texts.append(t)
@@ -693,7 +719,7 @@ class I18nController:
                 texts.append(normalized)
 
         # 模式3：HTML 文本内容 >中文< （模板中未加引号的 UI 文本）
-        for m in re.finditer(r">\s*([^<]*[\u4e00-\u9fff][^<]*)<", no_mustache):
+        for m in re.finditer(r"(?<!=)>\s*([^<]*[\u4e00-\u9fff][^<]*)<", no_mustache):
             t = m.group(1).strip()
             # 清理嵌套的 HTML 标签残留（如 >中文</span> 已经由 < 边界处理）
             # 过滤纯数字/符号
@@ -763,6 +789,13 @@ class I18nController:
             "仅返回 JSON 对象: {key: 原始text}。不解释，不改 value。"
         )
 
+    async def scan_frontend_new(self) -> Dict[str, Any]:
+        """扫描前端硬编码中文，返回待翻译列表（不执行 AI 处理）"""
+        items = self._scan_chinese_texts()
+        # 按文件分组排序
+        items.sort(key=lambda x: (x["file"], x["line"]))
+        return {"total": len(items), "items": items}
+
     async def scan_and_add(self, ai_proxy_name: str) -> Dict[str, Any]:
         """扫描前端硬编码中文 → AI 生成 key → 追加到 cn.json"""
         from app.controllers.ai_proxy import ai_proxy_controller
@@ -817,6 +850,257 @@ class I18nController:
             "scanned_count": len(raw_items), "added_count": added, "skipped_count": skipped,
             "batch_count": len(batches), "failed_batches": failed if failed else None,
         }
+
+    async def process_scan(self, ai_proxy_name: str, items: List[dict]) -> Dict[str, Any]:
+        """接收前端 AST 扫描结果，AI 生成 key 后追加到 cn.json
+
+        与 scan_and_add 的区别：跳过 Python 正则扫描，直接使用前端 @cybersailor/i18n-detect-vue 的 AST 解析结果。
+        """
+        from app.controllers.ai_proxy import ai_proxy_controller
+
+        proxy = await ai_proxy_controller.get_by_name(ai_proxy_name)
+        if not proxy:
+            raise ValueError(f"AI 代理 '{ai_proxy_name}' 不存在")
+
+        # 1. 转换为内部格式，推导 prefix
+        cn_data = self._load_locale("cn")
+        existing_keys = {k for k, _v, _t in self._flatten(cn_data)}
+        existing_texts = {v for _k, v, _t in self._flatten(cn_data) if isinstance(v, str) and v.strip()}
+
+        processed = []
+        seen = set()
+        for it in items:
+            text = (it.get("text") or "").strip()
+            file = it.get("file", "")
+            if not text or len(text) < 1:
+                continue
+            # 去重：已存在于 cn.json 的值 或 同文件同文本已处理
+            if text in existing_texts:
+                continue
+            dedup_key = (text, file)
+            if dedup_key in seen:
+                continue
+            seen.add(dedup_key)
+            # 从文件路径推导 prefix
+            parts = tuple(file.replace("\\", "/").split("/"))
+            prefix = self._derive_prefix(parts)
+            processed.append({"text": text, "prefix": prefix, "file": file,
+                              "start": it.get("start"), "end": it.get("end"),
+                              "source": it.get("source", "")})
+
+        if not processed:
+            return {"scanned_count": len(items), "added_count": 0, "skipped_count": len(items), "batch_count": 0, "failed_batches": None}
+
+        # 2. 分片
+        batches = [processed[i:i + self._SCAN_BATCH_SIZE] for i in range(0, len(processed), self._SCAN_BATCH_SIZE)]
+        sys_prompt = self._build_scan_add_system_prompt()
+        sem = asyncio.Semaphore(self._SCAN_MAX_CONCURRENT)
+
+        async def _proc(idx: int, batch: list) -> Tuple[int, dict, str | None]:
+            async with sem:
+                inp = [{"text": it["text"], "prefix": it["prefix"], "file": it["file"]} for it in batch]
+                user = f"请为以下中文 UI 文本生成合适的 i18n key：\n{json.dumps(inp, ensure_ascii=False, indent=2)}"
+                try:
+                    r = await self._call_ai(proxy, sys_prompt, user)
+                    p = self._extract_json(r)
+                    return (idx, p if isinstance(p, dict) else {}, None if isinstance(p, dict) else f"批次 {idx} 非字典")
+                except Exception as e:
+                    logger.error(f"process_scan 批次 {idx} 失败: {e}")
+                    return (idx, {}, str(e))
+
+        results_list = await asyncio.gather(*[_proc(i, b) for i, b in enumerate(batches)])
+
+        # 3. 合并结果
+        new_entries = {}
+        failed = []
+        for idx, r, err in results_list:
+            if err:
+                failed.append({"batch": idx, "count": len(batches[idx]), "error": err})
+            else:
+                new_entries.update(r)
+
+        # 4. 追加到 cn.json（去重）
+        added = 0
+        skipped = 0
+        for key, value in new_entries.items():
+            if not isinstance(value, str) or key in existing_keys:
+                skipped += 1
+                continue
+            await self._set_value_by_key(cn_data, key, value)
+            existing_keys.add(key)
+            added += 1
+
+        self._save_locale("cn", cn_data)
+
+        # 5. 回写源文件：将硬编码中文替换为 $t('key')
+        replaced = 0
+        if added > 0:
+            text_to_key = {v: k for k, v in new_entries.items() if isinstance(v, str)}
+            replaced = self._replace_in_source_files(processed, text_to_key)
+
+        return {
+            "scanned_count": len(processed),
+            "added_count": added,
+            "replaced_count": replaced,
+            "skipped_count": skipped,
+            "batch_count": len(batches),
+            "failed_batches": failed if failed else None,
+        }
+
+    async def batch_delete(self, keys: List[str]) -> Dict[str, Any]:
+        """从所有语言文件中批量删除指定 key 及其值"""
+        locales = self._get_locales()
+        locale_data = {loc: self._load_locale(loc) for loc in locales}
+        deleted = 0
+        for key in keys:
+            key_deleted = False
+            for loc in locales:
+                if self._delete_key_by_path(locale_data[loc], key.split(".")):
+                    key_deleted = True
+            if key_deleted:
+                for loc in locales:
+                    self._save_locale(loc, locale_data[loc])
+                deleted += 1
+        await self._sync_index_js()
+        return {"deleted": deleted}
+
+    def _delete_key_by_path(self, data: dict, parts: list) -> bool:
+        """按点分隔路径删除嵌套字典中的键，同时清理空的父节点"""
+        if len(parts) == 1:
+            return data.pop(parts[0], None) is not None
+        key = parts[0]
+        if key in data and isinstance(data[key], dict):
+            if self._delete_key_by_path(data[key], parts[1:]):
+                # 清理空的父节点
+                if not data[key]:
+                    del data[key]
+                return True
+        return False
+
+    def _replace_in_source_files(self, processed: list, text_to_key: dict) -> int:
+        """用 AI 生成的 key 替换源文件中的硬编码中文，并自动补全 i18n import
+
+        替换规则：
+        - .vue + html-inline   → {{ $t('key') }}    （模板中 $t 全局可用）
+        - .vue + js-string 等  → t('key')           （需 useI18n）
+        - .js/.ts + 任意       → i18n.global.t('key')（需 import i18n）
+        """
+        project_root = _get_project_root()
+        web_src = project_root / "web"
+
+        by_file: dict = {}
+        for it in processed:
+            txt = it["text"]
+            key = text_to_key.get(txt)
+            start = it.get("start")
+            end = it.get("end")
+            source = it.get("source", "")
+            if not key or start is None or end is None:
+                continue
+            f = it["file"]
+            by_file.setdefault(f, []).append((start, end, txt, key, source))
+
+        replaced = 0
+        modified_files: set = set()
+        for rel_path, replacements in by_file.items():
+            filepath = web_src / rel_path
+            if not filepath.exists():
+                continue
+            content = filepath.read_text(encoding="utf-8")
+            is_vue = rel_path.endswith(".vue")
+            # .js/.ts 中 t 是否已可用（已声明 const { t } = ...）
+            has_t = bool(re.search(r"\bconst\s*\{\s*t\s*\}\s*=", content))
+
+            for start, end, _txt, key, source in sorted(replacements, key=lambda x: -x[0]):
+                if is_vue and source == "html-inline":
+                    repl = "{{ $t('%s') }}" % key
+                elif is_vue:
+                    repl = "t('%s')" % key
+                elif has_t:
+                    repl = "t('%s')" % key
+                else:
+                    repl = "i18n.global.t('%s')" % key
+                content = content[:start] + repl + content[end:]
+                replaced += 1
+
+            filepath.write_text(content, encoding="utf-8")
+            modified_files.add(rel_path)
+
+        # 回写后补全 i18n import
+        self._ensure_i18n_imports(modified_files)
+
+        logger.info(f"_replace_in_source_files: 替换了 {replaced} 处，涉及 {len(by_file)} 个文件")
+        return replaced
+
+    def _ensure_i18n_imports(self, files: set):
+        """确保修改后的文件有可用的 i18n 函数
+
+        .vue 文件：检测是否有 `const { t } = useI18n()`，无则补全 import + 声明
+        .js/.ts 文件：检测是否有 `import i18n from '~/i18n'`，无则补全
+        """
+        project_root = _get_project_root()
+        web_src = project_root / "web"
+
+        for rel_path in files:
+            filepath = web_src / rel_path
+            if not filepath.exists():
+                continue
+            content = filepath.read_text(encoding="utf-8")
+            modified = False
+
+            if rel_path.endswith(".vue"):
+                # 仅当 script 中有 t('...') 调用时才需补全
+                m_script = re.search(
+                    r"<script\s+setup[^>]*>(.*?)</script>", content, re.DOTALL
+                )
+                if m_script:
+                    script_body = m_script.group(1)
+                    # 无 t(' 调用 → 只有模板 $t，无需 import
+                    if not re.search(r"\bt\s*\(", script_body):
+                        continue
+                    # 已有 useI18n → 跳过
+                    if "useI18n" in script_body and re.search(
+                        r"\bconst\s*\{\s*t\s*\}\s*=\s*useI18n\s*\(", script_body
+                    ):
+                        continue
+                    # 补全 import
+                    if "from 'vue-i18n'" not in script_body:
+                        script_body = (
+                            "import { useI18n } from 'vue-i18n'\n" + script_body
+                        )
+                        modified = True
+                    # 补全 const { t } = useI18n()（放在 imports 之后）
+                    if not re.search(
+                        r"\bconst\s*\{\s*t\s*\}\s*=\s*useI18n\s*\(", script_body
+                    ):
+                        # 找到 import 块结尾
+                        lines = script_body.split("\n")
+                        insert_at = 0
+                        for i, line in enumerate(lines):
+                            if line.strip().startswith("import "):
+                                insert_at = i + 1
+                            elif insert_at > 0 and not line.strip():
+                                continue
+                            elif insert_at > 0:
+                                break
+                        lines.insert(insert_at, "const { t } = useI18n()")
+                        script_body = "\n".join(lines)
+                        modified = True
+                    if modified:
+                        content = (
+                            content[: m_script.start(1)]
+                            + script_body
+                            + content[m_script.end(1) :]
+                        )
+            else:
+                # .js/.ts 文件
+                if "import i18n from '~/i18n'" not in content:
+                    content = "import i18n from '~/i18n'\n" + content
+                    modified = True
+
+            if modified:
+                filepath.write_text(content, encoding="utf-8")
+                logger.info(f"_ensure_i18n_imports: 补全 {rel_path}")
 
     # ─── 前端硬编码扫描（旧，保留兼容） ──────────────────────────
     async def scan_frontend(self) -> Dict[str, Any]:

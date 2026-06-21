@@ -12,6 +12,8 @@ from app.schemas.i18n import (
     I18nBatchUpdateRequest,
     I18nImportRequest,
     ScanAndAddRequest,
+    I18nBatchDeleteRequest,
+    ProcessScanRequest,
     I18nUpdateRequest,
 )
 
@@ -86,6 +88,12 @@ async def scan_frontend():
     return Success(data=data)
 
 
+@router.get("/scan-frontend-new", summary="扫描前端待翻译字段")
+async def scan_frontend_new():
+    """扫描 web/src 下前端代码中的硬编码中文字符串（增强扫描，含 HTML 文本内容）"""
+    data = await i18n_controller.scan_frontend_new()
+    return Success(data=data)
+
 @router.post("/scan-and-add", summary="扫描新字段并添加")
 async def scan_and_add(req: ScanAndAddRequest):
     """扫描前端硬编码中文，AI 生成 i18n key 后追加到 cn.json"""
@@ -105,6 +113,28 @@ async def scan_and_add(req: ScanAndAddRequest):
         logger.exception("扫描添加失败")
         return Fail(code=500, msg=f"扫描添加失败: {e}")
 
+
+@router.post("/process-scan", summary="处理前端扫描结果并添加")
+async def process_scan(req: ProcessScanRequest):
+    """接收前端 AST 扫描结果，AI 生成 i18n key 后追加到 cn.json"""
+    try:
+        result = await i18n_controller.process_scan(
+            ai_proxy_name=req.ai_proxy_name,
+            items=req.items,
+        )
+        msg = (
+            f"扫描到 {result['scanned_count']} 条新字段，"
+            f"成功添加 {result['added_count']} 条"
+        )
+        if result.get("replaced_count"):
+            msg += f"，已替换源文件 {result['replaced_count']} 处"
+        return Success(data=result, msg=msg)
+    except ValueError as e:
+        return Fail(code=400, msg=str(e))
+    except Exception as e:
+        logger.exception("process_scan 失败")
+        return Fail(code=500, msg=f"处理失败: {e}")
+
 @router.post("/replace-hardcoded", summary="替换前端硬编码")
 async def replace_hardcoded(req: HardcodedReplaceRequest):
     """替换单个硬编码字符串为 i18n 调用"""
@@ -114,3 +144,14 @@ async def replace_hardcoded(req: HardcodedReplaceRequest):
     if result["errors"]:
         return Fail(code=400, msg="; ".join(result["errors"]))
     return Success(data=result, msg=f"成功替换 {result['success']} 处")
+
+
+@router.post("/batch-delete", summary="批量删除国际化字段")
+async def batch_delete_i18n(req: I18nBatchDeleteRequest):
+    """从所有语言文件中批量删除指定 key 及其值"""
+    try:
+        result = await i18n_controller.batch_delete(keys=req.keys)
+        return Success(data=result, msg=f"成功删除 {result['deleted']} 个字段")
+    except Exception as e:
+        logger.exception("批量删除失败")
+        return Fail(code=500, msg=f"批量删除失败: {e}")

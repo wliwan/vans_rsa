@@ -22,7 +22,13 @@
     "label_network_error_msg_cn_beff7894": "${NETWORK_ERROR_MSG}, 点击重试",
     "message_cn_3bb47b67": "编辑成功",
     "placeholder_cn_d03d66bc": "请输入图标名称",
-    "title_cn_7de2898d": "登录页"
+    "title_cn_7de2898d": "登录页",
+    "workbench_default_title": "${t('views.workbench.label_workbench')}Default",
+    "profile_default_title": "${t('views.profile.label_profile')}Default",
+    "login": "Login",
+    "empty": "Empty",
+    "name_default": "${e.name}Default",
+    "date_format": "YYYY-MM-DD HH:mm:ss"
   },
   "header": {
     "label_logout": "退出登录",
@@ -200,7 +206,8 @@
         "country_plus": "国家 +{0}",
         "country_update": "国家更新 {0}",
         "administrative_plus": "行政区 +{0}",
-        "city_plus": "城市 +{0}"
+        "city_plus": "城市 +{0}",
+        "comma": "，"
       },
       "regionBoundary": {
         "breadcrumb": {
@@ -632,14 +639,76 @@
         "completed_summary": "完成: 成功 {0}, 失败 {1}",
         "process_complete_summary": "处理完成: 成功 {0} 张, 失败 {1} 张",
         "success_process_images": "成功处理 {0} 张",
-        "success_process_images_detail": "成功处理 {0} 张图片"
+        "success_process_images_detail": "成功处理 {0} 张图片",
+        "cursor_pointer": "cursor: pointer;",
+        "upload_failed": "上传失败:",
+        "update_failed": "更新失败:",
+        "ai_process_failed": "AI处理失败:",
+        "preview_failed": "预览失败:",
+        "material_list": "素材列表",
+        "ai_process": "AI处理",
+        "confirm_delete_selected_material": "确认删除选中的素材？",
+        "refresh": "刷新",
+        "preview_workspace": "预览工作区",
+        "preview_scale_percent": "{{ Math.round(previewScale * 100) }}%",
+        "gps_location": "拍摄位置: {{ gpsLocation.lat.toFixed(6) }}, {{ gpsLocation.lng.toFixed(6) }}",
+        "select_image_file": "选择图片文件",
+        "selected_file": "已选择: {{ uploadFile.name }}",
+        "skill": "Skill",
+        "start_processing": "开始处理",
+        "drag_to_select_crop_area": "在图片上拖动鼠标选择裁剪区域",
+        "drag_slider_preview_rotation": "拖动滑块实时预览旋转效果",
+        "refresh_preview": "刷新预览",
+        "auto_sync_values_after_drag": "左侧画布拖动选区后自动同步数值",
+        "preview_effect": "预览效果"
       },
       "road-network-workbench": {
         "base_map_label": ", label: `底图 — ${bl.label}`, type:",
         "base_map": "底图 — {0}",
         "road_network_label": ", label: `路网 — ${nw?.file_name ||",
         "road_network": "路网 — {0}",
-        "map_export": "地图导出_{0}"
+        "map_export": "地图导出_{0}",
+        "stadia_outdoors": "Stadia Outdoors",
+        "stadia_maps_copyright": "&copy; Stadia Maps",
+        "stadia_dark": "Stadia Dark",
+        "stadia_toner": "Stadia Toner",
+        "stadia_imagery": "Stadia Imagery",
+        "yandex_map": "Yandex Map",
+        "yandex_copyright": "&copy; Yandex",
+        "yandex_satellite": "Yandex Satellite",
+        "bing_satellite": "Bing Satellite",
+        "microsoft_copyright": "&copy; Microsoft",
+        "osm_copyright": "&copy; OSM",
+        "google_satellite": "Google Satellite",
+        "google_copyright": "&copy; Google",
+        "zoomend_moveend": "zoomend moveend",
+        "compass_html": "<div class=\"compass-outer\"> <div class=\"compass-ring\"> <span class=\"compass-dir dir-n\">N</span> <span class=\"compass-dir dir-e\">E</span> <span class=\"compass-dir dir-s\">S</span> <span class=\"compass-dir dir-w\">W</span> <svg class=\"compass-ticks\" viewBox=\"0 0 100 100\"> <line x1=\"50\" y1=\"8\" x2=\"50\" y2=\"16\" stroke=\"#bbb\" stroke-width=\"1.5\"/> <line x1=\"50\" y1=\"84\" x2=\"50\" y2=\"92\" stroke=\"#bbb\" stroke-width=\"1.5\"/> <line x1=\"8\" y1=\"50\" x2=\"16\" y2=\"50\" stroke=\"#bbb\" stroke-width=\"1.5\"/> <line x1=\"84\" y1=\"50\" x2=\"92\" y2=\"50\" stroke=\"#bbb\" stroke-width=\"1.5\"/> </svg> <div class=\"compass-needle\"> <div class=\"needle-north\"></div> <div class=\"needle-south\"></div> </div> </div> </div>",
+        "download_icon_svg": "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"#555\"><path d=\"M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z\"/></svg>",
+        "question_mark": "?",
+        "ampersand": "&",
+        "road_network_title": "路网 — ${nw?.file_name || '当前路网'}",
+        "current_road_network": "当前路网",
+        "map_export_filename": "地图导出_${new Date().toLocaleString('zh-CN')}",
+        "fullscreen_label": "⛶ {{ t('views.network.roadNetworkWorkbench.fullscreen') }}",
+        "clear_cache_label": "🗑 {{ t('views.network.roadNetworkWorkbench.clearCache') }}",
+        "zoom_level_label": "Z: {{ liveZoom }}",
+        "name_zh_parenthesis": "（{{ lt.name_zh }}）",
+        "stats_total_length_format": "{{ t('views.network.roadNetworkWorkbench.stats.totalLength') }}: {{ networkInfo.total_length_km }} km",
+        "stats_density_format": "{{ t('views.network.roadNetworkWorkbench.stats.density') }}: {{ networkInfo.density_km_per_km2 }} km/km²",
+        "stats_file_size_format": "{{ t('views.network.roadNetworkWorkbench.stats.fileSize') }}: {{ (networkInfo.file_size / 1024 / 1024).toFixed(1) }} MB",
+        "stats_item_format": "{{ s.name_zh || s.type }}: {{ s.count }}{{ t('views.network.roadNetworkWorkbench.stats.unitItem') }} ({{ s.percent }}%)",
+        "device_name_display": "(typeof hw === 'string' ? hw : (hw.type + (hw.name_zh && hw.name_zh !== hw.type ? '（' + hw.name_zh + '）' : '')))",
+        "toggle_map_controls": "显示/隐藏地图控件",
+        "export_tile_hint": "提示：路网图层为同源瓦片，导出效果最佳。底图可能因跨域无法完整截取。"
+      },
+      "region_boundary": {
+        "bearer_token": "Bearer ${getToken() || ''}"
+      },
+      "road-network": {
+        "bearer_token_header": "Bearer ${getToken() || ''}",
+        "title_function_call": "_t('title')",
+        "search_placeholder_function_call": "_t('searchPlaceholder', { level: currentLevelLabel })",
+        "upload_modal_title_function_call": "_t('uploadModal.title')"
       }
     },
     "pixel": {
@@ -695,12 +764,30 @@
         "medium": ", 中等:",
         "high": ", 高:",
         "sync_complete": "同步完成：新增 {0} 条，更新 {1} 条，API 共 {2} 条",
-        "cleared_data": "已清除 {0} 条数据"
+        "cleared_data": "已清除 {0} 条数据",
+        "label_account": "像素账户：",
+        "label_time_period": "时间段：",
+        "sync_data": "同步数据",
+        "clear_data": "清除数据",
+        "confirm_clear_all_defect_data": "确认清除该账户的所有病害数据？"
       },
       "track": {
         "type": "类型{0}",
         "sync_complete": "同步完成：新增 {0} 条，更新 {1} 条，API 共 {2} 条",
-        "cleared_data": "已清除 {0} 条数据"
+        "cleared_data": "已清除 {0} 条数据",
+        "car_info_display": "${c.car_no || c.car_id} — ${c.name || c.device_id || ''}",
+        "label_account": "像素账户：",
+        "label_car_model": "车型：",
+        "label_vehicle": "车辆：",
+        "label_time_period": "时间段：",
+        "sync_data": "同步数据",
+        "clear_data": "清除数据",
+        "confirm_clear_track_data": "确认清除该账户{{ selectedCar ? '该车辆' : t('views.pixel.label_cn_9a7b52fc') }}的轨迹数据？"
+      },
+      "account": {
+        "padding_value": "2px 3px",
+        "style_margin_right_8px": "margin-right: 8px;",
+        "new_account": "新建账户"
       }
     },
     "profile": {
@@ -753,7 +840,10 @@
       "title_cn_735ac607": "技能管理",
       "title_cn_8c339e83": "新建技能",
       "no_match_skill": "无匹配技能",
-      "skill_empty_create": "暂无技能，请新建"
+      "skill_empty_create": "暂无技能，请新建",
+      "pipe": "|",
+      "select_skill_prompt": "请在左侧选择一个技能",
+      "confirm_delete_skill": "确认删除该技能？"
     },
     "statistic-center": {
       "label_ai_cn_7a58217b": "AI 正在分析数据并生成报告...",
@@ -1636,10 +1726,84 @@
         "connection_success_tables_count": "连接成功，共 {0} 个表",
         "imported_tables_count": "成功导入 {0} 个表",
         "parsed_tables_count": "解析成功，共 {0} 个表",
-        "imported_road_network_statistics_count": "成功导入 {0} 个路网统计"
+        "imported_road_network_statistics_count": "成功导入 {0} 个路网统计",
+        "pipe": "|",
+        "close_sign": "×",
+        "make": "Make",
+        "model": "Model",
+        "software": "Software",
+        "orientation": "Orientation",
+        "x_resolution": "XResolution",
+        "y_resolution": "YResolution",
+        "f_number": "FNumber",
+        "flash": "Flash",
+        "gps_latitude": "GPSLatitude",
+        "gps_longitude": "GPSLongitude",
+        "gps_altitude": "GPSAltitude",
+        "compression": "Compression",
+        "artist": "Artist",
+        "copyright": "Copyright",
+        "opencv_processing_with_operation": "OpenCV处理 (${cvForm.value.operation})",
+        "opencv_processing_complete": "OpenCV 处理完成：成功 ${res.data?.success_count || 0} 个",
+        "ai_processing_complete": "AI 处理完成：成功 ${res.data?.success_count || 0} 个",
+        "ocr_extraction_complete": "OCR 提取完成：成功 ${res.data?.success_count || 0} 个",
+        "import_complete": "导入完成：成功 ${res.data?.success_count || 0} 个",
+        "copy_files_success": "成功复制 ${res.data?.success_count || 0} 个文件",
+        "exported_database_docs_count": "已导出 ${selectedDatabaseDocIds.value.length} 条数据",
+        "deleted_database_docs_count": "已删除 ${selectedDatabaseDocIds.value.length} 条数据",
+        "copy_data_items_success": "成功复制 ${res.data?.documents || 0} 项数据",
+        "mysql_connection_success": "连接成功，共 ${mysqlTables.value.length} 个表",
+        "import_tables_success": "成功导入 ${selected.length} 个表",
+        "sqlite_parse_success": "解析成功，共 ${sqliteTables.value.length} 个表",
+        "import_road_network_stats_success": "成功导入 ${res.data?.length || selected.length} 个路网统计",
+        "export_with_count": "导出({{ selectedAnalysisIds.length }})",
+        "confirm_delete_analysis_tables": "确认删除已选中的 {{ selectedAnalysisIds.length }} 个分析表格？",
+        "ai_analysis_with_count": "AI分析({{ selectedDocIds.length }})",
+        "confirm_delete_documents": "确认删除选中的 {{ selectedDocIds.length }} 个文档？",
+        "char_count_display": "{{ d.char_count?.toLocaleString() }} 字符",
+        "char_count_display_a": "{{ a.char_count?.toLocaleString() }} 字符",
+        "export_database_docs_with_count": "导出({{ selectedDatabaseDocIds.length }})",
+        "confirm_delete_database_docs": "确认删除选中的 {{ selectedDatabaseDocIds.length }} 条数据库数据？",
+        "row_count_display": "{{ d.row_count?.toLocaleString() }} 行",
+        "dump_date_display": "dump: {{ d.dump_date?.slice(0, 10) }}",
+        "confirm_delete_static_files": "确认删除已选中的 {{ selectedStaticFileIds.length }} 个文件？",
+        "upload_file_to_directory": "上传文件到{{ staticFileSourceType === 'original' ? t('views.statistic-center.label_cn_d3182537') : t('views.statistic-center.label_cn_c57e8ae8') }}目录",
+        "dot": "·",
+        "dpi": "{{ selectedStaticFile.dpi }} DPI",
+        "bit_depth": "{{ selectedStaticFile.bit_depth }} bit",
+        "material_count": "{{ r.material_count }} 素材",
+        "comment_with_dash": "- {{ t.comment }}",
+        "import_mysql_tables": "导入 ({{ mysqlTables.filter(t => t.selected).length }})",
+        "import_sqlite_tables": "导入 ({{ sqliteTables.filter(t => t.selected).length }})",
+        "road_network_files_count": "/ {{ roadNetworks.length }} 个路网文件",
+        "node_count": "{{ (n.node_count || 0).toLocaleString() }} 节点",
+        "edge_count": "{{ (n.edge_count || 0).toLocaleString() }} 边",
+        "junction_count": "{{ n.junction_count }} 路口",
+        "highway_count": "{{ n.highway_count }} 等级",
+        "selected_road_network_stats": "{{ t('views.statistic-center.label_cn_8d9a071e') }} {{ roadNetworks.filter(n => n.selected).length || '' }} 个路网统计"
       },
       "report": {
-        "export_failed": "导出{0}失败"
+        "export_failed": "导出{0}失败",
+        "word": "Word",
+        "select_left_report": "请选择左侧报告"
+      },
+      "doc-workbench": {
+        "html_body_min_width": "<body style=\"min-width:1024px\"",
+        "print": "打印",
+        "word": "Word",
+        "select_left_report": "请选择左侧报告",
+        "no_data_source_hint": "该工作区暂无数据源，请先在数据工作台中上传数据",
+        "section_item_count": "{{ sectionStats[sec.key]?.selected ?? 0 }} / {{ sec.list.length }} 项",
+        "preview_static_files_count": "📁 {{ t('views.statistic-center.label_cn_2a0c4740') }} {{ previewData.source_counts.static_files }}",
+        "preview_stats": "预览统计"
+      },
+      "excel-data": {
+        "file_size_bytes_s": "({{ formatFileSize(s.file_size) }})",
+        "batch_export": "批量导出({{ selectedAnalysisIds.length }})",
+        "batch_delete": "批量删除({{ selectedAnalysisIds.length }})",
+        "confirm_delete_selected_analysis_tables": "确认删除已选中的 {{ selectedAnalysisIds.length }} 个分析表格？",
+        "delete_all": "全部删除",
+        "file_size_bytes_a": "({{ formatFileSize(a.file_size) }})"
       }
     },
     "system": {
@@ -1790,7 +1954,41 @@
       "title_cn_e5846bb9": "超级用户",
       "title_cn_ec49329b": "请求方法",
       "title_cn_f39bf763": "组件路径",
-      "title_cn_f53b5122": "角色列表"
+      "title_cn_f53b5122": "角色列表",
+      "ai-proxy": {
+        "margin_right_style": "margin-right: 8px;"
+      },
+      "api": {
+        "tags": "Tags",
+        "create_api": "新建API",
+        "refresh_api": "刷新API"
+      },
+      "dept": {
+        "create_dept": "新建部门"
+      },
+      "download_config": {
+        "save_config": "保存配置",
+        "test_connectivity": "测试连通性",
+        "response_code_and_elapsed_ms": "响应码 {{ proxyTestResult.status_code }}，耗时 {{ proxyTestResult.elapsed_ms }}ms",
+        "modified": "已修改",
+        "zero_means_no_retry": "0 = 不重试",
+        "range_60_to_3600_seconds": "60-3600 秒"
+      },
+      "menu": {
+        "create_root_menu": "新建根菜单",
+        "scan_views": "扫描视图",
+        "only_root_menu_can_set_redirect_path": "只有一级菜单可以设置跳转路径",
+        "below_are": "以下是",
+        "view_folders_below_for_component_path": "下的所有视图文件夹，可用于菜单配置中的「组件路径」字段。",
+        "no_view_folders_scanned": "未扫描到视图文件夹",
+        "selected_path": "已选路径："
+      },
+      "role": {
+        "create_role": "新建角色"
+      },
+      "user": {
+        "create_user": "新建用户"
+      }
     },
     "tool": {
       "vehicle": {
@@ -1838,7 +2036,13 @@
         "stat_alg_result": "算法结果",
         "stat_distance_pic": "定距拍照",
         "stat_position": "位置统计",
-        "title": "车辆状态检测"
+        "title": "车辆状态检测",
+        "car_info_display": "${c.car_no || c.car_id} — ${c.name || c.device_id || ''}",
+        "coordinates_display": "${info.longitude.toFixed(4)}°E, ${info.latitude.toFixed(4)}°N",
+        "angle_display": "${info.angle}°",
+        "zero_b": "0 B",
+        "check_status_data": "— {{ checkResult.status.data }}",
+        "flow_status_code_label": "{{ t('views.tool.vehicle.flow_status_code') }}:"
       },
       "message_cn_a0d51a5f": "检测失败：",
       "message_cn_d6f56b29": "流量查询失败：",
@@ -1857,7 +2061,11 @@
       "label_workbench": "工作台",
       "text_hello": "hello, {username}",
       "text_no_pages": "暂无可用功能页面",
-      "text_welcome": "今天又是元气满满的一天!"
+      "text_welcome": "今天又是元气满满的一天!",
+      "more_children_count": "+{{ card.children.length - 4 }}"
+    },
+    "top-menu": {
+      "first_level_menu": "一级菜单"
     }
   },
   "app_name": "VansRSA",
@@ -1865,16 +2073,57 @@
   "components": {
     "common": {
       "loading_empty_wrapper": {
-        "click_retry": "{0}, 点击重试"
+        "click_retry": "{0}, 点击重试",
+        "bg_white_dark_bg_dark": "bg-white dark:bg-dark transition-background-color duration-300 ease-in-out",
+        "text_320px_primary": "text-320px text-primary",
+        "text_16px_666": "text-16px text-#666"
+      },
+      "doc_workbench_sidebar": {
+        "select_workspace_condition": "selectedWs ? t('views.statistic-center.placeholder_cn_d37f5b56') : t('views.statistic-center.placeholder_cn_a466ba6b')",
+        "chevron_right": "›"
+      },
+      "task_progress_panel": {
+        "background_tasks": "后台任务 ({{ tasks.length }})",
+        "clear_completed": "清除已完成",
+        "collapse": "收起",
+        "retry": "重试",
+        "close": "✕"
       }
     },
     "table": {
       "crud_table": {
         "total_count": "共 {0} 条"
       }
+    },
+    "icon": {
+      "icon_picker": {
+        "more_icons_go_to": "更多图标去",
+        "icones": "Icones"
+      }
+    },
+    "query-bar": {
+      "query_bar": {
+        "search": "搜索"
+      }
     }
   },
   "helpers": {
     "unknown_error": "【{0}】: 未知异常!"
+  },
+  "permission": {
+    "need_roles_example": "need roles: like v-permission=\"get/api/v1/user/list\""
+  },
+  "page_title_guard": {
+    "page_title_separator": "${pageTitle} | ${baseTitle}"
+  },
+  "is": {
+    "object_type_template": "[object ${type}]",
+    "object": "Object",
+    "string": "String",
+    "number": "Number",
+    "boolean": "Boolean",
+    "date": "Date",
+    "promise": "Promise",
+    "window": "Window"
   }
 }

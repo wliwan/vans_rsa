@@ -3,6 +3,7 @@ import { defineConfig, loadEnv } from 'vite'
 import { convertEnv, getSrcPath, getRootPath } from './build/utils'
 import { viteDefine } from './build/config'
 import { createVitePlugins } from './build/plugin'
+import { i18nScanPlugin } from './vite-plugin-i18n-scan'
 import { OUTPUT_DIR, PROXY_CONFIG } from './build/constant'
 
 export default defineConfig(({ command, mode }) => {
@@ -23,7 +24,8 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     define: viteDefine,
-    plugins: createVitePlugins(viteEnv, isBuild),
+    // i18n-scan 插件仅在 dev 模式下工作
+    plugins: [...createVitePlugins(viteEnv, isBuild), i18nScanPlugin()],
     server: {
       host: '0.0.0.0',
       port: VITE_PORT,

@@ -1,11 +1,13 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import { computed, h, onMounted, ref } from 'vue'
+import { useTaskProgressStore } from '@/store/modules/taskProgress'
 import {
   NButton,
   NDataTable,
   NInput,
   NModal,
+  NPopconfirm,
   NRadio,
   NRadioGroup,
   NSelect,
@@ -20,6 +22,8 @@ import api from '@/api'
 import TheIcon from '@/components/icon/TheIcon.vue'
 
 const { t } = useI18n()
+
+const taskStore = useTaskProgressStore()
 
 defineOptions({ name: '国际化管理' })
 
@@ -36,21 +40,61 @@ const editingValues = ref({})
 // Key 搜索过滤
 const searchText = ref('')
 
+// 未翻译筛选：选定语言后只显示该语言未翻译的行
+const filterUntranslated = ref(null)
+
+// 全量条目（用于统计和分页）
+const allEntries = ref([])
+
+// 根据筛选条件过滤后的条目
+const filteredEntries = computed(() => {
+  const entries = allEntries.value
+  const loc = filterUntranslated.value
+  if (!loc) return entries
+  return entries.filter(e => {
+    const v = e.translations[loc]
+    return v === null || v === undefined || (typeof v === 'string' && v.trim() === '')
+  })
+})
+
 // ── getData：适配 CrudTable，内部做前端分页 ──
 async function getData({ page = 1, page_size = 10 } = {}) {
   const res = await api.getI18nList()
   locales.value = res.data.locales || []
-  const allEntries = res.data.entries || []
+  allEntries.value = res.data.entries || []
+  const entries = filteredEntries.value
   const start = (page - 1) * page_size
   return {
-    data: allEntries.slice(start, start + page_size),
-    total: allEntries.length,
+    data: entries.slice(start, start + page_size),
+    total: entries.length,
   }
 }
+
+// 统计：每种语言已翻译的条目数
+const translationStats = computed(() => {
+  const entries = allEntries.value
+  const total = entries.length
+  const stats = {}
+  for (const loc of locales.value) {
+    let count = 0
+    for (const entry of entries) {
+      const v = entry.translations[loc]
+      if (v !== null && v !== undefined && (typeof v !== 'string' || v.trim() !== '')) {
+        count++
+      }
+    }
+    stats[loc] = { count, total }
+  }
+  return stats
+})
+
+// 多选
+const checkedKeys = ref([])
 
 // ── 动态构建列（locales 更新后自动重新计算） ──
 const columns = computed(() => {
   const cols = [
+    { type: 'selection' },
     {
       title: 'Key',
       key: 'key',
@@ -79,8 +123,9 @@ const columns = computed(() => {
 
   locales.value.forEach((loc) => {
     const langNames = { cn: t('lang'), en: 'English', tr: 'Türkçe', jp: '日本語', fr: 'Français', de: 'Deutsch', ko: '한국어', es: 'Español', ru: 'Русский', ar: 'العربية' }
+    const st = translationStats.value[loc]
     cols.push({
-      title: langNames[loc] || loc.toUpperCase(),
+      title: st ? `${langNames[loc] || loc.toUpperCase()} ${st.count}/${st.total}` : (langNames[loc] || loc.toUpperCase()),
       key: `locale_${loc}`,
       width: 200,
       ellipsis: { tooltip: true },
@@ -158,6 +203,8 @@ async function commitEdit(row, loc) {
   try {
     await api.updateI18n({ key: row.key, locale: loc, value: newValue })
     row.translations[loc] = newValue
+    // 筛选激活时刷新表格，已翻译行自动消失；无筛选时不刷新保持原位置
+    if (filterUntranslated.value) $table.value?.handleSearch()
     message.success('已保存')
   } catch (e) {
     message.error(t('views.network.roadNetworkWorkbench.messages.saveFail'))
@@ -222,7 +269,7 @@ async function handleImport() {
 const aiVisible = ref(false)
 const aiGenerating = ref(false)
 const aiProxyName = ref(null)
-const aiTargetLanguage = ref(null)
+const aiTargetLanguages = ref([])
 const aiMode = ref('incremental')
 const proxyOptions = ref([])
 
@@ -252,7 +299,7 @@ const languageOptions = [
 
 async function openAIGenerate() {
   aiProxyName.value = null
-  aiTargetLanguage.value = null
+  aiTargetLanguages.value = []
   aiMode.value = 'incremental'
   aiVisible.value = true
   try {
@@ -267,54 +314,89 @@ async function openAIGenerate() {
 }
 
 async function handleAIGenerate() {
-  if (!aiProxyName.value || !aiTargetLanguage.value) {
+  if (!aiProxyName.value || aiTargetLanguages.value.length === 0) {
     message.warning('请选择 AI 代理和目标语言')
     return
   }
-  aiGenerating.value = true
-  try {
-    const res = await api.aiGenerateI18n({
-      ai_proxy_name: aiProxyName.value,
-      target_locale: aiTargetLanguage.value,
-      mode: aiMode.value,
+
+  aiVisible.value = false
+  const mode = aiMode.value
+  const proxy = aiProxyName.value
+  const languageNames = { en: '英文', jp: '日文', fr: '法文', de: '德文', ko: '韩文', es: '西班牙文', ru: '俄文', ar: '阿拉伯文', pt: '葡萄牙文', it: '意大利文', tr: '土耳其文', th: '泰文', vi: '越南文', nl: '荷兰文', pl: '波兰文' }
+
+  const tasks = aiTargetLanguages.value.map(async (locale) => {
+    const langName = languageNames[locale] || locale.toUpperCase()
+    const taskId = taskStore.startTask(`AI 翻译 → ${langName}`)
+    taskStore.updateProgress(taskId, { progress: 10, message: '正在翻译...' })
+    try {
+      const res = await api.aiGenerateI18n({
+        ai_proxy_name: proxy,
+        target_locale: locale,
+        mode,
+      })
+      const d = res.data || {}
+      let msg = `翻译完成，${d.translated_count || 0} / ${d.total_count || 0} 条`
+      if (d.skipped_count > 0) msg += `（跳过 ${d.skipped_count} 条已有翻译）`
+      if (d.failed_batches && d.failed_batches.length > 0) msg += `（${d.failed_batches.length} 批次失败）`
+      taskStore.finishTask(taskId, msg)
+    } catch (e) {
+      taskStore.failTask(taskId, { message: `翻译失败`, detail: e.message || '未知错误' })
+    }
     })
-    const failedBatches = res.data?.failed_batches
-    const skipped = res.data?.skipped_count || 0
-    let msg = `AI 翻译完成，共翻译 ${res.data?.translated_count || 0} / ${res.data?.total_count || 0} 条`
-    if (skipped > 0) {
-      msg += `（跳过 ${skipped} 条已有翻译）`
-    }
-    if (failedBatches && failedBatches.length > 0) {
-      msg += `（${failedBatches.length} 个批次失败）`
-    }
-    message.success(msg)
-    aiVisible.value = false
+
+  try {
+    await Promise.allSettled(tasks)
     $table.value?.handleSearch()
   } catch (e) {
-    message.error('AI 翻译失败: ' + (e.message || t('views.network.roadNetworkWorkbench.messages.unknownError')))
-  } finally {
-    aiGenerating.value = false
+    // 不应到达此处，错误已在各 task 内处理
   }
 }
 
-// ── 扫描新字段并添加 ──
+// ── 扫描新字段 ──
 const scanAddVisible = ref(false)
+const scanAddResults = ref([])
+const scanAddTotal = ref(0)
 const scanAddProxyName = ref(null)
 const scanAddLoading = ref(false)
-const scanLoading = ref(false)
+const scanAddScanning = ref(false)
 const scanAddProxyOptions = ref([])
+
+const scanAddColumns = [
+  { title: '文件', key: 'file', width: 200, ellipsis: { tooltip: true } },
+  { title: '行号', key: 'line', width: 60, align: 'center' },
+  { title: '中文文本', key: 'text', width: 240, ellipsis: { tooltip: true } },
+  { title: '检测来源', key: 'source', width: 100, align: 'center' },
+]
 
 async function openScanAdd() {
   scanAddProxyName.value = null
+  scanAddResults.value = []
+  scanAddTotal.value = 0
   scanAddVisible.value = true
   try {
     const res = await api.getAIProxyList({ page: 1, page_size: 9999 })
-    scanAddProxyOptions.value = (res.data || []).map((p) => ({
-      label: `${p.name} (${p.model || 'unknown'})`,
-      value: p.name,
-    }))
+    scanAddProxyOptions.value = (res.data || []).map(p => ({ label: `${p.name} (${p.model || 'unknown'})`, value: p.name }))
   } catch {
     // ignore
+  }
+  // 自动开始扫描
+  await doScan()
+}
+
+async function doScan() {
+  scanAddScanning.value = true
+  try {
+    const res = await api.scanDetectI18n()
+    const items = (res && res.items) || []
+    scanAddResults.value = items
+    scanAddTotal.value = res.total || items.length
+  } catch (e) {
+    // 回退：Vite 端点不可用时使用旧后端扫描
+    try { const fallback = await api.scanFrontendNewI18n(); scanAddResults.value = fallback.data.items || []; scanAddTotal.value = fallback.data.total || 0; }
+    catch (_) { /* ignore */ }
+    message.error('扫描失败: ' + (e.message || '未知错误'))
+  } finally {
+    scanAddScanning.value = false
   }
 }
 
@@ -323,24 +405,41 @@ async function handleScanAdd() {
     message.warning('请选择 AI 代理')
     return
   }
+  if (scanAddTotal.value === 0) {
+    message.info('没有待处理的新字段')
+    return
+  }
   scanAddLoading.value = true
-  scanLoading.value = true
+  // 将前端扫描结果发送给后端做 AI 处理（保留 start/end 用于回写源文件）
+  const items = scanAddResults.value.map(it => ({ file: it.file, line: it.line, text: it.text, start: it.start, end: it.end, source: it.source }))
   try {
-    const res = await api.scanAndAddI18n({
-      ai_proxy_name: scanAddProxyName.value,
-    })
-    const d = res.data || {}
-    let msg = `扫描到 ${d.scanned_count || 0} 条新字段，成功添加 ${d.added_count || 0} 条`
+    const res = await api.processScanI18n({ ai_proxy_name: scanAddProxyName.value, items })
+    const d = (res && res.data) || {}
+    const added = d.added_count || 0
+    const scanned = d.scanned_count || 0
+    const replaced = d.replaced_count || 0
+    let msg = `成功添加 ${added} 条`
+    if (replaced > 0) msg += `，已替换源文件 ${replaced} 处`
     if (d.skipped_count > 0) msg += `，跳过 ${d.skipped_count} 条已有字段`
-    if (d.failed_batches && d.failed_batches.length > 0) msg += `（${d.failed_batches.length} 个批次失败）`
     message.success(msg)
     scanAddVisible.value = false
     $table.value?.handleSearch()
   } catch (e) {
-    message.error('扫描添加失败: ' + (e.message || '未知错误'))
+    message.error('批量处理失败: ' + (e.message || '未知错误'))
   } finally {
     scanAddLoading.value = false
-    scanLoading.value = false
+  }
+}
+
+async function handleBatchDelete() {
+  if (checkedKeys.value.length === 0) return
+  try {
+    await api.batchDeleteI18n({ keys: checkedKeys.value })
+    message.success(`已删除 ${checkedKeys.value.length} 个字段`)
+    checkedKeys.value = []
+    $table.value?.handleSearch()
+  } catch (e) {
+    message.error('批量删除失败: ' + (e.message || '未知错误'))
   }
 }
 
@@ -363,14 +462,43 @@ onMounted(() => {
         <NButton @click="openImport">
           <TheIcon icon="material-symbols:upload" :size="18" class="mr-5" />导入
         </NButton>
-        <NButton type="warning" @click="openScanAdd">
+        <NButton type="warning" @click="openScanAdd" :loading="scanAddScanning && !scanAddVisible">
           <TheIcon icon="material-symbols:search" :size="18" class="mr-5" />扫描新字段并添加
         </NButton>
         <NButton type="info" v-permission="'post/api/v1/i18n/ai-generate'" @click="openAIGenerate">
           <TheIcon icon="material-symbols:auto-awesome" :size="18" class="mr-5" />AI 翻译
         </NButton>
+        <NPopconfirm @positive-click="handleBatchDelete" v-if="checkedKeys.length > 0">
+          <template #trigger>
+            <NButton type="error" secondary>
+              <TheIcon icon="material-symbols:delete-outline" :size="18" class="mr-5" />批量删除 ({{ checkedKeys.length }})
+            </NButton>
+          </template>
+          确定删除选中的 {{ checkedKeys.length }} 个字段？此操作不可撤销。
+        </NPopconfirm>
       </NSpace>
     </template>
+
+    <!-- 翻译统计条 -->
+    <div style="margin-top: 8px; display: flex; align-items: center; gap: 16px; font-size: 13px; color: #666">
+      <span>共 <b style="color: #333">{{ allEntries.length }}</b> 个键值</span>
+      <template v-for="loc in locales" :key="loc">
+        <span v-if="translationStats[loc]" style="display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 0 4px; border-radius: 4px"
+              :style="filterUntranslated === loc ? { background: '#e8f0fe', fontWeight: 600 } : {}"
+              @click="filterUntranslated = filterUntranslated === loc ? null : loc; $table?.handleSearch()">
+          <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block"
+                :style="{ background: translationStats[loc].count === translationStats[loc].total ? '#18a058' : translationStats[loc].count > 0 ? '#2080f0' : '#ddd' }" />
+          <span>{{ { cn: t('lang'), en: 'EN', tr: 'TR', jp: 'JP', fr: 'FR', de: 'DE', ko: 'KO', es: 'ES', ru: 'RU', ar: 'AR', pt: 'PT', it: 'IT', th: 'TH', vi: 'VI', nl: 'NL', pl: 'PL' }[loc] || loc.toUpperCase() }}</span>
+          <b :style="{ color: translationStats[loc].count === translationStats[loc].total ? '#18a058' : translationStats[loc].count > 0 ? '#2080f0' : '#999' }">
+            {{ translationStats[loc].count }}
+          </b>
+        </span>
+      </template>
+    </div>
+    <div v-if="filterUntranslated" style="margin-top: 4px; font-size: 12px; color: #2080f0">
+      筛选「{{ { cn: t('lang'), en: 'English', tr: 'Türkçe', jp: '日本語', fr: 'Français', de: 'Deutsch', ko: '한국어', es: 'Español', ru: 'Русский', ar: 'العربية', pt: 'Português', it: 'Italiano', th: 'ไทย', vi: 'Tiếng Việt', nl: 'Nederlands', pl: 'Polski' }[filterUntranslated] || filterUntranslated }}」未翻译的行
+      <NButton size="tiny" quaternary @click="filterUntranslated = null; $table?.handleSearch()">清除</NButton>
+    </div>
 
     <CrudTable
       ref="$table"
@@ -380,6 +508,7 @@ onMounted(() => {
       row-key="key"
       :scroll-x="1800"
       style="margin-top: 12px"
+      @on-checked="(keys) => checkedKeys = keys"
     />
 
     <!-- 导入弹窗（不变） -->
@@ -414,9 +543,10 @@ onMounted(() => {
       <div style="margin-top: 16px">
         <label style="display: block; margin-bottom: 4px"><b>目标语言</b></label>
         <NSelect
-          v-model:value="aiTargetLanguage"
+          v-model:value="aiTargetLanguages"
           :options="languageOptions"
-          placeholder="请选择要翻译成的目标语言"
+          placeholder="可选择多个语言同时翻译"
+          multiple
           filterable
         />
       </div>
@@ -439,31 +569,46 @@ onMounted(() => {
         <NSpace justify="end">
           <NButton @click="aiVisible = false">取消</NButton>
           <NButton type="primary" :loading="aiGenerating" @click="handleAIGenerate">
-            {{ aiGenerating ? '翻译中...' : '开始翻译' }}
+            开始翻译
           </NButton>
         </NSpace>
       </template>
     </NModal>
 
     <!-- 扫描新字段并添加弹窗 -->
-    <NModal v-model:show="scanAddVisible" preset="card" title="扫描新字段并添加" style="width: 500px">
-      <div>
-        <label style="display: block; margin-bottom: 4px"><b>AI 代理</b></label>
+    <NModal v-model:show="scanAddVisible" preset="card" title="扫描新字段并添加" style="width: 800px">
+      <div style="margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between">
+        <span v-if="scanAddScanning" style="color: #888">正在扫描前端代码...</span>
+        <span v-else style="color: #666">共发现 <b>{{ scanAddTotal }}</b> 条待翻译字段</span>
+        <NButton size="small" @click="doScan" :loading="scanAddScanning">重新扫描</NButton>
+      </div>
+      <NDataTable
+        v-if="scanAddResults.length > 0"
+        :columns="scanAddColumns"
+        :data="scanAddResults"
+        :max-height="320"
+        virtual-scroll
+        size="small"
+        striped
+      />
+      <div v-else-if="!scanAddScanning" style="text-align: center; padding: 40px; color: #999">
+        暂无待翻译字段
+      </div>
+      <div style="margin-top: 12px; display: flex; align-items: center; gap: 12px">
+        <label style="white-space: nowrap; font-weight: 600">AI 代理</label>
         <NSelect
           v-model:value="scanAddProxyName"
           :options="scanAddProxyOptions"
-          placeholder="请选择用于生成 key 的 AI 代理"
+          placeholder="选择 AI 代理后批量生成 key"
           filterable
+          style="flex: 1"
         />
-        <div style="margin-top: 8px; color: #888; font-size: 13px">
-          将扫描前端代码中直接使用的中文文本，用 AI 生成合适的 i18n key 后追加到 cn.json。
-        </div>
       </div>
       <template #footer>
         <NSpace justify="end">
-          <NButton @click="scanAddVisible = false">取消</NButton>
+          <NButton @click="scanAddVisible = false">关闭</NButton>
           <NButton type="primary" :loading="scanAddLoading" @click="handleScanAdd">
-            {{ scanAddLoading ? '扫描中...' : '开始扫描并添加' }}
+            {{ scanAddLoading ? '处理中...' : '批量处理' }}
           </NButton>
         </NSpace>
       </template>

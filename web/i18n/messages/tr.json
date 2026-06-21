@@ -1,300 +1,8 @@
 {
-  "common": {
-    "buttons": {
-      "update": "Düzenle"
-    },
-    "text": {
-      "update_success": "Düzenleme başarılı"
-    },
-    "label_cn_2bbd2bb7": "İzinsiz",
-    "label_cn_38cf16f2": "Tamam",
-    "label_cn_607e7a4f": "Görüntüle",
-    "label_cn_66ab5e9f": "Ekle",
-    "label_cn_6abd7b8c": "Kaynak veya arayüz mevcut değil",
-    "label_cn_8ce7527b": "İstek parametre hatası",
-    "label_cn_a6161cd2": "Oturum süresi doldu",
-    "label_cn_cd662c4a": "Ağ biraz tembellik yapıyor~",
-    "label_cn_d14d267e": "Toplam ${itemCount} kayıt",
-    "label_cn_eb52c0df": "Sunucu hatası",
-    "label_cn_fad5222c": "Tamamlandı",
-    "label_cn_fb852fc6": "Devam ediyor",
-    "label_code_cn_b809f04d": "【${code}】: Bilinmeyen hata!",
-    "label_network_error_msg_cn_beff7894": "${NETWORK_ERROR_MSG}, tekrar denemek için tıklayın",
-    "message_cn_3bb47b67": "Düzenleme başarılı",
-    "placeholder_cn_d03d66bc": "Simge adını girin",
-    "title_cn_7de2898d": "Giriş sayfası"
-  },
-  "header": {
-    "label_logout": "Çıkış yap",
-    "label_logout_dialog_title": "Uyarı",
-    "label_profile": "Profil",
-    "text_logout_confirm": "Çıkış yapmak istediğinize emin misiniz?",
-    "text_logout_success": "Çıkış yapıldı"
-  },
-  "layout": {
-    "label_cn_649d90ab": "Sağdakini kapat",
-    "label_cn_64ca9bab": "Yeniden yükle",
-    "label_cn_6816da19": "Diğerlerini kapat",
-    "label_cn_b15d9127": "Kapat",
-    "label_cn_e9290eaa": "Soldakini kapat"
-  },
   "views": {
-    "errors": {
-      "label_error": "Hata sayfası",
-      "text_back_to_home": "Ana sayfaya dön"
-    },
-    "login": {
-      "message_input_username_password": "Kullanıcı adı ve şifre girin",
-      "message_login_success": "Giriş başarılı",
-      "message_verifying": "Doğrulanıyor...",
-      "text_login": "Giriş yap"
-    },
     "network": {
-      "region": {
-        "breadcrumb": {
-          "root": "Kök"
-        },
-        "buttons": {
-          "addChild": "Alt öğe ekle",
-          "cancel": "İptal",
-          "cancelProxy": "Vekili iptal et",
-          "clear": "Temizle",
-          "clearAll": "Tüm verileri temizle",
-          "create": "Oluştur",
-          "edit": "Düzenle",
-          "fillGeonames": "Çince adları doldur",
-          "hideDetail": "Detayı gizle",
-          "import": "İçe aktar",
-          "importIso3166": "ISO 3166 içe aktar",
-          "save": "Kaydet",
-          "setProxy": "Vekil ayarla",
-          "showDetail": "Detayı görüntüle"
-        },
-        "detail": {
-          "fields": {
-            "area": "Alan",
-            "capital": "Başkent",
-            "code": "Kod",
-            "isoAlpha2": "ISO Alpha-2",
-            "isoAlpha3": "ISO Alpha-3",
-            "isoNumeric": "ISO Numeric",
-            "latitude": "Enlem",
-            "localName": "Yerel Ad",
-            "longitude": "Boylam",
-            "name": "Ad",
-            "population": "Nüfus",
-            "timezone": "Saat Dilimi",
-            "type": "Tür"
-          },
-          "export": "Dışa Aktar",
-          "exportPlaceholder": "Dışa aktarma seviyesi seçin",
-          "title": "Detay — {name}"
-        },
-        "detailLabels": {
-          "area": "Alan",
-          "capital": "Başkent",
-          "code": "Kod",
-          "isoAlpha2": "ISO Alpha-2",
-          "isoAlpha3": "ISO Alpha-3",
-          "isoNumeric": "ISO Numeric",
-          "latitude": "Enlem",
-          "localName": "Yerel Ad",
-          "longitude": "Boylam",
-          "name": "Ad",
-          "population": "Nüfus",
-          "timezone": "Saat Dilimi",
-          "type": "Tür"
-        },
-        "exportLevelOptions": {
-          "all": "Tümü (ülkeler dahil)",
-          "stateAndCity": "Bölge + Şehir",
-          "stateOnly": "Sadece Bölge"
-        },
-        "formLabels": {
-          "area": "Alan (km²)",
-          "capital": "Başkent",
-          "code": "Kod",
-          "isoAlpha2": "ISO Alpha-2",
-          "isoAlpha3": "ISO Alpha-3",
-          "isoNumeric": "ISO Numeric",
-          "latitude": "Enlem",
-          "localName": "Yerel Ad",
-          "longitude": "Boylam",
-          "name": "Ad",
-          "parentId": "Üst ID",
-          "population": "Nüfus",
-          "timezone": "Saat Dilimi",
-          "type": "Tür"
-        },
-        "formPlaceholders": {
-          "capital": "Örn: Pekin",
-          "code": "Örn: CN",
-          "isoAlpha2": "CN",
-          "isoAlpha3": "CHN",
-          "isoNumeric": "156",
-          "localName": "Örn: China",
-          "name": "Örn: Çin",
-          "timezone": "Asia/Shanghai"
-        },
-        "formRules": {
-          "nameRequired": "Ad girin"
-        },
-        "levelLabel": {
-          "city": "Şehir",
-          "country": "Ülke",
-          "state": "Eyalet"
-        },
-        "list": {
-          "confirmClear": "Tüm veriler silinsin mi? Bu işlem geri alınamaz.",
-          "confirmDelete": "\"{name}\" silinsin mi?",
-          "confirmDeleteWithChildren": "\"{name}\" ve tüm alt öğeleri silinsin mi?",
-          "count": "Toplam {count} kayıt",
-          "currentLevel": "Mevcut seviye: {level}",
-          "delete": "Sil",
-          "hasChildren": "Alt öğeler var",
-          "loading": "Yükleniyor...",
-          "noData": "Veri yok"
-        },
-        "messages": {
-          "clearFail": "Temizleme başarısız",
-          "clearSuccess": "Temizlendi: {count} kayıt",
-          "createSuccess": "Ekleme başarılı",
-          "deleteFail": "Silme başarısız",
-          "deleteSuccess": "Silme başarılı",
-          "exportFail": "Dışa aktarma başarısız",
-          "exportSuccess": "Dışa aktarma başarılı",
-          "geonamesCacheSuccess": "Önbellekten {count} bölgenin Çince adı dolduruldu",
-          "geonamesDownloadFail": "İndirme başarısız. Lütfen ağ bağlantınızı kontrol edip tekrar deneyin.",
-          "geonamesFillComplete": "Çince ad doldurma tamamlandı",
-          "geonamesNoData": "Doldurulacak veri yok. Lütfen önce ülke verilerini içe aktarın.",
-          "geonamesRetryHint": "İndirme başarısız. Genel ilerleme panelinde yeniden deneyebilirsiniz.",
-          "geonamesTaskName": "Bölgelerin Çince adlarını doldurma",
-          "geonamesTimeout": "Doldurma zaman aşımı",
-          "geonamesTimeoutDetail": "Doldurma işlemi 30 dakikayı aştı, otomatik olarak iptal edildi.",
-          "importFail": "İçe aktarma başarısız",
-          "importNoData": "Yeni veri yok",
-          "importSuccess": "İçe aktarma tamamlandı: {detail}",
-          "saveFail": "Kaydetme başarısız",
-          "updateSuccess": "Güncelleme başarılı"
-        },
-        "checking": "Kontrol ediliyor...",
-        "modalTitle": "Bölge Bilgisi",
-        "proxyPlaceholder": "Proxy adresini girin...",
-        "searchPlaceholder": "{level} Çince/İngilizce ad veya kod ara...",
-        "taskName": "Bölgelerin Çince adlarını doldurma",
-        "title": "Küresel Ülke ve Bölge Yönetimi",
-        "typeOptions": [
-          {
-            "label": "国家",
-            "value": "COUNTRY"
-          },
-          {
-            "label": "行政区",
-            "value": "STATE"
-          },
-          {
-            "label": "城市",
-            "value": "CITY"
-          }
-        ],
-        "country_plus": "Ülke +{0}",
-        "country_update": "Ülke güncelleme {0}",
-        "administrative_plus": "İdari bölge +{0}",
-        "city_plus": "Şehir +{0}"
-      },
-      "regionBoundary": {
-        "breadcrumb": {
-          "root": "Kök"
-        },
-        "buttons": {
-          "clear": "Temizle",
-          "delete": "Sil",
-          "export": "Dışa Aktar",
-          "gadmDownload": "GADM'dan İndir",
-          "selectFile": "Dosya Seç",
-          "upload": "Dosya Yükle"
-        },
-        "fileColumns": {
-          "actions": "İşlemler",
-          "fileName": "Dosya adı",
-          "fileSize": "Boyut",
-          "fileType": "Tür",
-          "status": "Durum",
-          "time": "Zaman"
-        },
-        "levelLabel": {
-          "city": "Şehir",
-          "country": "Ülke",
-          "state": "Bölge"
-        },
-        "list": {
-          "loading": "Yükleniyor...",
-          "noData": "Veri yok, lütfen önce içe aktarın"
-        },
-        "messages": {
-          "clearFail": "Temizleme başarısız",
-          "clearSuccess": "{count} dosya temizlendi",
-          "deleteFail": "Silme başarısız",
-          "deleteSuccess": "Silme başarılı",
-          "downloadFailTip": "İndirme başarısız, sağ alt panelden tekrar deneyin",
-          "downloadSuccess": "Sınır dosyası indirme başarılı",
-          "exportFail": "Dışa aktarma başarısız",
-          "uploadSuccess": "Yükleme başarılı"
-        },
-        "panel": {
-          "boundaryFiles": "Sınır dosyaları — {name}",
-          "currentLevel": "Mevcut seviye: {level}",
-          "downloadStatus": "İndirme durumu:",
-          "downloaded": "İndirildi",
-          "fileCount": "Toplam {count} dosya",
-          "noFiles": "Sınır dosyası yok, lütfen GADM'den indirin veya yükleyin",
-          "notDownloaded": "İndirilmedi",
-          "selectHint": "← Sınır dosyalarını görüntülemek ve indirmek için bölge seçin",
-          "selectRegion": "Lütfen bölge seçin"
-        },
-        "statusMap": {
-          "DOWNLOADING": "İndiriliyor",
-          "FAILED": "Başarısız",
-          "PENDING": "Bekleyen",
-          "SUCCESS": "İndirildi"
-        },
-        "task": {
-          "complete": "Sınır indirme tamamlandı",
-          "downloadName": "Sınır indirme: {name}",
-          "downloading": "İndiriliyor...",
-          "fail": "Sınır indirme başarısız"
-        },
-        "uploadModal": {
-          "supportedFormats": "GeoJSON, KML, SHP formatları desteklenir",
-          "title": "Sınır dosyası yükle"
-        },
-        "confirmClear": "«{name}» için tüm sınır dosyalarını temizlemek istediğinize emin misiniz?",
-        "searchPlaceholder": "{level} için Çince/İngilizce ad veya kod ara...",
-        "title": "İdari Bölge Sınır Dosyaları Yönetimi"
-      },
       "roadNetwork": {
-        "breadcrumb": {
-          "root": "Kök"
-        },
-        "buttons": {
-          "clear": "Temizle",
-          "delete": "Sil",
-          "export": "Dışa Aktar",
-          "osmDownload": "OSM'den İndir",
-          "selectFile": "Dosya Seç",
-          "upload": "Dosya Yükle"
-        },
-        "downloadModes": {
-          "byBoundary": "Sınır dosyasına göre indir",
-          "byName": "Yer adına göre indir"
-        },
         "fileColumns": {
-          "actions": "İşlemler",
-          "edgeCount": "Kenar Sayısı",
-          "fileName": "Dosya Adı",
-          "fileSize": "Boyut",
-          "fileType": "Biçim",
-          "mode": "Mod",
           "nodeCount": "Düğüm Sayısı",
           "status": "Durum",
           "time": "Zaman"
@@ -632,14 +340,27 @@
         "completed_summary": "Tamamlandı: {0} başarılı, {1} başarısız",
         "process_complete_summary": "İşlem tamamlandı: {0} başarılı, {1} başarısız",
         "success_process_images": "{0} görüntü başarıyla işlendi",
-        "success_process_images_detail": "{0} görüntü başarıyla işlendi"
+        "success_process_images_detail": "{0} görüntü başarıyla işlendi",
+        "upload_failed": "Yükleme başarısız:",
+        "update_failed": "Güncelleme başarısız:",
+        "ai_processing_failed": "AI işleme başarısız:",
+        "preview_failed": "Önizleme başarısız:",
+        "material_list": "Malzeme listesi",
+        "preview_workspace": "Önizleme çalışma alanı",
+        "start_processing": "İşlemeyi başlat",
+        "drag_slider_preview_rotation": "Kaydırıcıyı sürükleyerek döndürme efektini canlı önizle",
+        "refresh_preview": "Önizlemeyi yenile",
+        "drag_selection_auto_sync_values": "Sol tuvalde seçim sürüklendiğinde değerleri otomatik senkronize et",
+        "preview_effect": "Önizleme efekti"
       },
       "road-network-workbench": {
         "base_map_label": ", label: `Taban harita — ${bl.label}`, type:",
         "base_map": "Taban harita — {0}",
         "road_network_label": ", label: `Yol ağı — ${nw?.file_name ||",
         "road_network": "Yol ağı — {0}",
-        "map_export": "Harita dışa aktar_{0}"
+        "map_export": "Harita dışa aktar_{0}",
+        "toggle_map_controls": "Harita kontrollerini göster/gizle",
+        "tip_road_network_layer_tiles_same_origin_export_best": "İpucu: Yol ağı katmanı aynı kaynaktan gelen döşemelerdir, dışa aktarma en iyi sonucu verir. Temel harita çapraz kaynak nedeniyle tamamen yakalanamayabilir."
       }
     },
     "pixel": {
@@ -695,12 +416,25 @@
         "medium": ", Orta:",
         "high": ", Yüksek:",
         "sync_complete": "Senkronizasyon tamamlandı: {0} yeni, {1} güncellenmiş, API'de toplam {2}",
-        "cleared_data": "{0} veri temizlendi"
+        "cleared_data": "{0} veri temizlendi",
+        "pixel_account": "Piksel hesabı:",
+        "time_period": "Zaman aralığı:",
+        "sync_data": "Verileri senkronize et",
+        "clear_data": "Verileri temizle"
       },
       "track": {
         "type": "Tür {0}",
         "sync_complete": "Senkronizasyon tamamlandı: {0} yeni, {1} güncellenmiş, API'de toplam {2}",
-        "cleared_data": "{0} veri temizlendi"
+        "cleared_data": "{0} veri temizlendi",
+        "pixel_account": "Piksel hesabı:",
+        "vehicle_model": "Araç modeli:",
+        "vehicle": "Araç:",
+        "time_period": "Zaman aralığı:",
+        "sync_data": "Verileri senkronize et",
+        "clear_data": "Verileri temizle"
+      },
+      "account": {
+        "new_account": "Yeni hesap"
       }
     },
     "profile": {
@@ -753,7 +487,8 @@
       "title_cn_735ac607": "Beceri Yönetimi",
       "title_cn_8c339e83": "Yeni Beceri",
       "no_match_skill": "Eşleşen beceri yok",
-      "skill_empty_create": "Henüz beceri yok, lütfen yeni oluşturun"
+      "skill_empty_create": "Henüz beceri yok, lütfen yeni oluşturun",
+      "search_skill": "$  || 'Beceri ara...'"
     },
     "statistic-center": {
       "label_ai_cn_7a58217b": "AI verileri analiz ediyor ve rapor oluşturuyor...",
@@ -1636,10 +1371,41 @@
         "connection_success_tables_count": "Bağlantı başarılı, toplam {0} tablo",
         "imported_tables_count": "{0} tablo başarıyla içe aktarıldı",
         "parsed_tables_count": "Ayrıştırma başarılı, toplam {0} tablo",
-        "imported_road_network_statistics_count": "{0} yol ağı istatistiği başarıyla içe aktarıldı"
+        "imported_road_network_statistics_count": "{0} yol ağı istatistiği başarıyla içe aktarıldı",
+        "opencv_processing": "OpenCV işleme ({0})",
+        "opencv_processing_complete": "OpenCV işleme tamamlandı: {0} başarılı",
+        "ai_processing_complete": "AI işleme tamamlandı: {0} başarılı",
+        "ocr_extraction_complete": "OCR çıkarma tamamlandı: {0} başarılı",
+        "exported_count": "{0} veri dışa aktarıldı",
+        "delete": "Sil( )",
+        "selected_slash": "Seçili   /",
+        "export": "Dışa aktar( )",
+        "upload_file_to_directory": "Dosyayı dizine yükle",
+        "process_count_images": "İşle (   görsel)",
+        "ai_optimize_count_images": "AI optimizasyon (   görsel)",
+        "select_all_with_selected": "Tümünü seç (Seçili   /  )",
+        "import": "İçe aktar ( )",
+        "copy_selected_files_to_another_workspace": "Seçili    dosyayı başka bir çalışma alanına kopyala.",
+        "tilde_rows": "~   satır",
+        "uploaded_count": "Yüklendi: {0}",
+        "uploaded_file": "{{ sqliteFileName ? `Yüklendi: ${sqliteFileName}` :   }}",
+        "copy_database_import_to_target": "Veritabanı içe aktarma verilerinin    öğesini hedef çalışma alanına kopyala",
+        "edit_workspace": "wsEditing ? 'Çalışma alanını düzenle' :"
       },
       "report": {
-        "export_failed": "{0} dışa aktarma başarısız"
+        "export_failed": "{0} dışa aktarma başarısız",
+        "report": "Rapor ( )"
+      },
+      "doc-workbench": {
+        "slash_items": "/    öğe",
+        "table": "📊 Tablo",
+        "analysis": "📈 Analiz",
+        "document": "📄 Belge"
+      },
+      "excel-data": {
+        "original_table": "Orijinal tablo ( )",
+        "decomposed_analysis_table": "Ayrıştırma Analiz Tablosu ( )",
+        "edit_workspace": "wsEditing ? 'Çalışma Alanını Düzenle' :"
       }
     },
     "system": {
@@ -1790,7 +1556,32 @@
       "title_cn_e5846bb9": "Süper kullanıcı",
       "title_cn_ec49329b": "İstek yöntemi",
       "title_cn_f39bf763": "Bileşen yolu",
-      "title_cn_f53b5122": "Rol listesi"
+      "title_cn_f53b5122": "Rol listesi",
+      "api": {
+        "new_api": "Yeni API",
+        "refresh_api": "API'yi Yenile"
+      },
+      "dept": {
+        "new_dept": "Yeni Departman"
+      },
+      "download-config": {
+        "test_connectivity": "Bağlantıyı Test Et",
+        "already_modified": "Değiştirildi",
+        "zero_means_no_retry": "0 = Tekrar Deneme",
+        "seconds_range_60_to_3600": "60-3600 saniye",
+        "save_config": "Yapılandırmayı Kaydet"
+      },
+      "menu": {
+        "selected_path": "Seçilen yol:",
+        "new_root_menu": "Yeni Kök Menü",
+        "scan_views": "Görünümleri Tara"
+      },
+      "role": {
+        "new_role": "Yeni Rol"
+      },
+      "user": {
+        "new_user": "Yeni Kullanıcı"
+      }
     },
     "tool": {
       "vehicle": {
@@ -1858,6 +1649,9 @@
       "text_hello": "Merhaba, {username}",
       "text_no_pages": "Kullanılabilir işlev sayfası yok",
       "text_welcome": "Yine enerjik bir gün!"
+    },
+    "top-menu": {
+      "top_level_menu": "Birinci Seviye Menü"
     }
   },
   "app_name": "VansRSA",
@@ -1866,11 +1660,23 @@
     "common": {
       "loading_empty_wrapper": {
         "click_retry": "{0}, yeniden dene"
+      },
+      "task_progress_panel": {
+        "background_tasks": "Arka Plan Görevleri ( )",
+        "clear_completed": "Tamamlananları Temizle",
+        "collapse": "Daralt",
+        "retry": "Tekrar Dene",
+        "background_tasks_with_count": "Arka Plan Görevleri ({{ tasks.length }})"
       }
     },
     "table": {
       "crud_table": {
         "total_count": "Toplam {0}"
+      }
+    },
+    "query-bar": {
+      "query_bar": {
+        "search": "Ara"
       }
     }
   },
