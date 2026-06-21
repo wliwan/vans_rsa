@@ -49,5 +49,8 @@ v1_router.include_router(vehicle_router, prefix="/vehicle", dependencies=[Depend
 v1_router.include_router(report_router, prefix="/report", dependencies=[DependPermission])
 v1_router.include_router(system_config_router, prefix="/system-config", dependencies=[DependPermission])
 v1_router.include_router(i18n_router, prefix="/i18n", dependencies=[DependPermission])
+# v1_router.include_router(announcement_router, prefix="/announcement", dependencies=[DependPermission])
+# v1_router.include_router(article_router, prefix="//content/article", dependencies=[DependPermission])
+# v1_router.include_router(article_router, prefix="/content/article", dependencies=[DependPermission])
 
 

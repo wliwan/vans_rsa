@@ -95,6 +95,15 @@ const checkedDocumentIds = ref([])
 const checkedDatabaseDocIds = ref([])
 const checkedStaticFileIds = ref([])
 
+// 分区数据（作为 computed，使 label 能正确调用 t()）
+const dataSourceSections = computed(() => [
+  { key: 'sheets', label: t('views.statistic-center.label_cn_642e5368'), icon: 'material-symbols:table', color: 'blue', list: allSheets.value },
+  { key: 'analyses', label: t('views.statistic-center.label_cn_d93cc1b1'), icon: 'material-symbols:analytics', color: 'green', list: allAnalyses.value },
+  { key: 'documents', label: t('views.statistic-center.label_cn_c35ee691'), icon: 'material-symbols:description', color: 'purple', list: allDocuments.value },
+  { key: 'database', label: t('views.statistic-center.label_cn_5bac3fe5'), icon: 'material-symbols:database', color: 'orange', list: allDatabaseDocs.value },
+  { key: 'staticFiles', label: t('views.statistic-center.label_cn_28f6e7a6'), icon: 'material-symbols:folder', color: 'teal', list: allStaticFiles.value },
+])
+
 // 分区展开状态
 const expandedSections = ref({
   sheets: false, analyses: false, documents: false, database: false, staticFiles: false,
@@ -514,6 +523,16 @@ onBeforeUnmount(() => destroyCodeMirror())
       class="flex-1 min-w-0 overflow-hidden flex flex-col"
       @click="onContentClick"
     >
+      <!-- 侧边栏收起时的边栏拉手 -->
+      <div
+        v-if="!panelVisible"
+        class="sidebar-pull-handle"
+        @click.stop="panelVisible = true"
+        :title="$t('views.statistic-center.title_cn_c56cb26a')"
+      >
+        <TheIcon icon="material-symbols:chevron-right" :size="18" />
+      </div>
+
       <!-- 操作栏（固定顶部） -->
       <div
         v-if="selectedReport"
@@ -521,9 +540,6 @@ onBeforeUnmount(() => destroyCodeMirror())
         style="flex-shrink: 0"
       >
         <div class="flex items-center gap-2">
-          <NButton v-if="!panelVisible" size="tiny" quaternary @click.stop="panelVisible = true">
-            <TheIcon icon="material-symbols:menu" :size="18" />
-          </NButton>
           <h2 class="text-lg font-bold m-0">{{ selectedReport.name }}</h2>
         </div>
         <NSpace>
@@ -532,16 +548,16 @@ onBeforeUnmount(() => destroyCodeMirror())
             <template #unchecked>{{ t('views.statistic-center.label_cn_645dbc55') }}</template>
           </NSwitch>
           <NButton v-if="viewMode === 'edit'" size="small" @click="saveEdit">
-            <TheIcon icon="material-symbols:save" :size="16" class="mr-4" />保存
+            <TheIcon icon="material-symbols:save" :size="16" class="mr-4" />{{ t('views.statistic-center.label_cn_be5fbbe3') }}
           </NButton>
           <NButton size="small" @click="openClone">
-            <TheIcon icon="material-symbols:content-copy" :size="16" class="mr-4" />克隆
+            <TheIcon icon="material-symbols:content-copy" :size="16" class="mr-4" />{{ t('views.statistic-center.label_cn_23b45f1a') }}
           </NButton>
           <NButton size="small" @click="exportReport('html')">
             <TheIcon icon="material-symbols:code" :size="16" class="mr-4" />HTML
           </NButton>
           <NButton size="small" @click="printReport">
-            <TheIcon icon="material-symbols:print" :size="16" class="mr-4" />打印
+            <TheIcon icon="material-symbols:print" :size="16" class="mr-4" />{{ t('views.statistic-center.label_cn_7e0362d9') }}
           </NButton>
           <NButton size="small" @click="exportReport('docx')">
             <TheIcon icon="material-symbols:article" :size="16" class="mr-4" />Word
@@ -549,7 +565,7 @@ onBeforeUnmount(() => destroyCodeMirror())
           <NPopconfirm @positive-click="deleteReport">
             <template #trigger>
               <NButton size="small" type="error">
-                <TheIcon icon="material-symbols:delete-outline" :size="16" class="mr-4" />删除
+                <TheIcon icon="material-symbols:delete-outline" :size="16" class="mr-4" />{{ t('views.statistic-center.label_cn_2f4aaddd') }}
               </NButton>
             </template>
           </NPopconfirm>
@@ -559,7 +575,7 @@ onBeforeUnmount(() => destroyCodeMirror())
       <!-- 内容区 -->
       <div style="flex: 1; min-height: 0; position: relative; contain: layout style">
         <div v-if="!selectedReport" class="flex items-center justify-center h-full text-gray-400 text-base">
-          请选择左侧报告
+          {{ t('views.statistic-center.label_cn_b5f0a318') }}
         </div>
         <template v-else>
           <div v-show="viewMode === 'edit'" ref="cmContainer" style="position: absolute; inset: 0"></div>
@@ -602,17 +618,11 @@ onBeforeUnmount(() => destroyCodeMirror())
           <NSpin size="small" /><span class="ml-2 text-sm text-gray-400">{{ t('views.statistic-center.label_cn_6f6b9b2f') }}</span>
         </div>
         <div v-else-if="totalDataSourceCount === 0" class="text-sm text-gray-400 text-center py-6">
-          该工作区暂无数据源，请先在数据工作台中上传数据
+          {{ t('views.statistic-center.label_cn_4e86f1c9') }}
         </div>
         <div v-else class="ds-sections">
           <!-- 动态渲染 5 个分区 -->
-          <template v-for="sec in [
-            { key: 'sheets', label: '$t(\'views.statistic-center.label_cn_642e5368\')', icon: 'material-symbols:table', color: 'blue', list: allSheets },
-            { key: 'analyses', label: '$t(\'views.statistic-center.label_cn_d93cc1b1表格\')', icon: 'material-symbols:analytics', color: 'green', list: allAnalyses },
-            { key: 'documents', label: '$t(\'views.statistic-center.label_cn_c35ee691\')', icon: 'material-symbols:description', color: 'purple', list: allDocuments },
-            { key: 'database', label: '$t(\'views.statistic-center.label_cn_5bac3fe5\')', icon: 'material-symbols:database', color: 'orange', list: allDatabaseDocs },
-            { key: 'staticFiles', label: '$t(\'views.statistic-center.label_cn_28f6e7a6\')', icon: 'material-symbols:folder', color: 'teal', list: allStaticFiles },
-          ]" :key="sec.key">
+          <template v-for="sec in dataSourceSections" :key="sec.key">
             <div
               v-if="sec.list.length"
               class="ds-section"
@@ -635,7 +645,7 @@ onBeforeUnmount(() => destroyCodeMirror())
                     @click.stop="toggleSectionAll(sec.key)"
                     :type="sectionStats[sec.key]?.all ? 'primary' : 'default'"
                   >
-                    {{ sectionStats[sec.key]?.all ? t('views.statistic-center.label_cn_625fb26b') : '$t(\'views.statistic-center.label_cn_66eeacd9\')' }}
+                    {{ sectionStats[sec.key]?.all ? t('views.statistic-center.label_cn_625fb26b') : t('views.statistic-center.label_cn_66eeacd9') }}
                   </NButton>
                   <!-- 折叠箭头 -->
                   <div class="ds-section__arrow" :class="{ 'ds-section__arrow--open': expandedSections[sec.key] }">
@@ -683,10 +693,10 @@ onBeforeUnmount(() => destroyCodeMirror())
             </div>
           </div>
           <div class="preview-stats__detail">
-            <span v-if="previewData.source_counts?.sheets">📊 表格 {{ previewData.source_counts.sheets }} </span>
-            <span v-if="previewData.source_counts?.analyses">📈 分析 {{ previewData.source_counts.analyses }} </span>
-            <span v-if="previewData.source_counts?.documents">📄 文档 {{ previewData.source_counts.documents }} </span>
-            <span v-if="previewData.source_counts?.static_files">📁 {{ t('views.statistic-center.label_cn_2a0c4740') }} {{ previewData.source_counts.static_files }} </span>
+            <span v-if="previewData.source_counts?.sheets">{{ t('views.statistic-center.label_cn_c2f57bd6', { count: previewData.source_counts.sheets }) }} </span>
+            <span v-if="previewData.source_counts?.analyses">{{ t('views.statistic-center.label_cn_809deb12', { count: previewData.source_counts.analyses }) }} </span>
+            <span v-if="previewData.source_counts?.documents">{{ t('views.statistic-center.label_cn_b725b10f', { count: previewData.source_counts.documents }) }} </span>
+            <span v-if="previewData.source_counts?.static_files">{{ t('views.statistic-center.label_cn_5d52e8a7', { count: previewData.source_counts.static_files }) }} </span>
           </div>
         </div>
       </NFormItem>
@@ -731,13 +741,13 @@ onBeforeUnmount(() => destroyCodeMirror())
           :loading="previewLoading"
           :disabled="dataSourcesLoading"
         >
-          <TheIcon icon="material-symbols:visibility" :size="18" class="mr-1" />预览统计
+          <TheIcon icon="material-symbols:visibility" :size="18" class="mr-1" />{{ t('views.statistic-center.label_cn_2dc47e6a') }}
         </NButton>
         <div v-else />
         <NSpace>
           <NButton size="large" @click="showGenerateModal = false">{{ t('views.statistic-center.label_cn_625fb26b') }}</NButton>
           <NButton type="primary" size="large" @click="handleGenerate" :disabled="dataSourcesLoading">
-            <TheIcon icon="material-symbols:smart-toy" :size="18" class="mr-1" />开始生成
+            <TheIcon icon="material-symbols:smart-toy" :size="18" class="mr-1" />{{ t('views.statistic-center.label_cn_dac38a8b') }}
           </NButton>
         </NSpace>
       </NSpace>
@@ -991,6 +1001,31 @@ onBeforeUnmount(() => destroyCodeMirror())
 /* 弹窗表单间距收紧 */
 .generate-form :deep(.n-form-item) {
   margin-bottom: 16px;
+}
+
+/* 侧边栏收起时的边栏拉手（左侧边缘竖条） */
+.sidebar-pull-handle {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  background: var(--n-color-embedded);
+  border: 1px solid var(--n-border-color);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  color: var(--n-text-color-3);
+  transition: width 0.15s, color 0.15s;
+}
+.sidebar-pull-handle:hover {
+  width: 28px;
+  color: var(--primary-color);
 }
 </style>
 

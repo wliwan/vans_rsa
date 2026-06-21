@@ -24,3 +24,7 @@ data/db.sqlite3-wal
 !**/.codewhale/constitution.json
 .deepseek/
 *.pickle
+
+# dev logs
+logs/
+dist_package/

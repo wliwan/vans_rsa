@@ -1,14 +1,14 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import i18n from '~/i18n'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, reactive } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, reactive, watch } from 'vue'
 import { useBreakpoints } from '@vueuse/core'
 import {
 
 
 
-  NButton, NInput, NInputNumber, NLayout, NLayoutSider, NLayoutContent,
-  NList, NListItem, NModal, NSpace, NSelect, NPopconfirm,
+  NButton, NInput, NInputNumber,
+  NModal, NSpace, NSelect, NPopconfirm,
   NForm, NFormItem, NTag, NUpload, NUploadDragger, NText,
   NCheckbox, NSpin, NTabs, NTabPane, NEmpty, NBreadcrumb, NBreadcrumbItem,
   NSlider, useMessage,
@@ -62,6 +62,11 @@ function runWithProgress(taskTitle, apiCall, onSuccessMsg, onSuccess = null) {
 // 移动端适配
 const bp = reactive(useBreakpoints({ sm: 666, md: 991 }))
 const isMobileCollapsed = computed(() => bp.isSmaller('sm') || bp.between('sm', 'md'))
+// 侧边栏显隐：默认展开，移动端自动收起，用户可手动切换
+const sidebarVisible = ref(true)
+watch(isMobileCollapsed, (mobile) => {
+  if (mobile) sidebarVisible.value = false
+})
 
 function formatFileSize(bytes) {
   if (bytes == null || bytes === 0) return ''
@@ -81,6 +86,14 @@ const showWsModal = ref(false)
 const wsModalForm = ref({ name: '', description: '', user_ids: [] })
 const wsEditing = ref(false)
 const loading = ref(false)
+
+// ── 侧边栏搜索 ──
+const searchQuery = ref('')
+const filteredWorkspaces = computed(() => {
+  if (!searchQuery.value) return workspaces.value
+  const q = searchQuery.value.toLowerCase()
+  return workspaces.value.filter((w) => w.name.toLowerCase().includes(q))
+})
 
 // ── 数据源 Tab ──
 const activeDataSource = ref('excel')
@@ -1014,41 +1027,82 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <NLayout has-sider style="height: calc(100vh - 120px)">
+  <div class="flex" style="height: calc(100vh - 120px)">
     <!-- ── 左侧工作区列表 ── -->
-    <NLayoutSider
-      bordered width="320" :collapsed-width="0"
-      :collapsed="isMobileCollapsed" show-trigger="arrow-circle"
-      :native-scrollbar="false" content-style="padding: 12px"
+    <div
+      v-show="sidebarVisible"
+      class="data-sidebar"
+      style="width: 300px; flex-shrink: 0"
     >
-      <NSpace vertical>
-        <NButton type="primary" block @click="openCreateWs">
-          <TheIcon icon="material-symbols:add" :size="20" class="mr-2" />{{ t('views.statistic-center.label_cn_9cb11943') }}
+      <div class="sidebar-header">
+        <div class="flex items-center justify-between mb-3">
+          <span class="header-label">{{ $t('views.statistic-center.title_cn_aad781ad') }}</span>
+          <div class="flex items-center gap-2">
+            <span class="header-count">{{ workspaces.length }}</span>
+            <NButton size="tiny" quaternary @click="sidebarVisible = false" class="sidebar-toggle-btn">
+              <TheIcon icon="material-symbols:chevron-left" :size="16" />
+            </NButton>
+          </div>
+        </div>
+        <NInput
+          v-model:value="searchQuery"
+          :placeholder="t('views.statistic-center.placeholder_cn_a466ba6b')"
+          clearable
+          size="small"
+          class="search-box"
+        >
+          <template #prefix>
+            <TheIcon icon="material-symbols:search" :size="16" class="text-gray-400" />
+          </template>
+        </NInput>
+        <NButton type="primary" block @click="openCreateWs" class="create-btn" size="large">
+          <TheIcon icon="material-symbols:add" :size="20" class="mr-1" />{{ t('views.statistic-center.label_cn_9cb11943') }}
         </NButton>
-        <NList hoverable clickable :show-divider="false">
-          <NListItem
-            v-for="(ws, idx) in workspaces" :key="ws.id"
-            :class="{ 'bg-blue-50 dark:bg-blue-900': selectedWs?.id === ws.id }"
-            style="border-radius: 8px; margin-bottom: 4px; cursor: pointer"
-            @click="selectWorkspace(ws)"
-          >
-            <div class="flex items-center gap-3 flex-1 min-w-0">
-              <div class="ws-avatar" :style="{ background: wsAccent(idx) }">
-                {{ ws.name.charAt(0) }}
-              </div>
-              <div class="flex flex-col flex-1 min-w-0">
-                <span class="font-medium text-base truncate">{{ ws.name }}</span>
-                <span class="text-gray-400 text-sm">{{ ws.updated_at }}</span>
-              </div>
+      </div>
+
+      <div class="card-list">
+        <div
+          v-for="(ws, idx) in filteredWorkspaces"
+          :key="ws.id"
+          class="sidebar-card"
+          :class="{ 'sidebar-card--active': selectedWs?.id === ws.id }"
+          @click="selectWorkspace(ws)"
+        >
+          <div class="card-avatar" :style="{ background: wsAccent(idx) }">
+            {{ ws.name.charAt(0) }}
+          </div>
+          <div class="card-body">
+            <div class="card-title">{{ ws.name }}</div>
+            <div class="card-meta">
+              <span>{{ ws.updated_at?.slice(0, 10) }}</span>
+              <span v-if="ws.users?.length" class="card-stat">
+                <TheIcon icon="material-symbols:group" :size="13" class="mr-0.5" />{{ ws.users.length }}
+              </span>
             </div>
-          </NListItem>
-        </NList>
-        <div v-if="!workspaces.length" class="text-center text-gray-400 py-10">{{ t('views.statistic-center.label_cn_c3e99070') }}</div>
-      </NSpace>
-    </NLayoutSider>
+          </div>
+          <TheIcon icon="material-symbols:chevron-right" :size="18" class="text-gray-400 flex-shrink-0" />
+        </div>
+        <div v-if="!filteredWorkspaces.length" class="empty-state">
+          <TheIcon icon="material-symbols:inbox-outline" :size="40" class="text-gray-300 dark:text-gray-600 mb-3" />
+          <p class="text-sm text-gray-400">
+            {{ searchQuery ? t('views.statistic-center.label_cn_f63f56b1') : t('views.statistic-center.label_cn_c3e99070') }}
+          </p>
+        </div>
+      </div>
+    </div>
 
     <!-- ── 右侧数据源区域 ── -->
-    <NLayoutContent content-style="padding: 16px">
+    <div class="flex-1 min-w-0 overflow-hidden flex flex-col" style="padding: 16px">
+      <!-- 侧边栏收起时的边栏拉手 -->
+      <div
+        v-if="!sidebarVisible"
+        class="sidebar-pull-handle"
+        @click="sidebarVisible = true"
+        :title="$t('views.statistic-center.label_cn_9cb11943')"
+      >
+        <TheIcon icon="material-symbols:chevron-right" :size="18" />
+      </div>
+
       <NSpin :show="loading">
         <div v-if="!selectedWs" class="flex items-center justify-center h-full text-gray-400 text-lg">
           {{ t('views.statistic-center.label_cn_aba2706f') }}
@@ -1057,9 +1111,11 @@ onBeforeUnmount(() => {
         <div v-else class="h-full flex flex-col">
           <!-- 工作区标题栏 -->
           <div class="flex items-center justify-between mb-4">
-            <div>
-              <h2 class="text-xl font-bold m-0">{{ selectedWs.name }}</h2>
-              <p v-if="selectedWs.description" class="text-gray-500 text-sm m-0 mt-1">{{ selectedWs.description }}</p>
+            <div class="flex items-center gap-3">
+              <div>
+                <h2 class="text-xl font-bold m-0">{{ selectedWs.name }}</h2>
+                <p v-if="selectedWs.description" class="text-gray-500 text-sm m-0 mt-1">{{ selectedWs.description }}</p>
+              </div>
             </div>
             <NSpace>
               <NButton size="small" @click="openEditWs">
@@ -1668,8 +1724,8 @@ onBeforeUnmount(() => {
           </NTabs>
         </div>
       </NSpin>
-    </NLayoutContent>
-  </NLayout>
+    </div>
+  </div>
 
   <!-- ── OpenCV 处理弹窗 ── -->
   <NModal v-model:show="showCVModal" :title="t('views.statistic-center.label_cn_65060ed5')" preset="card" style="width: 650px">
@@ -2071,12 +2127,161 @@ onBeforeUnmount(() => {
 .text-lg { font-size: 18px !important; line-height: 26px !important; }
 .text-xl { font-size: 20px !important; line-height: 28px !important; }
 
-.ws-avatar {
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-weight: 700; font-size: 15px;
+/* ======== 侧边栏样式（与 DocWorkbenchSidebar 一致） ======== */
+
+.data-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-right: 1px solid var(--n-border-color);
+  background: var(--n-color);
+}
+
+.sidebar-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--n-border-color);
   flex-shrink: 0;
+}
+
+.sidebar-toggle-btn {
+  margin-right: -4px;
+  opacity: 0.5;
+}
+.sidebar-toggle-btn:hover {
+  opacity: 1;
+}
+
+.header-label {
+  font-size: 12px;
+  font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--n-text-color-3);
+}
+
+.header-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--n-text-color-3);
+  background: var(--n-color-embedded);
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+.search-box {
+  margin-bottom: 12px;
+}
+
+.create-btn {
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s;
+}
+.create-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.card-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+}
+
+.sidebar-card {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+.sidebar-card:hover {
+  background: var(--n-color-hover);
+  border-color: var(--n-border-color);
+}
+.sidebar-card--active {
+  background: var(--n-color-embedded);
+  border-color: var(--primary-color-hover);
+}
+
+.card-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-right: 10px;
+  transition: transform 0.2s;
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--n-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--n-text-color-3);
+}
+
+.card-stat {
+  display: flex;
+  align-items: center;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+/* 侧边栏收起时的边栏拉手（左侧边缘竖条） */
+.sidebar-pull-handle {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  background: var(--n-color-embedded);
+  border: 1px solid var(--n-border-color);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  color: var(--n-text-color-3);
+  transition: width 0.15s, color 0.15s;
+}
+.sidebar-pull-handle:hover {
+  width: 28px;
+  color: var(--primary-color);
 }
 </style>
