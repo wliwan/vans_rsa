@@ -632,14 +632,23 @@
         "completed_summary": "完成: 成功 {0}, 失败 {1}",
         "process_complete_summary": "处理完成: 成功 {0} 张, 失败 {1} 张",
         "success_process_images": "成功处理 {0} 张",
-        "success_process_images_detail": "成功处理 {0} 张图片"
+        "success_process_images_detail": "成功处理 {0} 张图片",
+        "material_list": "素材列表",
+        "preview_workspace": "预览工作区",
+        "start_processing": "开始处理",
+        "drag_slider_preview_rotate": "拖动滑块实时预览旋转效果",
+        "refresh_preview": "刷新预览",
+        "auto_sync_values": "左侧画布拖动选区后自动同步数值",
+        "preview_effect": "预览效果"
       },
       "road-network-workbench": {
         "base_map_label": ", label: `底图 — ${bl.label}`, type:",
         "base_map": "底图 — {0}",
         "road_network_label": ", label: `路网 — ${nw?.file_name ||",
         "road_network": "路网 — {0}",
-        "map_export": "地图导出_{0}"
+        "map_export": "地图导出_{0}",
+        "toggle_map_controls": "显示/隐藏地图控件",
+        "hint_road_layer_tiles": "提示：路网图层为同源瓦片，导出效果最佳。底图可能因跨域无法完整截取。"
       }
     },
     "pixel": {
@@ -695,12 +704,18 @@
         "medium": ", 中等:",
         "high": ", 高:",
         "sync_complete": "同步完成：新增 {0} 条，更新 {1} 条，API 共 {2} 条",
-        "cleared_data": "已清除 {0} 条数据"
+        "cleared_data": "已清除 {0} 条数据",
+        "pixel_account": "像素账户：",
+        "time_period": "时间段："
       },
       "track": {
         "type": "类型{0}",
         "sync_complete": "同步完成：新增 {0} 条，更新 {1} 条，API 共 {2} 条",
-        "cleared_data": "已清除 {0} 条数据"
+        "cleared_data": "已清除 {0} 条数据",
+        "pixel_account": "像素账户：",
+        "vehicle_model": "车型：",
+        "vehicle": "车辆：",
+        "time_period": "时间段："
       }
     },
     "profile": {
@@ -753,7 +768,9 @@
       "title_cn_735ac607": "技能管理",
       "title_cn_8c339e83": "新建技能",
       "no_match_skill": "无匹配技能",
-      "skill_empty_create": "暂无技能，请新建"
+      "skill_empty_create": "暂无技能，请新建",
+      "search_skills": "搜索技能...",
+      "no_skill_message": "searchQuery ? '无匹配技能' : '暂无技能，请新建'"
     },
     "statistic-center": {
       "label_ai_cn_7a58217b": "AI 正在分析数据并生成报告...",
@@ -1636,7 +1653,10 @@
         "connection_success_tables_count": "连接成功，共 {0} 个表",
         "imported_tables_count": "成功导入 {0} 个表",
         "parsed_tables_count": "解析成功，共 {0} 个表",
-        "imported_road_network_statistics_count": "成功导入 {0} 个路网统计"
+        "imported_road_network_statistics_count": "成功导入 {0} 个路网统计",
+        "file_type_placeholder": "selectedStaticFile.format_type || '文件'",
+        "import_mysql_tables": "导入 ({{ mysqlTables.filter(t => t.selected).length }})",
+        "import_sqlite_tables": "导入 ({{ sqliteTables.filter(t => t.selected).length }})"
       },
       "report": {
         "export_failed": "导出{0}失败"
@@ -1790,7 +1810,16 @@
       "title_cn_e5846bb9": "超级用户",
       "title_cn_ec49329b": "请求方法",
       "title_cn_f39bf763": "组件路径",
-      "title_cn_f53b5122": "角色列表"
+      "title_cn_f53b5122": "角色列表",
+      "download-config": {
+        "test_connectivity": "测试连通性",
+        "modified": "已修改",
+        "zero_means_no_retry": "0 = 不重试",
+        "time_range_seconds": "60-3600 秒"
+      },
+      "menu": {
+        "selected_path": "已选路径："
+      }
     },
     "tool": {
       "vehicle": {
@@ -1858,6 +1887,9 @@
       "text_hello": "hello, {username}",
       "text_no_pages": "暂无可用功能页面",
       "text_welcome": "今天又是元气满满的一天!"
+    },
+    "top-menu": {
+      "level1_menu": "一级菜单"
     }
   },
   "app_name": "VansRSA",
@@ -1866,11 +1898,22 @@
     "common": {
       "loading_empty_wrapper": {
         "click_retry": "{0}, 点击重试"
+      },
+      "task_progress_panel": {
+        "background_tasks_count": "后台任务 ({{ tasks.length }})",
+        "clear_completed": "清除已完成",
+        "collapse": "收起",
+        "retry": "重试"
       }
     },
     "table": {
       "crud_table": {
         "total_count": "共 {0} 条"
+      }
+    },
+    "query-bar": {
+      "query_bar": {
+        "search": "搜索"
       }
     }
   },

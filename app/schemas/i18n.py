@@ -62,3 +62,32 @@ class ProcessScanRequest(BaseModel):
 class I18nBatchDeleteRequest(BaseModel):
     """批量删除国际化字段"""
     keys: List[str] = Field(..., description="要删除的字段 key 列表")
+
+
+class ScanNewFieldItem(BaseModel):
+    """单条扫描结果（新字段）"""
+    file: str = Field(..., description="文件相对路径，如 web/src/views/xxx/index.vue")
+    line: int = Field(..., description="行号")
+    text: str = Field(..., description="硬编码中文文本")
+    context: str = Field("", description="所在行的上下文（截断到 200 字符）")
+    prefix: str = Field("common", description="推导的 i18n key 前缀")
+    source: str = Field(
+        "unknown",
+        description="检测来源: html-inline | html-attribute | js-string | template-interpolation",
+    )
+
+
+class ScanNewFieldsResponse(BaseModel):
+    """扫描新字段响应"""
+    total: int = Field(..., description="待翻译字段总数")
+    items: List[ScanNewFieldItem] = Field(default_factory=list, description="字段详情列表")
+
+
+class ProcessScanRequest(BaseModel):
+    """接收扫描结果，AI 生成 key 并追加到 cn.json"""
+    ai_proxy_name: str = Field(..., description="AI 代理名称")
+    items: List[dict] = Field(..., description="扫描结果列表，每项含 {file, line, text}")
+    safe_mode: bool = Field(
+        True,
+        description="安全模式 (默认 true): 只写 cn.json 不修改源 Vue 文件；false: 同时回写源文件",
+    )

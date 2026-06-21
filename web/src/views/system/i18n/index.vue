@@ -363,11 +363,13 @@ const scanAddScanning = ref(false)
 const scanAddProxyOptions = ref([])
 
 const hideMixedFields = ref(false)
+const scanAddSafeMode = ref(true)  // 默认安全模式：只写 cn.json 不修改源文件
 
 const scanAddColumns = [
   { title: '文件', key: 'file', width: 200, ellipsis: { tooltip: true } },
   { title: '行号', key: 'line', width: 60, align: 'center' },
   { title: '中文文本', key: 'text', width: 240, ellipsis: { tooltip: true } },
+  { title: '前缀', key: 'prefix', width: 140, ellipsis: { tooltip: true } },
   { title: '检测来源', key: 'source', width: 100, align: 'center' },
 ]
 
@@ -400,11 +402,20 @@ async function openScanAdd() {
 async function doScan() {
   scanAddScanning.value = true
   try {
-    const res = await api.scanDetectI18n()
-    scanAddResults.value = res.items || []
-    scanAddTotal.value = res.total || scanAddResults.value.length
-  } catch (e) {
-    message.error('扫描失败: ' + (e.message || '未知错误'))
+    // 优先使用新的 Python 正则扫描端点（不依赖外部 npm 包）
+    const res = await api.scanNewFieldsI18n()
+    const data = res.data || res
+    scanAddResults.value = data.items || []
+    scanAddTotal.value = data.total || scanAddResults.value.length
+  } catch (_newErr) {
+    // 降级到旧端点
+    try {
+      const res = await api.scanDetectI18n()
+      scanAddResults.value = res.items || []
+      scanAddTotal.value = res.total || scanAddResults.value.length
+    } catch (e) {
+      message.error('扫描失败: ' + (e.message || '未知错误'))
+    }
   } finally {
     scanAddScanning.value = false
   }
@@ -421,9 +432,9 @@ async function handleScanAdd() {
   }
   scanAddLoading.value = true
   // 将前端扫描结果发送给后端做 AI 处理（保留 start/end 用于回写源文件）
-  const items = scanAddResults.value.map(it => ({ file: it.file, line: it.line, text: it.text, start: it.start, end: it.end, source: it.source }))
+  const items = scanAddResults.value.map(it => ({ file: it.file, line: it.line, text: it.text, prefix: it.prefix, start: it.start, end: it.end, source: it.source }))
   try {
-    const res = await api.processScanI18n({ ai_proxy_name: scanAddProxyName.value, items })
+    const res = await api.processScanI18n({ ai_proxy_name: scanAddProxyName.value, items, safe_mode: scanAddSafeMode.value })
     const d = (res && res.data) || {}
     const added = d.added_count || 0
     const scanned = d.scanned_count || 0
@@ -616,6 +627,12 @@ onMounted(() => {
           filterable
           style="flex: 1"
         />
+      </div>
+      <div style="margin-top: 8px">
+        <NCheckbox v-model:checked="scanAddSafeMode">
+          <span style="font-weight: 500">安全模式</span>
+          <span style="color: #666; margin-left: 4px; font-size: 12px">（只更新 cn.json，不修改源 Vue 文件。编译通过后再手动回写源文件）</span>
+        </NCheckbox>
       </div>
       <template #footer>
         <NSpace justify="end">

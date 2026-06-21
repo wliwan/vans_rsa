@@ -289,8 +289,12 @@ export default {
   importI18n: (data = {}) => request.post('/i18n/import', data),
   aiGenerateI18n: (data = {}) => request.post('/i18n/ai-generate', data, { timeout: 0 }),
 
-  scanDetectI18n: () => fetch('/__i18n-scan').then(r => r.json()),
+  scanDetectI18n: () => fetch('/__i18n-scan').then(r => r.json()),  // 旧端点（依赖未安装的 npm 包，已废弃）
+  scanNewFieldsI18n: () => request.get('/i18n/scan-new-fields'),      // 新端点（Python 正则，始终可用）
   processScanI18n: (data = {}) => request.post('/i18n/process-scan', data, { timeout: 0 }),
+  verifyI18nBuild: () => request.post('/i18n/verify-build', {}, { timeout: 0 }),
+  gitRestoreI18n: (data = {}) => request.post('/i18n/git-restore', data),
+  gitModifiedFilesI18n: () => request.get('/i18n/git-modified-files'),
   batchDeleteI18n: (data = {}) => request.post('/i18n/batch-delete', data),
   // skills
   getSkillList: (params = {}) => request.get('/skill/list', { params }),

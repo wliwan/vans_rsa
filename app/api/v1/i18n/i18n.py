@@ -1,8 +1,9 @@
 """国际化管理 API 路由"""
 
 import logging
+from typing import List
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Body
 
 from app.controllers.i18n import i18n_controller
 from app.schemas.base import Success, SuccessExtra, Fail
@@ -79,13 +80,28 @@ async def ai_generate_i18n(req: I18nAIGenerateRequest):
         return Fail(code=500, msg=f"AI 翻译失败: {e}")
 
 
+@router.get(
+    "/scan-new-fields",
+    summary="扫描前端代码中的硬编码中文字符串（Python 正则，不依赖 npm 包）",
+)
+async def scan_new_fields():
+    """扫描 web/src/ 下所有 .vue/.js/.ts/.jsx/.tsx 文件，提取未国际化的硬编码中文"""
+    try:
+        result = await i18n_controller.scan_frontend()
+        return Success(data=result, msg=f"扫描完成，发现 {result['total']} 条待翻译字段")
+    except Exception as e:
+        logger.exception("scan_new_fields 失败")
+        return Fail(code=500, msg=f"扫描失败: {e}")
+
+
 @router.post("/process-scan", summary="处理前端扫描结果并添加")
 async def process_scan(req: ProcessScanRequest):
-    """接收前端 AST 扫描结果，AI 生成 i18n key 后追加到 cn.json"""
+    """接收扫描结果，AI 生成 i18n key 后追加到 cn.json（可选安全模式不写源文件）"""
     try:
         result = await i18n_controller.process_scan(
             ai_proxy_name=req.ai_proxy_name,
             items=req.items,
+            safe_mode=req.safe_mode,
         )
         msg = (
             f"扫描到 {result['scanned_count']} 条新字段，"
@@ -99,6 +115,43 @@ async def process_scan(req: ProcessScanRequest):
     except Exception as e:
         logger.exception("process_scan 失败")
         return Fail(code=500, msg=f"处理失败: {e}")
+
+
+@router.post("/verify-build", summary="验证前端编译（pnpm build）")
+async def verify_build():
+    """运行 pnpm build 检查前端编译是否通过"""
+    try:
+        result = i18n_controller._verify_frontend_build()
+        if result["ok"]:
+            return Success(data=result, msg="编译通过")
+        else:
+            return Fail(code=400, msg=f"编译失败 (exit={result['exit_code']})", data=result)
+    except Exception as e:
+        logger.exception("verify_build 失败")
+        return Fail(code=500, msg=f"编译验证异常: {e}")
+
+
+@router.post("/git-restore", summary="Git 回退指定文件")
+async def git_restore(files: List[str] = Body(..., embed=True)):
+    """用 git checkout HEAD -- <file> 回退指定文件"""
+    if not files:
+        return Fail(code=400, msg="未指定要回退的文件")
+    try:
+        ok = i18n_controller._git_restore_files(files)
+        return Success(data={"ok": ok, "files": files}, msg="回退完成" if ok else "部分回退失败")
+    except Exception as e:
+        logger.exception("git_restore 失败")
+        return Fail(code=500, msg=f"回退异常: {e}")
+
+
+@router.get("/git-modified-files", summary="获取 Git 已修改未暂存的文件列表")
+async def git_modified_files():
+    """获取 git diff --name-only 的文件列表"""
+    try:
+        files = i18n_controller._git_modified_files()
+        return Success(data={"files": files, "count": len(files)})
+    except Exception as e:
+        return Fail(code=500, msg=f"获取失败: {e}")
 
 
 @router.post("/batch-delete", summary="批量删除国际化字段")

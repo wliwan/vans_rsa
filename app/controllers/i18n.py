@@ -26,6 +26,34 @@ def _get_project_root() -> Path:
     return Path(__file__).resolve().parent.parent.parent
 
 
+def _is_valid_scan_text(text: str) -> bool:
+    """验证扫描到的文本是否是有效的待翻译文本。
+
+    过滤规则：
+    - 必须包含中文
+    - 长度 ≥ 1
+    - 排除纯变量/表达式/符号
+    - 排除已国际化的引用 t('...') / $t('...')
+    - 排除纯数字/符号组合
+    """
+    import re
+    text = text.strip()
+    if not text:
+        return False
+    if not re.search(r'[\u4e00-\u9fff]', text):
+        return False
+    # 排除已国际化的引用
+    if re.search(r'\b(?:t|_t|\$t|i18n\.global\.t)\s*\(', text):
+        return False
+    # 排除纯数字/符号组合（无中文）
+    if re.match(r'^[\d\s\.\,\-\+\%\/\(\)\[\]\{\}\|&;:]+$', text):
+        return False
+    # 排除 date-fns / dayjs 格式字符串（只有符号和字母）
+    if re.match(r'^[YMDdhmsaHkS\s\-\/\.:]+$', text):
+        return False
+    return True
+
+
 class I18nController:
     """国际化控制器（非 CRUDBase，直接操作 JSON 文件）"""
 
@@ -600,6 +628,220 @@ class I18nController:
         return ".".join(prefix_parts) if prefix_parts else "common"
 
 
+    # ─── 通用正则扫描（不依赖前端 Vite / npm 包）───────────────
+
+    # 扫描时跳过的目录名（相对于 web/src/）
+    _SCAN_EXCLUDE_DIRS = frozenset({
+        "node_modules", "dist", "public", "lib", "i18n", ".git",
+        "__pycache__", "assets", "locales",
+    })
+    # 扫描的文件扩展名
+    _SCAN_EXTENSIONS = frozenset({".vue", ".js", ".ts", ".jsx", ".tsx"})
+    # 在模板中预期已国际化的属性（title/placeholder/label/alt 除外——它们仍需要扫描）
+    _SCAN_SKIP_ATTRS = frozenset({"class", "style", "id", "ref", "key", "name", "type", "href", "src"})
+
+    async def scan_frontend(self) -> Dict[str, Any]:
+        """递归扫描 web/src/ 下所有前端文件，提取硬编码中文字符串。
+
+        不依赖 @cybersailor/i18n-detect-vue（npm 包），使用 Python 正则扫描，
+        覆盖率更高，始终可用。返回结构化列表供预览/批量处理。
+
+        返回格式：
+        {
+            "total": 123,
+            "items": [
+                {
+                    "file": "web/src/views/xxx/index.vue",
+                    "line": 42,
+                    "text": "新建工作区",
+                    "context": "<NButton @click=\"handleAdd\">新建工作区</NButton>",
+                    "prefix": "views.xxx.index",
+                    "source": "html-inline" | "html-attribute" | "js-string" | "template-interpolation",
+                },
+                ...
+            ]
+        }
+        """
+        import re
+        import os as _os
+
+        project_root = _get_project_root()
+        src_dir = project_root / "web" / "src"
+        if not src_dir.exists():
+            return {"total": 0, "items": []}
+
+        # 1. 收集所有目标文件
+        files: list = []
+        def _walk(d: Path):
+            for entry in sorted(d.iterdir()):
+                if entry.name.startswith("."):
+                    continue
+                if entry.is_dir():
+                    if entry.name in self._SCAN_EXCLUDE_DIRS:
+                        continue
+                    _walk(entry)
+                elif entry.is_file() and entry.suffix in self._SCAN_EXTENSIONS:
+                    files.append(entry)
+
+        _walk(src_dir)
+
+        # 2. 加载 cn.json 已有值用于去重
+        cn_data = self._load_locale("cn")
+        existing_texts: set = set()
+        for _k, v, _t in self._flatten(cn_data):
+            if isinstance(v, str) and v.strip():
+                existing_texts.add(v.strip())
+
+        # 3. 逐文件扫描
+        all_items: list = []
+        seen_in_file: set = set()  # (file, text) 去重
+
+        for filepath in files:
+            try:
+                raw = filepath.read_text(encoding="utf-8")
+            except Exception:
+                continue
+
+            rel = str(filepath.relative_to(project_root))
+            is_vue = filepath.suffix == ".vue"
+            lines = raw.split("\n")
+
+            # 推导 prefix
+            parts = tuple(rel.replace("\\", "/").split("/"))
+            prefix = self._derive_prefix(parts)
+
+            file_has_script_setup = bool(re.search(r"<script\s+setup[^>]*>", raw))
+
+            for line_no_1, line in enumerate(lines, 1):
+                stripped = line.strip()
+
+                # 跳过空行、纯注释
+                if not stripped:
+                    continue
+                if stripped.startswith("//") or stripped.startswith("<!--") or stripped.startswith("/*") or stripped.startswith("*"):
+                    continue
+                # 跳过 import / export / console / defineOptions name
+                if re.match(r"^(import\s|export\s|console\.)", stripped):
+                    continue
+                if "defineOptions" in stripped and re.search(r"name\s*:", stripped):
+                    continue
+
+                # ── 模式 1: 单引号字符串（含中文） ──
+                for m in re.finditer(r"'([^']*[\u4e00-\u9fff][^']*)'", line):
+                    text = m.group(1).strip()
+                    if not text or len(text) < 1:
+                        continue
+                    # 排除已国际化的引用
+                    before = line[:m.start()]
+                    if re.search(r"\b(?:t|_t|\$t|i18n\.global\.t)\s*\(\s*$", before):
+                        continue
+                    if re.search(r"\bt\s*\(\s*['\"]", text):
+                        continue
+                    if not _is_valid_scan_text(text):
+                        continue
+                    self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix,
+                                         "js-string" if not is_vue else "html-inline")
+
+                # ── 模式 2: 双引号字符串（含中文） ──
+                for m in re.finditer(r'"([^"]*[\u4e00-\u9fff][^"]*)"', line):
+                    text = m.group(1).strip()
+                    if not text or len(text) < 1:
+                        continue
+                    before = line[:m.start()]
+                    # 跳过 HTML attribute 中的双引号（如 class="..."）
+                    if re.search(r'\b(?:' + '|'.join(self._SCAN_SKIP_ATTRS) + r')\s*=\s*$', before):
+                        continue
+                    # 排除已国际化的引用
+                    if re.search(r"\b(?:t|_t|\$t|i18n\.global\.t)\s*\(\s*$", before):
+                        continue
+                    if re.search(r'\bt\s*\(\s*["\']', text):
+                        continue
+                    if not _is_valid_scan_text(text):
+                        continue
+                    source = "html-attribute" if re.search(r'\b(?:title|placeholder|label|alt|action|summary|description)\s*=\s*$', before) else "js-string"
+                    if not is_vue and source == "html-attribute":
+                        source = "js-string"
+                    self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, source)
+
+                # ── 模式 3: HTML 属性值（title/placeholder/label/alt/action/summary/description） ──
+                for m in re.finditer(r'\b(title|placeholder|label|alt|action|summary|description)="([^"]*[\u4e00-\u9fff][^"]*)"', line):
+                    text = m.group(2).strip()
+                    if not text or len(text) < 1:
+                        continue
+                    if not _is_valid_scan_text(text):
+                        continue
+                    self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, "html-attribute")
+
+                # ── 模式 4: 标签间文本（含中文，不含 {{ }} 插值） ──
+                for m in re.finditer(r'(?:>|/>)\s*([^<{]*[\u4e00-\u9fff][^<{]*?)<', line):
+                    text = m.group(1).strip()
+                    if not text or len(text) < 1:
+                        continue
+                    # 只取纯中文文本（不含 HTML 标签、不含变量引用）
+                    if re.search(r'<[^>]+>', text):
+                        continue
+                    if not _is_valid_scan_text(text):
+                        continue
+                    self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, "html-inline")
+
+                # ── 模式 5: Vue 模板插值 {{ ... }} ──
+                if is_vue:
+                    for m in re.finditer(r'\{\{\s*([^}]*[\u4e00-\u9fff][^}]*?)\s*\}\}', line):
+                        text = m.group(1).strip()
+                        if not text or len(text) < 1:
+                            continue
+                        # 排除 $t('...')
+                        if re.search(r'\$t\s*\(', text):
+                            continue
+                        if not _is_valid_scan_text(text):
+                            continue
+                        self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, "template-interpolation")
+
+                # ── 模式 6: JSX / h() 中的中文文本节点 ──
+                if not is_vue or file_has_script_setup:
+                    for m in re.finditer(r'>\s*([\u4e00-\u9fff][^<]*?)</', line):
+                        text = m.group(1).strip()
+                        if not text or len(text) < 2:
+                            continue
+                        if not _is_valid_scan_text(text):
+                            continue
+                        self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, "html-inline")
+
+            # 每处理一个文件清理 seen 中的 file 专属去重（只在函数级别去重）
+            # seen_in_file 已经是全局的 (file, text) 去重，保留
+
+        # 5. 按 cn.json 已有值去重
+        filtered = []
+        for item in all_items:
+            if item["text"] in existing_texts:
+                continue
+            filtered.append(item)
+
+        # 6. 按文件+行号排序
+        filtered.sort(key=lambda x: (x["file"], x["line"]))
+
+        return {"total": len(filtered), "items": filtered}
+
+    @staticmethod
+    def _add_scan_item(
+        all_items: list, seen: set,
+        rel: str, line_no: int, text: str,
+        line_content: str, prefix: str, source: str,
+    ) -> None:
+        """添加一条扫描结果，自动去重"""
+        dedup_key = (rel, text.strip())
+        if dedup_key in seen:
+            return
+        seen.add(dedup_key)
+        all_items.append({
+            "file": rel,
+            "line": line_no,
+            "text": text.strip(),
+            "context": line_content[:200],
+            "prefix": prefix,
+            "source": source,
+        })
+
     # ─── AI 扫描添加 ────────────────────────────────────────────
 
     _SCAN_BATCH_SIZE: int = 30
@@ -630,10 +872,13 @@ class I18nController:
             "仅返回 JSON 对象: {key: 原始text}。不解释，不改 value。"
         )
 
-    async def process_scan(self, ai_proxy_name: str, items: List[dict]) -> Dict[str, Any]:
-        """接收前端 AST 扫描结果，AI 生成 key 后追加到 cn.json
+    async def process_scan(
+        self, ai_proxy_name: str, items: List[dict], safe_mode: bool = True
+    ) -> Dict[str, Any]:
+        """接收扫描结果，AI 生成 key 后追加到 cn.json。
 
-        与 scan_and_add 的区别：跳过 Python 正则扫描，直接使用前端 @cybersailor/i18n-detect-vue 的 AST 解析结果。
+        safe_mode=True (默认): 只写 cn.json，不修改源 Vue 文件。编译通过后再手动或通过脚本回写。
+        safe_mode=False: 同时回写源文件（将硬编码中文替换为 $t('key')）。
         """
         from app.controllers.ai_proxy import ai_proxy_controller
 
@@ -713,9 +958,13 @@ class I18nController:
 
         # 5. 回写源文件：将硬编码中文替换为 $t('key')
         replaced = 0
+        modified_files = []
         if added > 0:
             text_to_key = {v: k for k, v in new_entries.items() if isinstance(v, str)}
-            replaced = self._replace_in_source_files(processed, text_to_key)
+            if safe_mode:
+                logger.info(f"safe_mode: 跳过源文件回写，已添加 {added} 条 key 到 cn.json")
+            else:
+                replaced = self._replace_in_source_files(processed, text_to_key)
 
         return {
             "scanned_count": len(processed),
@@ -724,7 +973,85 @@ class I18nController:
             "skipped_count": skipped,
             "batch_count": len(batches),
             "failed_batches": failed if failed else None,
+            "safe_mode": safe_mode,
+            "modified_files": modified_files,
         }
+
+    # ─── Git 回退 & 编译验证 ───────────────────────────────────
+
+    @staticmethod
+    def _git_modified_files() -> List[str]:
+        """获取所有已修改但未 stage 的文件列表（相对于项目根目录）。"""
+        import subprocess
+        try:
+            root = _get_project_root()
+            out = subprocess.check_output(
+                ["git", "diff", "--name-only"],
+                cwd=str(root),
+                text=True,
+                timeout=10,
+            )
+            return [f for f in out.strip().split("\n") if f]
+        except Exception:
+            return []
+
+    @staticmethod
+    def _git_restore_files(files: List[str]) -> bool:
+        """用 git checkout 回退指定文件到 HEAD 版本。
+
+        只回退明确指定的文件，不使用全局 checkout。
+        """
+        import subprocess
+        root = _get_project_root()
+        ok = True
+        for f in files:
+            try:
+                subprocess.check_call(
+                    ["git", "checkout", "HEAD", "--", f],
+                    cwd=str(root),
+                    timeout=15,
+                )
+                logger.info(f"git checkout HEAD -- {f}")
+            except Exception as e:
+                logger.error(f"git checkout 失败 ({f}): {e}")
+                ok = False
+        return ok
+
+    @staticmethod
+    def _verify_frontend_build() -> Dict[str, Any]:
+        """运行 pnpm build 验证编译。
+
+        Returns:
+            {
+                "ok": True/False,
+                "exit_code": 0/1,
+                "stdout_tail": "...",
+                "stderr_tail": "...",
+            }
+        """
+        import subprocess
+        root = _get_project_root()
+        web_dir = root / "web"
+        try:
+            proc = subprocess.run(
+                ["pnpm", "build"],
+                cwd=str(web_dir),
+                capture_output=True,
+                text=True,
+                timeout=300,
+            )
+            tail_stdout = "\n".join(proc.stdout.strip().split("\n")[-20:]) if proc.stdout else ""
+            tail_stderr = "\n".join(proc.stderr.strip().split("\n")[-20:]) if proc.stderr else ""
+            return {
+                "ok": proc.returncode == 0,
+                "exit_code": proc.returncode,
+                "stdout_tail": tail_stdout,
+                "stderr_tail": tail_stderr,
+            }
+        except subprocess.TimeoutExpired:
+            return {"ok": False, "exit_code": -1, "stdout_tail": "", "stderr_tail": "pnpm build 超时 (>300s)"}
+        except FileNotFoundError:
+            return {"ok": False, "exit_code": -1, "stdout_tail": "", "stderr_tail": "pnpm 未安装或不在 PATH"}
 
     async def batch_delete(self, keys: List[str]) -> Dict[str, Any]:
         """从所有语言文件中批量删除指定 key 及其值"""
