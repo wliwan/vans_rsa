@@ -1,7 +1,10 @@
 <script setup>
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import {
+
+
   NButton, NCard, NDataTable, NModal, NPopconfirm,
   NSpace, NSpin, NTag, NUpload,
   NBreadcrumb, NBreadcrumbItem, NInput,
@@ -11,12 +14,13 @@ import CommonPage from '@/components/page/CommonPage.vue'
 import TheIcon from '@/components/icon/TheIcon.vue'
 import { useTaskProgressStore } from '@/store/modules/taskProgress'
 import { getToken } from '@/utils'
+const { t } = useI18n()
+
 import api from '@/api'
 
-defineOptions({ name: '行政区边界文件管理' })
+defineOptions({ name: i18n.global.t('views.network.regionBoundary.title') })
 
 const message = useMessage()
-const { t } = useI18n()
 
 // ── 级联列表 ──
 const breadcrumb = ref([])
@@ -144,7 +148,7 @@ async function onDownload() {
     loadBoundaryStatus(selectedNode.value.id)
   } catch (e) {
     clearInterval(simTimer)
-    const errMsg = e?.response?.data?.msg || e?.message || '下载失败'
+    const errMsg = e?.response?.data?.msg || e?.message || t('views.network.label_cn_65e200d3')
     taskStore.failTask(taskId, { message: t('views.network.regionBoundary.task.fail'), detail: errMsg })
     message.error(t('views.network.regionBoundary.messages.downloadFailTip'))
   } finally {

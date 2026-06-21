@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 def file_to_markdown(file_path: str, filename: str) -> tuple[str, int]:
     """将文件内容转换为 Markdown 文本。返回 (markdown_text, char_count)"""
     ext = os.path.splitext(filename)[1].lower()
+    if not ext:
+        ext = os.path.splitext(file_path)[1].lower()
 
     if ext in (".txt", ".md", ".markdown"):
         return _read_text(file_path)

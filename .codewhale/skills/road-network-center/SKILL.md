@@ -341,3 +341,35 @@ class RoadNetwork(BaseModel, TimestampMixin):
     `filter` 函数确保仅 `label` 字段参与匹配，空 pattern 时显示全部节点。
 11. **Blob 响应拦截**：axios 响应拦截器中必须先判断 `config.responseType === 'blob'` 或 `data instanceof Blob`，对 Blob 响应直接 `return Promise.resolve(response)`（透传原始 response），否则 `data?.code !== 200` 会把 Blob 误判为错误响应导致文件下载失败
 12. **异步非阻塞**：所有耗时同步操作（如 OSMnx 下载、大文件 I/O）必须通过 `asyncio.get_running_loop().run_in_executor(None, fn)` 放入线程池执行，避免阻塞事件循环。`httpx.AsyncClient` 和 Tortoise ORM 的 `await` 操作本身是异步的无需额外处理。若一个请求卡在同步操作上，asyncio 事件循环被阻塞，**所有其他请求也会卡死**
+13. **Leaflet 本地化**：所有 Leaflet 资源（CSS/JS/marker 图标）必须下载到 `web/public/lib/leaflet/`，index.html 引用本地路径，禁止使用 CDN
+14. **Leaflet 瓦片截取**：Canvas 截取瓦片时，用 `getBoundingClientRect()` 获取实际位置（Leaflet 用 CSS `transform: translate3d()` 定位，`style.left/top` 为空），用 `el.querySelector('img')` 取 img 元素（Leaflet 用 `<div class="leaflet-tile"><img/></div>` 包裹）
+15. **图层导出**：包含跨域瓦片或 DOM 控件时用 `html-to-image` 库截取完整 DOM；纯同源路网瓦片可用 Canvas 直接绘制
+16. **PNG 元数据**：导出图片的 description 写入 JSON 元数据（中心点、作者、路网统计），后端用 Pillow `PngInfo` 写入 tEXt 块
+
+---
+
+## 路网工作台前端库
+
+| 库 | 路径 | 用途 |
+|---|---|---|
+| Leaflet 1.9.4 | `web/public/lib/leaflet/` | 地图渲染 (CSS/JS/marker 图标) |
+| html-to-image 1.11.11 | `web/public/lib/html-to-image/` | DOM → Canvas/PNG 截取（图层导出） |
+
+### Leaflet 控件
+
+- 缩放 (zoom)
+- 底图切换
+- 路网瓦片叠加
+- 图例
+- 坐标显示
+- **方位罗盘** (CompassControl, 右上角)
+- **比例尺** (L.control.scale, 左下角)
+- **图层导出按钮** (ExportControl, 缩放下方)
+
+### 路网工作台常见问题
+
+| 错误现象 | 原因 | 解决方案 |
+|---|---|---|
+| Leaflet 瓦片 Canvas 截取返回 0 | CSS `transform: translate3d()` 定位瓦片，`style.left/top` 为空 | 用 `getBoundingClientRect()` 获取实际位置 |
+| Leaflet `tile.el` 不是 `<img>` | Leaflet 用 `<div class="leaflet-tile"><img/></div>` 包裹 | 用 `el.querySelector('img')` 递归取 `<img>` |
+| Canvas 绘制跨域瓦片报 SecurityError | 底图瓦片来自外部 CDN，无 CORS 头 | 用 `html-to-image` 库截取完整 DOM（或仅导出同源路网瓦片） |

@@ -1,6 +1,11 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { h, onMounted, ref, resolveDirective, withDirectives } from 'vue'
 import {
+
+
+
   NButton,
   NForm,
   NFormItem,
@@ -27,9 +32,11 @@ import TheIcon from '@/components/icon/TheIcon.vue'
 
 import { formatDate, renderIcon } from '@/utils'
 import { useCRUD } from '@/composables'
+const { t } = useI18n()
+
 import api from '@/api'
 
-defineOptions({ name: '菜单管理' })
+defineOptions({ name: i18n.global.t('views.system.title_cn_310c10c1') })
 
 const $table = ref(null)
 const queryItems = ref({})
@@ -52,7 +59,7 @@ const {
   modalForm,
   modalFormRef,
 } = useCRUD({
-  name: '菜单',
+  name: t('views.system.label_cn_4ccbdc53'),
   initForm,
   doCreate: api.createMenu,
   doDelete: api.deleteMenu,
@@ -71,9 +78,9 @@ const menuOptions = ref([])
 
 const columns = [
   { title: 'ID', key: 'id', width: 50, ellipsis: { tooltip: true }, align: 'center' },
-  { title: '菜单名称', key: 'name', width: 80, ellipsis: { tooltip: true }, align: 'center' },
+  { title: t('views.system.title_cn_8ee9f276'), key: 'name', width: 80, ellipsis: { tooltip: true }, align: 'center' },
   {
-    title: '菜单类型',
+    title: t('views.system.title_cn_52fe00c3'),
     key: 'menu_type',
     width: 80,
     align: 'center',
@@ -91,12 +98,12 @@ const columns = [
       return h(
         NTag,
         { type: 'primary', round: round, bordered: bordered },
-        { default: () => (row.menu_type === 'catalog' ? '目录' : '菜单') }
+        { default: () => (row.menu_type === 'catalog' ? '目录' : t('views.system.label_cn_4ccbdc53')) }
       )
     },
   },
   {
-    title: '图标',
+    title: t('views.system.title_cn_5ef69f62'),
     key: 'icon',
     width: 40,
     align: 'center',
@@ -104,12 +111,12 @@ const columns = [
       return h(TheIcon, { icon: row.icon, size: 20 })
     },
   },
-  { title: '排序', key: 'order', width: 40, ellipsis: { tooltip: true }, align: 'center' },
-  { title: '访问路径', key: 'path', width: 80, ellipsis: { tooltip: true }, align: 'center' },
-  { title: '跳转路径', key: 'redirect', width: 80, ellipsis: { tooltip: true }, align: 'center' },
-  { title: '组件路径', key: 'component', width: 80, ellipsis: { tooltip: true }, align: 'center' },
+  { title: t('views.system.label_cn_c360e994'), key: 'order', width: 40, ellipsis: { tooltip: true }, align: 'center' },
+  { title: t('views.system.title_cn_d14fcd8f'), key: 'path', width: 80, ellipsis: { tooltip: true }, align: 'center' },
+  { title: t('views.system.title_cn_0fec1892'), key: 'redirect', width: 80, ellipsis: { tooltip: true }, align: 'center' },
+  { title: t('views.system.title_cn_f39bf763'), key: 'component', width: 80, ellipsis: { tooltip: true }, align: 'center' },
   {
-    title: '保活',
+    title: t('views.system.title_cn_bc28072c'),
     key: 'keepalive',
     width: 40,
     align: 'center',
@@ -123,7 +130,7 @@ const columns = [
     },
   },
   {
-    title: '隐藏',
+    title: t('views.system.title_cn_dce5379c'),
     key: 'is_hidden',
     width: 40,
     align: 'center',
@@ -137,7 +144,7 @@ const columns = [
     },
   },
   {
-    title: '创建日期',
+    title: t('views.system.title_cn_696f5a97'),
     key: 'created_at',
     width: 80,
     align: 'center',
@@ -146,7 +153,7 @@ const columns = [
     },
   },
   {
-    title: '操作',
+    title: t('views.network.roadNetworkWorkbench.tabs.fields.colActions'),
     key: 'actions',
     width: 120,
     align: 'center',
@@ -168,7 +175,7 @@ const columns = [
                 handleAdd()
               },
             },
-            { default: () => '子菜单', icon: renderIcon('material-symbols:add', { size: 16 }) }
+            { default: () => t('views.system.label_cn_26f9bff7'), icon: renderIcon('material-symbols:add', { size: 16 }) }
           ),
           [[vPermission, 'post/api/v1/menu/create']]
         ),
@@ -185,7 +192,7 @@ const columns = [
               },
             },
             {
-              default: () => '编辑',
+              default: () => t('views.workbench.label_edit'),
               icon: renderIcon('material-symbols:edit-outline', { size: 16 }),
             }
           ),
@@ -208,13 +215,13 @@ const columns = [
                     style: `display: ${row.children && row.children.length > 0 ? 'none' : ''};`, //有子菜单不允许删除
                   },
                   {
-                    default: () => '删除',
+                    default: () => t('views.network.roadNetworkWorkbench.tabs.filter.delete'),
                     icon: renderIcon('material-symbols:delete-outline', { size: 16 }),
                   }
                 ),
                 [[vPermission, 'delete/api/v1/menu/delete']]
               ),
-            default: () => h('div', {}, '确定删除该菜单吗?'),
+            default: () => h('div', {}, t('views.system.label_cn_ee097e23')),
           }
         ),
       ]
@@ -228,7 +235,7 @@ async function handleUpdateKeepalive(row) {
   row.keepalive = row.keepalive === false ? true : false
   await api.updateMenu(row)
   row.publishing = false
-  $message?.success(row.keepalive ? '已开启' : '已关闭')
+  $message?.success(row.keepalive ? '已开启' : t('views.system.label_cn_9c58505d'))
 }
 
 // 修改是否隐藏
@@ -238,7 +245,7 @@ async function handleUpdateHidden(row) {
   row.is_hidden = row.is_hidden === false ? true : false
   await api.updateMenu(row)
   row.publishing = false
-  $message?.success(row.is_hidden ? '已隐藏' : '已取消隐藏')
+  $message?.success(row.is_hidden ? '已隐藏' : t('views.system.label_cn_47f038fd'))
 }
 
 // 新增菜单(可选目录)
@@ -254,7 +261,7 @@ function handleClickAdd() {
 
 async function getTreeSelect() {
   const { data } = await api.getMenus()
-  const menu = { id: 0, name: '根目录', children: [] }
+  const menu = { id: 0, name: t('views.system.label_cn_c2b9f4b9'), children: [] }
   menu.children = data
   menuOptions.value = [menu]
 }
@@ -274,7 +281,7 @@ async function handleScanViews() {
     const res = await api.scanViews()
     scanTreeData.value = res.data || []
   } catch (e) {
-    message.error('扫描视图文件夹失败')
+    message.error(t('views.system.message_cn_646928c1'))
   } finally {
     scanLoading.value = false
   }
@@ -290,16 +297,16 @@ async function copyScanPath() {
   if (!selectedScanPath.value) return
   try {
     await navigator.clipboard.writeText(selectedScanPath.value)
-    message.success('已复制到剪贴板')
+    message.success(t('views.system.message_cn_4fb42e6e'))
   } catch {
-    message.warning('复制失败，请手动复制')
+    message.warning(t('views.system.message_cn_41da1ca4'))
   }
 }
 </script>
 
 <template>
   <!-- 业务页面 -->
-  <CommonPage show-footer title="菜单列表">
+  <CommonPage show-footer :title="t('views.system.title_cn_a6522480')">
     <template #action>
       <NSpace>
         <NButton v-permission="'post/api/v1/menu/create'" type="primary" @click="handleClickAdd">
@@ -337,13 +344,13 @@ async function copyScanPath() {
         :label-width="80"
         :model="modalForm"
       >
-        <NFormItem label="菜单类型" path="menu_type">
+        <NFormItem :label="t('views.system.title_cn_52fe00c3')" path="menu_type">
           <NRadioGroup v-model:value="modalForm.menu_type">
-            <NRadio label="目录" value="catalog" />
-            <NRadio label="菜单" value="menu" />
+            <NRadio :label="t('views.system.label_cn_767fa455')" value="catalog" />
+            <NRadio :label="t('views.system.label_cn_4ccbdc53')" value="menu" />
           </NRadioGroup>
         </NFormItem>
-        <NFormItem label="上级菜单" path="parent_id">
+        <NFormItem :label="t('views.system.label_cn_8427054c')" path="parent_id">
           <NTreeSelect
             v-model:value="modalForm.parent_id"
             key-field="id"
@@ -353,49 +360,49 @@ async function copyScanPath() {
           />
         </NFormItem>
         <NFormItem
-          label="菜单名称"
+          :label="t('views.system.title_cn_8ee9f276')"
           path="name"
           :rule="{
             required: true,
-            message: '请输入唯一菜单名称',
+            message: t('views.system.placeholder_cn_fb389b09'),
             trigger: ['input', 'blur'],
           }"
         >
-          <NInput v-model:value="modalForm.name" placeholder="请输入唯一菜单名称" />
+          <NInput v-model:value="modalForm.name" :placeholder="t('views.system.placeholder_cn_fb389b09')" />
         </NFormItem>
         <NFormItem
-          label="访问路径"
+          :label="t('views.system.title_cn_d14fcd8f')"
           path="path"
           :rule="{
             required: true,
-            message: '请输入访问路径',
+            message: t('views.system.placeholder_cn_26942298'),
             trigger: ['blur'],
           }"
         >
-          <NInput v-model:value="modalForm.path" placeholder="请输入访问路径" />
+          <NInput v-model:value="modalForm.path" :placeholder="t('views.system.placeholder_cn_26942298')" />
         </NFormItem>
-        <NFormItem v-if="modalForm.menu_type === 'menu'" label="组件路径" path="component">
+        <NFormItem v-if="modalForm.menu_type === 'menu'" :label="t('views.system.title_cn_f39bf763')" path="component">
           <NInput
             v-model:value="modalForm.component"
-            placeholder="请输入组件路径，例如：/system/user"
+            :placeholder="t('views.system.placeholder_cn_1d8242f1')"
           />
         </NFormItem>
-        <NFormItem label="跳转路径" path="redirect">
+        <NFormItem :label="t('views.system.title_cn_0fec1892')" path="redirect">
           <NInput
             v-model:value="modalForm.redirect"
             :disabled="modalForm.parent_id !== 0"
             :placeholder="
-              modalForm.parent_id !== 0 ? '只有一级菜单可以设置跳转路径' : '请输入跳转路径'
+              modalForm.parent_id !== 0 ? '只有一级菜单可以设置跳转路径' : t('views.system.placeholder_cn_266e7f8a')
             "
           />
         </NFormItem>
-        <NFormItem label="菜单图标" path="icon">
+        <NFormItem :label="t('views.system.label_cn_9483042d')" path="icon">
           <IconPicker v-model:value="modalForm.icon" />
         </NFormItem>
-        <NFormItem label="显示排序" path="order">
+        <NFormItem :label="t('views.system.label_cn_53295d54')" path="order">
           <NInputNumber v-model:value="modalForm.order" :min="1" />
         </NFormItem>
-        <NFormItem label="是否隐藏" path="is_hidden">
+        <NFormItem :label="t('views.system.label_cn_1a493fc3')" path="is_hidden">
           <NSwitch v-model:value="modalForm.is_hidden" />
         </NFormItem>
         <NFormItem label="KeepAlive" path="keepalive">
@@ -407,7 +414,7 @@ async function copyScanPath() {
     <!-- 扫描视图弹窗 -->
     <NModal
       v-model:show="showScanModal"
-      title="视图文件夹扫描结果"
+      :title="t('views.system.title_cn_8397ac5b')"
       preset="card"
       style="width: 600px; max-height: 80vh"
     >

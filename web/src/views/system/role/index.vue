@@ -1,6 +1,11 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { h, onMounted, ref, resolveDirective, withDirectives } from 'vue'
 import {
+
+
+
   NButton,
   NForm,
   NFormItem,
@@ -23,10 +28,12 @@ import CrudTable from '@/components/table/CrudTable.vue'
 
 import { formatDate, renderIcon } from '@/utils'
 import { useCRUD } from '@/composables'
+const { t } = useI18n()
+
 import api from '@/api'
 import TheIcon from '@/components/icon/TheIcon.vue'
 
-defineOptions({ name: '角色管理' })
+defineOptions({ name: i18n.global.t('views.system.title_cn_3f856ec2') })
 
 const $table = ref(null)
 const queryItems = ref({})
@@ -44,7 +51,7 @@ const {
   modalForm,
   modalFormRef,
 } = useCRUD({
-  name: '角色',
+  name: t('views.system.label_cn_464f3d4e'),
   initForm: {},
   doCreate: api.createRole,
   doDelete: api.deleteRole,
@@ -93,7 +100,7 @@ onMounted(() => {
 
 const columns = [
   {
-    title: '角色名',
+    title: t('views.system.title_cn_577c73c2'),
     key: 'name',
     width: 80,
     align: 'center',
@@ -103,13 +110,13 @@ const columns = [
     },
   },
   {
-    title: '角色描述',
+    title: t('views.system.title_cn_9036c224'),
     key: 'desc',
     width: 80,
     align: 'center',
   },
   {
-    title: '创建日期',
+    title: t('views.system.title_cn_696f5a97'),
     key: 'created_at',
     width: 60,
     align: 'center',
@@ -118,7 +125,7 @@ const columns = [
     },
   },
   {
-    title: '操作',
+    title: t('views.network.roadNetworkWorkbench.tabs.fields.colActions'),
     key: 'actions',
     width: 80,
     align: 'center',
@@ -137,7 +144,7 @@ const columns = [
               },
             },
             {
-              default: () => '编辑',
+              default: () => t('views.workbench.label_edit'),
               icon: renderIcon('material-symbols:edit-outline', { size: 16 }),
             }
           ),
@@ -160,13 +167,13 @@ const columns = [
                     style: 'margin-right: 8px;',
                   },
                   {
-                    default: () => '删除',
+                    default: () => t('views.network.roadNetworkWorkbench.tabs.filter.delete'),
                     icon: renderIcon('material-symbols:delete-outline', { size: 16 }),
                   }
                 ),
                 [[vPermission, 'delete/api/v1/role/delete']]
               ),
-            default: () => h('div', {}, '确定删除该角色吗?'),
+            default: () => h('div', {}, t('views.system.label_cn_6fb9c167')),
           }
         ),
         withDirectives(
@@ -201,7 +208,7 @@ const columns = [
               },
             },
             {
-              default: () => '设置权限',
+              default: () => t('views.system.label_cn_57a5acd3'),
               icon: renderIcon('material-symbols:edit-outline', { size: 16 }),
             }
           ),
@@ -230,7 +237,7 @@ async function updateRoleAuthorized() {
     api_infos: apiInfos,
   })
   if (code === 200) {
-    $message?.success('设置成功')
+    $message?.success(t('views.system.label_cn_f6088e4a'))
   } else {
     $message?.error(msg)
   }
@@ -243,7 +250,7 @@ async function updateRoleAuthorized() {
 </script>
 
 <template>
-  <CommonPage show-footer title="角色列表">
+  <CommonPage show-footer :title="t('views.system.title_cn_f53b5122')">
     <template #action>
       <NButton v-permission="'post/api/v1/role/create'" type="primary" @click="handleAdd">
         <TheIcon icon="material-symbols:add" :size="18" class="mr-5" />新建角色
@@ -257,12 +264,12 @@ async function updateRoleAuthorized() {
       :get-data="api.getRoleList"
     >
       <template #queryBar>
-        <QueryBarItem label="角色名" :label-width="50">
+        <QueryBarItem :label="t('views.system.title_cn_577c73c2')" :label-width="50">
           <NInput
             v-model:value="queryItems.role_name"
             clearable
             type="text"
-            placeholder="请输入角色名"
+            :placeholder="t('views.system.placeholder_cn_57facb3c')"
             @keypress.enter="$table?.handleSearch()"
           />
         </QueryBarItem>
@@ -284,18 +291,18 @@ async function updateRoleAuthorized() {
         :disabled="modalAction === 'view'"
       >
         <NFormItem
-          label="角色名"
+          :label="t('views.system.title_cn_577c73c2')"
           path="name"
           :rule="{
             required: true,
-            message: '请输入角色名称',
+            message: t('views.system.placeholder_cn_2a92f526'),
             trigger: ['input', 'blur'],
           }"
         >
-          <NInput v-model:value="modalForm.name" placeholder="请输入角色名称" />
+          <NInput v-model:value="modalForm.name" :placeholder="t('views.system.placeholder_cn_2a92f526')" />
         </NFormItem>
-        <NFormItem label="角色描述" path="desc">
-          <NInput v-model:value="modalForm.desc" placeholder="请输入角色描述" />
+        <NFormItem :label="t('views.system.title_cn_9036c224')" path="desc">
+          <NInput v-model:value="modalForm.desc" :placeholder="t('views.system.placeholder_cn_1d296a9b')" />
         </NFormItem>
       </NForm>
     </CrudModal>
@@ -307,7 +314,7 @@ async function updateRoleAuthorized() {
             <NInput
               v-model:value="pattern"
               type="text"
-              placeholder="筛选"
+              :placeholder="t('views.system.placeholder_cn_c2fe6253')"
               style="flex-grow: 1"
             ></NInput>
           </NGi>
@@ -321,7 +328,7 @@ async function updateRoleAuthorized() {
           </NGi>
         </NGrid>
         <NTabs>
-          <NTabPane name="menu" tab="菜单权限" display-directive="show">
+          <NTabPane name="menu" :tab="t('views.system.label_cn_bb3eb116')" display-directive="show">
             <!-- TODO：级联 -->
             <NTree
               :data="menuOption"
@@ -337,7 +344,7 @@ async function updateRoleAuthorized() {
               @update:checked-keys="(v) => (menu_ids = v)"
             />
           </NTabPane>
-          <NTabPane name="resource" tab="接口权限" display-directive="show">
+          <NTabPane name="resource" :tab="t('views.system.label_cn_e5184116')" display-directive="show">
             <NTree
               ref="apiTree"
               :data="apiOption"

@@ -6,4 +6,5 @@ from .pixel_account import pixel_account_controller as pixel_account_controller
 from .region import region_controller as region_controller
 from .role import role_controller as role_controller
 from .skill import skill_controller as skill_controller
+from .static_file import static_file_controller as static_file_controller
 from .user import user_controller as user_controller

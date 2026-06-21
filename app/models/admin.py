@@ -276,6 +276,11 @@ class Document(BaseModel, TimestampMixin):
     char_count = fields.IntField(default=0, description="字符数量")
     source_type = fields.CharField(max_length=20, description="来源类型: original / analysis")
     source_document = fields.ForeignKeyField("models.Document", null=True, related_name="analysis_documents", description="来源原始文档", index=True)
+    import_source = fields.CharField(max_length=20, null=True, description="数据库导入来源: mysql / sqlite / pixel / road_network")
+    source_table = fields.CharField(max_length=200, null=True, description="原始数据库表名")
+    row_count = fields.IntField(null=True, description="数据行数")
+    dump_date = fields.DatetimeField(null=True, description="数据导出时间")
+    source_last_updated = fields.DatetimeField(null=True, description="源数据最后更新时间")
     ai_proxy_id = fields.IntField(null=True, description="使用的AI代理ID")
     skill_id = fields.IntField(null=True, description="使用的Skill ID")
     prompt = fields.TextField(null=True, description="分析提示词")
@@ -290,6 +295,8 @@ class Report(BaseModel, TimestampMixin):
     content = fields.TextField(description="HTML内容")
     source_sheet_ids = fields.JSONField(default=list, description="引用的原始表格ID列表")
     source_analysis_ids = fields.JSONField(default=list, description="引用的分析表格ID列表")
+    source_document_ids = fields.JSONField(default=list, description="引用的文档ID列表")
+    source_static_ids = fields.JSONField(default=list, description="引用的静态文件ID列表")
     ai_proxy_id = fields.IntField(null=True, description="使用的AI代理ID")
     skill_id = fields.IntField(null=True, description="使用的Skill ID")
     prompt = fields.TextField(null=True, description="生成提示词")
@@ -336,3 +343,28 @@ class RoadMaterial(BaseModel, TimestampMixin):
 
     class Meta:
         table = "road_material"
+
+
+class StaticFile(BaseModel, TimestampMixin):
+    """静态文件数据 — 工作台静态文件TAB的两级目录管理"""
+    workspace = fields.ForeignKeyField("models.Workspace", related_name="static_files", description="所属工作区", index=True)
+    name = fields.CharField(max_length=200, description="文件名称（用户可编辑）", index=True)
+    description = fields.TextField(null=True, description="元数据（文本，用户可输入）")
+    file_name = fields.CharField(max_length=300, description="原始文件名")
+    file_path = fields.CharField(max_length=500, description="存储路径")
+    file_size = fields.BigIntField(default=0, description="文件大小(字节)")
+    source_type = fields.CharField(max_length=20, default="original", description="目录层级: original / ai_analysis", index=True)
+    is_image = fields.BooleanField(default=False, description="是否为图片文件")
+    width = fields.IntField(null=True, description="图片宽度(px)")
+    height = fields.IntField(null=True, description="图片高度(px)")
+    color_mode = fields.CharField(max_length=20, null=True, description="色彩模式(RGB/RGBA/CMYK等)")
+    bit_depth = fields.IntField(null=True, description="位深度")
+    dpi = fields.FloatField(null=True, description="DPI/PPI")
+    format_type = fields.CharField(max_length=10, null=True, description="格式类型(JPEG/PNG/TIFF等)")
+    exif_data = fields.JSONField(null=True, description="EXIF元数据")
+    source = fields.CharField(max_length=50, default="upload", description="来源: upload / cv_processed / ai_generated / ocr / road_material / auto")
+    parent_file = fields.ForeignKeyField("models.StaticFile", null=True, related_name="children", description="父文件（AI处理后关联原始文件）", index=True)
+    short_url_token = fields.CharField(max_length=64, unique=True, null=True, description="短链接令牌", index=True)
+
+    class Meta:
+        table = "static_file"

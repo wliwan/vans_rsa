@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import {
   NButton,
   NCard,
@@ -15,9 +16,9 @@ import {
 import CommonPage from '@/components/page/CommonPage.vue'
 import api from '@/api'
 
-defineOptions({ name: '车辆状态检测' })
-
 const { t } = useI18n()
+
+defineOptions({ name: i18n.global.t('views.tool.vehicle.title') })
 const message = useMessage()
 
 // ── 车辆选择 ──
@@ -92,7 +93,7 @@ async function onAccountChange(value) {
       value: t.type,
     }))
   } catch (e) {
-    message.error('获取车型列表失败')
+    message.error(t('views.pixel.message_cn_98c45a41'))
   } finally {
     carTypesLoading.value = false
   }
@@ -118,7 +119,7 @@ async function onCarTypeChange(value) {
       value: c.car_id,
     }))
   } catch (e) {
-    message.error('获取车辆列表失败')
+    message.error(t('views.pixel.message_cn_97e1c686'))
   } finally {
     carsLoading.value = false
   }
@@ -141,7 +142,7 @@ async function handleCheck() {
     const res = await api.getVehicleFullCheck({ car_id: selectedCar.value })
     checkResult.value = res.data
   } catch (e) {
-    message.error('检测失败：' + (e.response?.data?.msg || e.message))
+    message.error(t('views.tool.message_cn_a0d51a5f') + (e.response?.data?.msg || e.message))
   } finally {
     checking.value = false
   }
@@ -161,7 +162,7 @@ async function handleRefresh() {
         : t('views.tool.vehicle.device_offline')
     )
   } catch (e) {
-    message.error('刷新失败：' + (e.response?.data?.msg || e.message))
+    message.error(t('views.tool.message_cn_df570e03') + (e.response?.data?.msg || e.message))
   } finally {
     refreshing.value = false
   }
@@ -196,7 +197,7 @@ async function handleQueryFlow() {
     }
     message.success(t('views.tool.vehicle.flow_ok'))
   } catch (e) {
-    message.error('流量查询失败：' + (e.response?.data?.msg || e.message))
+    message.error(t('views.tool.message_cn_d6f56b29') + (e.response?.data?.msg || e.message))
   } finally {
     flowLoading.value = false
   }

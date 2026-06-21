@@ -1,4 +1,6 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { onMounted, ref } from 'vue'
 import { NInput, NSelect, NPopover } from 'naive-ui'
 import TheIcon from '@/components/icon/TheIcon.vue'
@@ -9,7 +11,10 @@ import CrudTable from '@/components/table/CrudTable.vue'
 
 import api from '@/api'
 
-defineOptions({ name: '审计日志' })
+
+const { t } = useI18n()
+
+defineOptions({ name: i18n.global.t('views.system.title_cn_a722bf43') })
 
 const $table = ref(null)
 const queryItems = ref({})
@@ -85,55 +90,55 @@ function formatJSON(data) {
       ? JSON.stringify(JSON.parse(data), null, 2)
       : JSON.stringify(data, null, 2)
   } catch (e) {
-    return data || '无数据'
+    return data || t('views.system.label_cn_01ceb3ed')
   }
 }
 
 const columns = [
   {
-    title: '用户名称',
+    title: t('views.system.title_cn_dfb8d511'),
     key: 'username',
     width: 'auto',
     align: 'center',
     ellipsis: { tooltip: true },
   },
   {
-    title: '接口概要',
+    title: t('views.system.title_cn_ccecc66e'),
     key: 'summary',
     align: 'center',
     width: 'auto',
     ellipsis: { tooltip: true },
   },
   {
-    title: '功能模块',
+    title: t('views.system.title_cn_c5b127aa'),
     key: 'module',
     align: 'center',
     width: 'auto',
     ellipsis: { tooltip: true },
   },
   {
-    title: '请求方法',
+    title: t('views.system.title_cn_ec49329b'),
     key: 'method',
     align: 'center',
     width: 'auto',
     ellipsis: { tooltip: true },
   },
   {
-    title: '请求路径',
+    title: t('views.system.title_cn_e407725f'),
     key: 'path',
     align: 'center',
     width: 'auto',
     ellipsis: { tooltip: true },
   },
   {
-    title: '状态码',
+    title: t('views.tool.vehicle.flow_status_code'),
     key: 'status',
     align: 'center',
     width: 'auto',
     ellipsis: { tooltip: true },
   },
   {
-    title: '请求体',
+    title: t('views.system.title_cn_97a2816c'),
     key: 'request_body',
     align: 'center',
     width: 80,
@@ -161,7 +166,7 @@ const columns = [
     },
   },
   {
-    title: '响应体',
+    title: t('views.system.title_cn_3c0c39d0'),
     key: 'response_body',
     align: 'center',
     width: 80,
@@ -189,14 +194,14 @@ const columns = [
     },
   },
   {
-    title: '响应时间(s)',
+    title: t('views.system.title_cn_e1abc5b2'),
     key: 'response_time',
     align: 'center',
     width: 'auto',
     ellipsis: { tooltip: true },
   },
   {
-    title: '操作时间',
+    title: t('views.system.title_cn_7e951d56'),
     key: 'created_at',
     align: 'center',
     width: 'auto',
@@ -216,66 +221,66 @@ const columns = [
       :get-data="api.getAuditLogList"
     >
       <template #queryBar>
-        <QueryBarItem label="用户名称" :label-width="70">
+        <QueryBarItem :label="t('views.system.title_cn_dfb8d511')" :label-width="70">
           <NInput
             v-model:value="queryItems.username"
             clearable
             type="text"
-            placeholder="请输入用户名称"
+            :placeholder="t('views.system.placeholder_cn_fd18aaf5')"
             @keypress.enter="$table?.handleSearch()"
           />
         </QueryBarItem>
-        <QueryBarItem label="功能模块" :label-width="70">
+        <QueryBarItem :label="t('views.system.title_cn_c5b127aa')" :label-width="70">
           <NInput
             v-model:value="queryItems.module"
             clearable
             type="text"
-            placeholder="请输入功能模块"
+            :placeholder="t('views.system.placeholder_cn_4ea94fed')"
             @keypress.enter="$table?.handleSearch()"
           />
         </QueryBarItem>
-        <QueryBarItem label="接口概要" :label-width="70">
+        <QueryBarItem :label="t('views.system.title_cn_ccecc66e')" :label-width="70">
           <NInput
             v-model:value="queryItems.summary"
             clearable
             type="text"
-            placeholder="请输入接口概要"
+            :placeholder="t('views.system.placeholder_cn_3d5d8a74')"
             @keypress.enter="$table?.handleSearch()"
           />
         </QueryBarItem>
-        <QueryBarItem label="请求方法" :label-width="70">
+        <QueryBarItem :label="t('views.system.title_cn_ec49329b')" :label-width="70">
           <NSelect
             v-model:value="queryItems.method"
             style="width: 180px"
             :options="methodOptions"
             clearable
-            placeholder="请选择请求方法"
+            :placeholder="t('views.system.placeholder_cn_ffbdec34')"
           />
         </QueryBarItem>
-        <QueryBarItem label="请求路径" :label-width="70">
+        <QueryBarItem :label="t('views.system.title_cn_e407725f')" :label-width="70">
           <NInput
             v-model:value="queryItems.path"
             clearable
             type="text"
-            placeholder="请输入请求路径"
+            :placeholder="t('views.system.placeholder_cn_23de224b')"
             @keypress.enter="$table?.handleSearch()"
           />
         </QueryBarItem>
-        <QueryBarItem label="状态码" :label-width="60">
+        <QueryBarItem :label="t('views.tool.vehicle.flow_status_code')" :label-width="60">
           <NInput
             v-model:value="queryItems.status"
             clearable
             type="text"
-            placeholder="请输入状态码"
+            :placeholder="t('views.system.placeholder_cn_e489de8f')"
             @keypress.enter="$table?.handleSearch()"
           />
         </QueryBarItem>
-        <QueryBarItem label="操作时间" :label-width="70">
+        <QueryBarItem :label="t('views.system.title_cn_7e951d56')" :label-width="70">
           <NDatePicker
             v-model:value="datetimeRange"
             type="datetimerange"
             clearable
-            placeholder="请选择时间范围"
+            :placeholder="t('views.system.placeholder_cn_ddc4a982')"
             @update:value="handleDateRangeChange"
           />
         </QueryBarItem>

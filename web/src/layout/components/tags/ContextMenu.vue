@@ -11,8 +11,12 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useTagsStore, useAppStore } from '@/store'
 import { renderIcon } from '@/utils'
+
+
+const { t } = useI18n()
 
 const props = defineProps({
   show: {
@@ -40,31 +44,31 @@ const appStore = useAppStore()
 
 const options = computed(() => [
   {
-    label: '重新加载',
+    label: t('layout.label_cn_64ca9bab'),
     key: 'reload',
     disabled: props.currentPath !== tagsStore.activeTag,
     icon: renderIcon('mdi:refresh', { size: '14px' }),
   },
   {
-    label: '关闭',
+    label: t('layout.label_cn_b15d9127'),
     key: 'close',
     disabled: tagsStore.tags.length <= 1,
     icon: renderIcon('mdi:close', { size: '14px' }),
   },
   {
-    label: '关闭其他',
+    label: t('layout.label_cn_6816da19'),
     key: 'close-other',
     disabled: tagsStore.tags.length <= 1,
     icon: renderIcon('mdi:arrow-expand-horizontal', { size: '14px' }),
   },
   {
-    label: '关闭左侧',
+    label: t('layout.label_cn_e9290eaa'),
     key: 'close-left',
     disabled: tagsStore.tags.length <= 1 || props.currentPath === tagsStore.tags[0].path,
     icon: renderIcon('mdi:arrow-expand-left', { size: '14px' }),
   },
   {
-    label: '关闭右侧',
+    label: t('layout.label_cn_649d90ab'),
     key: 'close-right',
     disabled:
       tagsStore.tags.length <= 1 ||

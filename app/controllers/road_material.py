@@ -238,6 +238,31 @@ class RoadMaterialController(CRUDBase[RoadMaterial, RoadMaterialCreate, RoadMate
         await obj.delete()
         return True
 
+    # ── 批量删除素材 ──
+    async def batch_delete_materials(self, material_ids: list[int]) -> dict:
+        """批量删除素材，返回 {deleted_count, not_found_ids, file_errors}"""
+        objs = await self.model.filter(id__in=material_ids).all()
+        found_ids = set(obj.id for obj in objs)
+        not_found_ids = [mid for mid in material_ids if mid not in found_ids]
+
+        file_errors = []
+        deleted_count = 0
+        for obj in objs:
+            try:
+                if os.path.exists(obj.file_path):
+                    os.remove(obj.file_path)
+            except Exception as e:
+                logger.warning(f"删除文件失败: {e}")
+                file_errors.append({"material_id": obj.id, "error": str(e)})
+            await obj.delete()
+            deleted_count += 1
+
+        return {
+            "deleted_count": deleted_count,
+            "not_found_ids": not_found_ids,
+            "file_errors": file_errors,
+        }
+
     # ── 通过短链接令牌获取素材 ──
     async def get_by_short_token(self, token: str) -> Optional[RoadMaterial]:
         return await self.model.filter(short_url_token=token).first()

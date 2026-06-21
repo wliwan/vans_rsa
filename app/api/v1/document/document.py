@@ -1,13 +1,14 @@
 import logging
 import os
+from typing import List
 
-from fastapi import APIRouter, Query, UploadFile
+from fastapi import APIRouter, File, Query, UploadFile
 from fastapi.responses import FileResponse
 from tortoise.expressions import Q
 
 from app.controllers.document import document_controller
 from app.schemas.base import Fail, Success, SuccessExtra
-from app.schemas.documents import DocumentAIAnalyze, DocumentBatchDelete, DocumentUpdateContent
+from app.schemas.documents import DocumentAIAnalyze, DocumentBatchDelete, DocumentCreateText, DocumentUpdateContent
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,33 @@ async def upload_document(
     except Exception as e:
         logger.error(f"上传文档失败: {e}")
         return Fail(code=500, msg="上传失败")
+
+
+@router.post("/batch-upload", summary="批量上传文档")
+async def batch_upload_documents(
+    workspace_id: int = Query(..., description="工作区ID"),
+    files: List[UploadFile] = File(..., description="文档文件列表"),
+):
+    success_list, error_list = [], []
+    for file in files:
+        try:
+            doc = await document_controller.upload(workspace_id, file)
+            success_list.append(await doc.to_dict())
+        except ValueError as e:
+            error_list.append({"filename": file.filename or "未知", "reason": str(e)})
+        except Exception as e:
+            logger.warning(f"批量上传文档失败 [{file.filename}]: {e}")
+            error_list.append({"filename": file.filename or "未知", "reason": str(e)})
+    return Success(
+        data={
+            "success": success_list,
+            "errors": error_list,
+            "total": len(files),
+            "success_count": len(success_list),
+            "error_count": len(error_list),
+        },
+        msg=f"上传完成：成功 {len(success_list)} 个，失败 {len(error_list)} 个",
+    )
 
 
 @router.get("/download", summary="下载文档")
@@ -89,6 +117,16 @@ async def ai_analyze_documents(body: DocumentAIAnalyze):
     except Exception as e:
         logger.error(f"AI分析失败: {e}")
         return Fail(code=500, msg="分析失败")
+
+
+@router.post("/create-text", summary="从文本创建文档")
+async def create_document_from_text(body: DocumentCreateText):
+    try:
+        doc = await document_controller.create_from_text(body.workspace_id, body.name, body.content)
+        return Success(data=await doc.to_dict(), msg="创建成功")
+    except Exception as e:
+        logger.error(f"创建文档失败: {e}")
+        return Fail(code=500, msg="创建失败")
 
 
 @router.get("/get-content", summary="获取文档内容")

@@ -1,9 +1,9 @@
-import en from './en.json'
 import cn from './cn.json'
+import en from './en.json'
 import tr from './tr.json'
 
 export default {
-  en,
   cn,
+  en,
   tr,
 }

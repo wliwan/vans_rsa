@@ -1,8 +1,12 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { computed } from 'vue'
 import { NButton, NCard, NProgress, NSpace, NTag, NTooltip } from 'naive-ui'
 import { useTaskProgressStore } from '@/store/modules/taskProgress'
 import { storeToRefs } from 'pinia'
+
+
+const { t } = useI18n()
 
 const store = useTaskProgressStore()
 const { tasks, collapsed } = storeToRefs(store)
@@ -10,7 +14,7 @@ const { tasks, collapsed } = storeToRefs(store)
 const showPanel = computed(() => tasks.value.length > 0 && !collapsed.value)
 
 const statusColors = { running: '#2080f0', done: '#18a058', error: '#d03050' }
-const statusLabels = { running: '进行中', done: '已完成', error: '失败' }
+const statusLabels = { running: '进行中', done: '已完成', error: t('views.network.roadNetwork.statusMap.FAILED') }
 
 function onRetry(task) {
   store.removeTask(task.id)

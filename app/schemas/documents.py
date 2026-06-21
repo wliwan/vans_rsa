@@ -15,6 +15,12 @@ class DocumentBatchDelete(BaseModel):
     document_ids: List[int] = Field(..., description="要删除的文档ID列表")
 
 
+class DocumentCreateText(BaseModel):
+    workspace_id: int = Field(..., description="工作区ID")
+    name: str = Field(..., description="文档名称")
+    content: str = Field(..., description="文档文本内容")
+
+
 class DocumentUpdateContent(BaseModel):
     document_id: int = Field(..., description="文档ID")
     content: str = Field(..., description="文档内容(Markdown)")

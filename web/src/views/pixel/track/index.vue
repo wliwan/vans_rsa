@@ -1,6 +1,11 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { h, onMounted, ref } from 'vue'
 import {
+
+
+
   NButton,
   NDatePicker,
   NInput,
@@ -16,7 +21,9 @@ import CrudTable from '@/components/table/CrudTable.vue'
 import TheIcon from '@/components/icon/TheIcon.vue'
 import api from '@/api'
 
-defineOptions({ name: '轨迹点数据管理' })
+const { t } = useI18n()
+
+defineOptions({ name: i18n.global.t('views.pixel.title_cn_b025c729') })
 
 const message = useMessage()
 const $table = ref(null)
@@ -49,22 +56,22 @@ const queryItems = ref({
 
 // 表格列
 const columns = [
-  { title: '轨迹时间', key: 'track_time', width: 160, ellipsis: { tooltip: true } },
-  { title: '车辆ID', key: 'car_id', width: 160, ellipsis: { tooltip: true } },
-  { title: '道路名称', key: 'road_name', width: 180, ellipsis: { tooltip: true } },
+  { title: t('views.pixel.title_cn_40518096'), key: 'track_time', width: 160, ellipsis: { tooltip: true } },
+  { title: t('views.pixel.title_cn_d01ecbaf'), key: 'car_id', width: 160, ellipsis: { tooltip: true } },
+  { title: t('views.pixel.title_cn_3f25ec9e'), key: 'road_name', width: 180, ellipsis: { tooltip: true } },
   {
-    title: '车辆类型',
+    title: t('views.pixel.title_cn_702fd23b'),
     key: 'car_type',
     width: 90,
     render(row) {
-      const typeMap = { 1: '小客车', 2: '巡检车', 3: '其他' }
+      const typeMap = { 1: '小客车', 2: '巡检车', 3: t('views.pixel.label_cn_0d98c747') }
       return h('span', typeMap[row.car_type] || `类型${row.car_type}`)
     },
   },
-  { title: '经度', key: 'longitude', width: 100, ellipsis: { tooltip: true } },
-  { title: '纬度', key: 'latitude', width: 100, ellipsis: { tooltip: true } },
+  { title: t('views.network.region.formLabels.longitude'), key: 'longitude', width: 100, ellipsis: { tooltip: true } },
+  { title: t('views.network.region.formLabels.latitude'), key: 'latitude', width: 100, ellipsis: { tooltip: true } },
   {
-    title: '标志',
+    title: t('views.pixel.title_cn_d12e77c5'),
     key: 'flag',
     width: 70,
     render(row) {
@@ -83,7 +90,7 @@ async function loadAccounts() {
       value: a.id,
     }))
   } catch (e) {
-    message.error('获取账户列表失败')
+    message.error(t('views.pixel.message_cn_819b786c'))
   }
 }
 
@@ -108,7 +115,7 @@ async function onAccountChange(value) {
       value: t.type,
     }))
   } catch (e) {
-    message.error('获取车型列表失败')
+    message.error(t('views.pixel.message_cn_98c45a41'))
   } finally {
     carTypesLoading.value = false
   }
@@ -135,7 +142,7 @@ async function onCarTypeChange(value) {
       value: c.car_id,
     }))
   } catch (e) {
-    message.error('获取车辆列表失败')
+    message.error(t('views.pixel.message_cn_97e1c686'))
   } finally {
     carsLoading.value = false
   }
@@ -152,15 +159,15 @@ function getData(params) {
 // 同步数据
 async function handleSync() {
   if (!selectedAccount.value) {
-    message.warning('请先选择像素账户')
+    message.warning(t('views.pixel.message_cn_9ba8511a'))
     return
   }
   if (!selectedCar.value) {
-    message.warning('请选择车型和车辆')
+    message.warning(t('views.pixel.placeholder_cn_5754890a'))
     return
   }
   if (!dateRange.value || dateRange.value.length !== 2) {
-    message.warning('请选择同步时间段')
+    message.warning(t('views.pixel.placeholder_cn_0e49c6f7'))
     return
   }
 
@@ -185,7 +192,7 @@ async function handleSync() {
     )
     $table.value?.handleSearch()
   } catch (e) {
-    message.error('同步失败：' + (e.response?.data?.msg || e.message))
+    message.error(t('views.pixel.message_cn_a0f67c55') + (e.response?.data?.msg || e.message))
   } finally {
     syncing.value = false
   }
@@ -194,7 +201,7 @@ async function handleSync() {
 // 清除数据
 async function handleClear() {
   if (!selectedAccount.value) {
-    message.warning('请先选择像素账户')
+    message.warning(t('views.pixel.message_cn_9ba8511a'))
     return
   }
   try {
@@ -205,7 +212,7 @@ async function handleClear() {
     message.success(`已清除 ${res.data.data?.deleted || 0} 条数据`)
     $table.value?.handleSearch()
   } catch (e) {
-    message.error('清除失败')
+    message.error(t('views.network.roadNetworkWorkbench.messages.clearCacheFail'))
   }
 }
 
@@ -216,14 +223,14 @@ onMounted(async () => {
 </script>
 
 <template>
-  <CommonPage title="轨迹点数据管理">
+  <CommonPage :title="t('views.pixel.title_cn_b025c729')">
     <!-- 操作区：四级联动 -->
     <NSpace align="center" style="margin-bottom: 12px">
       <span style="font-weight: 500">像素账户：</span>
       <NSelect
         v-model:value="selectedAccount"
         :options="accountOptions"
-        placeholder="选择像素平台账户"
+        :placeholder="t('views.pixel.placeholder_cn_7f19cdb7')"
         clearable
         style="width: 220px"
         @update:value="onAccountChange"
@@ -234,7 +241,7 @@ onMounted(async () => {
         :options="carTypeOptions"
         :loading="carTypesLoading"
         :disabled="!selectedAccount"
-        placeholder="选择车型"
+        :placeholder="t('views.tool.vehicle.select_car_type')"
         clearable
         style="width: 180px"
         @update:value="onCarTypeChange"
@@ -245,7 +252,7 @@ onMounted(async () => {
         :options="carOptions"
         :loading="carsLoading"
         :disabled="!selectedCarType"
-        placeholder="选择车辆"
+        :placeholder="t('views.tool.vehicle.select_car')"
         clearable
         filterable
         style="width: 220px"
@@ -256,7 +263,7 @@ onMounted(async () => {
         type="daterange"
         clearable
         style="width: 220px"
-        placeholder="选择同步时间段"
+        :placeholder="t('views.pixel.placeholder_cn_542fdf02')"
       />
       <NButton type="primary" :loading="syncing" :disabled="!selectedCar" @click="handleSync">
         <TheIcon icon="material-symbols:sync" :size="18" class="mr-5" />同步数据
@@ -267,7 +274,7 @@ onMounted(async () => {
             <TheIcon icon="material-symbols:delete-outline" :size="18" class="mr-5" />清除数据
           </NButton>
         </template>
-        确认清除该账户{{ selectedCar ? '该车辆' : '所有' }}的轨迹数据？
+        确认清除该账户{{ selectedCar ? '该车辆' : t('views.pixel.label_cn_9a7b52fc') }}的轨迹数据？
       </NPopconfirm>
     </NSpace>
 
@@ -279,19 +286,19 @@ onMounted(async () => {
       :get-data="getData"
     >
       <template #queryBar>
-        <QueryBarItem label="车辆ID" :content="queryItems.car_id">
+        <QueryBarItem :label="t('views.pixel.title_cn_d01ecbaf')" :content="queryItems.car_id">
           <NInput
             v-model:value="queryItems.car_id"
             clearable
-            placeholder="请输入车辆ID"
+            :placeholder="t('views.pixel.placeholder_cn_87da081e')"
             @keydown.enter="$table.handleSearch()"
           />
         </QueryBarItem>
-        <QueryBarItem label="道路名称" :content="queryItems.road_name">
+        <QueryBarItem :label="t('views.pixel.title_cn_3f25ec9e')" :content="queryItems.road_name">
           <NInput
             v-model:value="queryItems.road_name"
             clearable
-            placeholder="请输入道路名称"
+            :placeholder="t('views.pixel.placeholder_cn_33c3deb4')"
             @keydown.enter="$table.handleSearch()"
           />
         </QueryBarItem>

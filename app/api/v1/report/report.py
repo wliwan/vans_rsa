@@ -15,6 +15,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.post("/preview-sources", summary="预览数据源（MD转换 + 统计）")
+async def preview_sources(req: ReportPreviewSources):
+    try:
+        result = await report_service.preview_sources(
+            sheet_ids=req.sheet_ids,
+            analysis_ids=req.analysis_ids,
+            document_ids=req.document_ids,
+            static_file_ids=req.static_file_ids,
+        )
+        return Success(data=result)
+    except Exception as e:
+        logger.exception("预览数据源失败")
+        return Fail(code=500, msg=f"预览失败: {str(e)}")
+
+
 @router.get("/list", summary="报告列表")
 async def list_reports(
     workspace_id: int = Query(..., description="工作区ID"),
@@ -43,6 +58,8 @@ async def generate_report(req: ReportCreate):
             ai_proxy_id=req.ai_proxy_id,
             skill_id=req.skill_id,
             extra_prompt=req.prompt,
+            document_ids=req.source_document_ids,
+            static_file_ids=req.source_static_ids,
         )
         return Success(data=await report.to_dict(), msg="报告生成成功")
     except Exception as e:
@@ -80,6 +97,8 @@ async def clone_report(req: ReportClone):
         content=source.content,
         source_sheet_ids=source.source_sheet_ids,
         source_analysis_ids=source.source_analysis_ids,
+        source_document_ids=source.source_document_ids,
+        source_static_ids=source.source_static_ids,
         ai_proxy_id=source.ai_proxy_id,
         skill_id=source.skill_id,
         prompt=source.prompt,

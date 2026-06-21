@@ -1,7 +1,12 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { computed, onMounted, ref } from 'vue'
 import { useBreakpoints } from '@vueuse/core'
 import {
+
+
+
   NButton, NInput, NLayout, NLayoutSider, NLayoutContent,
   NList, NListItem, NModal, NSpace, NSelect, NPopconfirm,
   NForm, NFormItem, NTag, NUpload, NUploadDragger, NText, NDivider,
@@ -10,7 +15,9 @@ import {
 import TheIcon from '@/components/icon/TheIcon.vue'
 import api from '@/api'
 
-defineOptions({ name: '统计中心' })
+const { t } = useI18n()
+
+defineOptions({ name: i18n.global.t('views.statistic-center.title_cn_ec819346') })
 
 const message = useMessage()
 
@@ -61,7 +68,7 @@ async function loadWorkspaces() {
   try {
     const res = await api.getWorkspaceList({ page: 1, page_size: 9999 })
     workspaces.value = res.data || []
-  } catch (e) { message.error('加载工作区失败') }
+  } catch (e) { message.error(t('views.statistic-center.message_cn_17eec3f1')) }
 }
 
 // 选择工作区
@@ -76,7 +83,7 @@ async function loadSheets() {
   try {
     const res = await api.getSheetList({ workspace_id: selectedWs.value.id })
     sheets.value = res.data || []
-  } catch (e) { message.error('加载表格失败') }
+  } catch (e) { message.error(t('views.statistic-center.message_cn_51117ae0')) }
 }
 
 async function loadAnalyses() {
@@ -84,7 +91,7 @@ async function loadAnalyses() {
   try {
     const res = await api.getAnalysisList({ workspace_id: selectedWs.value.id })
     analyses.value = res.data || []
-  } catch (e) { message.error('加载分析失败') }
+  } catch (e) { message.error(t('views.statistic-center.message_cn_67dc5b1a')) }
 }
 
 // 工作区弹窗
@@ -105,7 +112,7 @@ function openCreateWs() {
 }
 
 function openEditWs() {
-  if (!selectedWs.value) { message.warning('请选择工作区'); return }
+  if (!selectedWs.value) { message.warning(t('views.statistic-center.placeholder_cn_cb53b40f')); return }
   wsEditing.value = true
   const ws = selectedWs.value
   wsModalForm.value = {
@@ -117,7 +124,7 @@ function openEditWs() {
 }
 
 async function handleWsSubmit() {
-  if (!wsModalForm.value.name) { message.warning('请输入名称'); return }
+  if (!wsModalForm.value.name) { message.warning(t('views.network.region.formRules.nameRequired')); return }
   try {
     if (wsEditing.value) {
       await api.updateWorkspace({ id: selectedWs.value.id, ...wsModalForm.value })
@@ -126,7 +133,7 @@ async function handleWsSubmit() {
     }
     showWsModal.value = false
     await loadWorkspaces()
-  } catch (e) { message.error('操作失败') }
+  } catch (e) { message.error(t('views.skill.message_cn_5fa802be')) }
 }
 
 async function deleteWorkspace() {
@@ -137,18 +144,18 @@ async function deleteWorkspace() {
     sheets.value = []
     analyses.value = []
     await loadWorkspaces()
-  } catch (e) { message.error('删除失败') }
+  } catch (e) { message.error(t('views.network.roadNetworkWorkbench.messages.deleteFail')) }
 }
 
 // 上传文件
 async function handleUpload({ file }) {
-  if (!selectedWs.value) { message.warning('请选择工作区'); return }
+  if (!selectedWs.value) { message.warning(t('views.statistic-center.placeholder_cn_cb53b40f')); return }
   uploading.value = true
   try {
     await api.uploadSheet(selectedWs.value.id, file.file)
-    message.success('上传成功')
+    message.success(t('views.network.roadNetwork.messages.uploadSuccess'))
     await loadSheets()
-  } catch (e) { message.error('上传失败') }
+  } catch (e) { message.error(t('views.statistic-center.message_cn_54e5de42')) }
   uploading.value = false
 }
 
@@ -157,14 +164,14 @@ async function exportSheet(sheet) {
   try {
     const res = await api.exportSheet({ sheet_id: sheet.id })
     downloadBlob(res.data, sheet.name)
-  } catch (e) { message.error('导出失败') }
+  } catch (e) { message.error(t('views.network.roadNetworkWorkbench.messages.exportFail')) }
 }
 
 async function exportAnalysis(a) {
   try {
     const res = await api.exportAnalysis({ analysis_id: a.id })
     downloadBlob(res.data, a.name + '.xlsx')
-  } catch (e) { message.error('导出失败') }
+  } catch (e) { message.error(t('views.network.roadNetworkWorkbench.messages.exportFail')) }
 }
 
 function downloadBlob(data, filename) {
@@ -179,7 +186,7 @@ function downloadBlob(data, filename) {
 async function openAnalyze(sheet) {
   analyzeForm.value = {
     workspace_id: selectedWs.value.id, sheet_id: sheet.id,
-    name: sheet.name.replace(/\.[^.]+$/, '') + '_分析',
+    name: sheet.name.replace(/\.[^.]+$/, '') + t('views.statistic-center.label_cn_d93cc1b1'),
     ai_proxy_id: null, skill_id: null, prompt: '',
   }
   try {
@@ -194,23 +201,23 @@ async function openAnalyze(sheet) {
 }
 
 async function handleAnalyzeSubmit() {
-  if (!analyzeForm.value.ai_proxy_id) { message.warning('请选择AI代理'); return }
+  if (!analyzeForm.value.ai_proxy_id) { message.warning(t('views.skill.placeholder_cn_ee488ec6')); return }
   try {
     loading.value = true
     await api.analyzeSheet(analyzeForm.value)
-    message.success('分析完成')
+    message.success(t('views.statistic-center.message_cn_a1220190'))
     showAnalyzeModal.value = false
     await loadAnalyses()
-  } catch (e) { message.error('分析失败') }
+  } catch (e) { message.error(t('views.network.roadNetworkWorkbench.messages.analyzeFail')) }
   loading.value = false
 }
 
 // 关联分析弹窗
 function openCorrelate() {
-  if (!selectedWs.value) { message.warning('请选择工作区'); return }
+  if (!selectedWs.value) { message.warning(t('views.statistic-center.placeholder_cn_cb53b40f')); return }
   correlateForm.value = {
     workspace_id: selectedWs.value.id, sheet_a_id: null, sheet_b_id: null,
-    name: '关联分析', ai_proxy_id: null, skill_id: null, prompt: '',
+    name: t('views.statistic-center.label_cn_5d47dd27'), ai_proxy_id: null, skill_id: null, prompt: '',
   }
   showCorrelateModal.value = true
   // 复用选项
@@ -227,15 +234,15 @@ function openCorrelate() {
 }
 
 async function handleCorrelateSubmit() {
-  if (!correlateForm.value.ai_proxy_id) { message.warning('请选择AI代理'); return }
-  if (!correlateForm.value.sheet_a_id || !correlateForm.value.sheet_b_id) { message.warning('请选择两个表格'); return }
+  if (!correlateForm.value.ai_proxy_id) { message.warning(t('views.skill.placeholder_cn_ee488ec6')); return }
+  if (!correlateForm.value.sheet_a_id || !correlateForm.value.sheet_b_id) { message.warning(t('views.statistic-center.placeholder_cn_0b253166')); return }
   try {
     loading.value = true
     await api.correlateSheets(correlateForm.value)
-    message.success('关联分析完成')
+    message.success(t('views.statistic-center.message_cn_aa8f059c'))
     showCorrelateModal.value = false
     await loadAnalyses()
-  } catch (e) { message.error('分析失败') }
+  } catch (e) { message.error(t('views.network.roadNetworkWorkbench.messages.analyzeFail')) }
   loading.value = false
 }
 
@@ -244,14 +251,14 @@ async function deleteSheet(sheet) {
   try {
     await api.deleteSheet({ sheet_id: sheet.id })
     await loadSheets()
-  } catch (e) { message.error('删除失败') }
+  } catch (e) { message.error(t('views.network.roadNetworkWorkbench.messages.deleteFail')) }
 }
 
 async function deleteAnalysisItem(a) {
   try {
     await api.deleteAnalysis({ analysis_id: a.id })
     await loadAnalyses()
-  } catch (e) { message.error('删除失败') }
+  } catch (e) { message.error(t('views.network.roadNetworkWorkbench.messages.deleteFail')) }
 }
 
 function toggleAnalysisSelect(id) {
@@ -269,14 +276,14 @@ function toggleAllAnalyses() {
 }
 
 async function batchDeleteAnalyses() {
-  if (!selectedAnalysisIds.value.length) { message.warning('请选择要删除的表格'); return }
+  if (!selectedAnalysisIds.value.length) { message.warning(t('views.statistic-center.placeholder_cn_5ec88707')); return }
   try {
     loading.value = true
     await api.batchDeleteAnalyses({ analysis_ids: [...selectedAnalysisIds.value] })
     selectedAnalysisIds.value = []
-    message.success('批量删除成功')
+    message.success(t('views.statistic-center.message_cn_eedd70c6'))
     await loadAnalyses()
-  } catch (e) { message.error('批量删除失败') }
+  } catch (e) { message.error(t('views.statistic-center.message_cn_1bac376d')) }
   loading.value = false
 }
 
@@ -286,20 +293,20 @@ async function clearAllAnalyses() {
     loading.value = true
     await api.clearAnalyses({ workspace_id: selectedWs.value.id })
     selectedAnalysisIds.value = []
-    message.success('已清空全部分析表格')
+    message.success(t('views.statistic-center.message_cn_e1424291'))
     await loadAnalyses()
-  } catch (e) { message.error('清空失败') }
+  } catch (e) { message.error(t('views.network.region.messages.clearFail')) }
   loading.value = false
 }
 
 async function batchExportAnalyses() {
-  if (!selectedAnalysisIds.value.length) { message.warning('请选择要导出的表格'); return }
+  if (!selectedAnalysisIds.value.length) { message.warning(t('views.statistic-center.placeholder_cn_95a97ff9')); return }
   try {
     loading.value = true
     const res = await api.batchExportAnalyses({ analysis_ids: [...selectedAnalysisIds.value] })
-    downloadBlob(res.data, '分析表格批量导出.zip')
-    message.success('批量导出成功')
-  } catch (e) { message.error('批量导出失败') }
+    downloadBlob(res.data, t('views.statistic-center.label_cn_fd0d0f30'))
+    message.success(t('views.statistic-center.message_cn_382c07d0'))
+  } catch (e) { message.error(t('views.statistic-center.message_cn_08d6cb0e')) }
   loading.value = false
 }
 
@@ -457,7 +464,7 @@ onMounted(() => loadWorkspaces())
                     <span class="font-medium">{{ a.name }}</span>
                     <span v-if="a.file_size" class="text-gray-400 text-xs ml-2">({{ formatFileSize(a.file_size) }})</span>
                     <NTag size="small" :type="a.source_type === 'correlation' ? 'warning' : 'info'" class="ml-2">
-                      {{ a.source_type === 'correlation' ? '关联' : '分析' }}
+                      {{ a.source_type === 'correlation' ? '关联' : t('views.statistic-center.label_cn_72fa7c88') }}
                     </NTag>
                     <span class="text-gray-400 text-xs ml-3">{{ a.created_at }}</span>
                   </div>
@@ -482,16 +489,16 @@ onMounted(() => loadWorkspaces())
   </NLayout>
 
   <!-- 工作区弹窗 -->
-  <NModal v-model:show="showWsModal" :title="wsEditing ? '编辑工作区' : '新建工作区'" preset="card" style="width: 500px">
+  <NModal v-model:show="showWsModal" :title="wsEditing ? '编辑工作区' : t('views.statistic-center.title_cn_9cb11943')" preset="card" style="width: 500px">
     <NForm :model="wsModalForm" label-placement="top">
-      <NFormItem label="名称" required>
-        <NInput v-model:value="wsModalForm.name" placeholder="工作区名称" />
+      <NFormItem :label="t('views.network.region.formLabels.name')" required>
+        <NInput v-model:value="wsModalForm.name" :placeholder="t('views.statistic-center.placeholder_cn_042874e1')" />
       </NFormItem>
-      <NFormItem label="描述">
-        <NInput v-model:value="wsModalForm.description" placeholder="描述" type="textarea" />
+      <NFormItem :label="t('views.statistic-center.label_cn_3bdd08ad')">
+        <NInput v-model:value="wsModalForm.description" :placeholder="t('views.statistic-center.label_cn_3bdd08ad')" type="textarea" />
       </NFormItem>
-      <NFormItem label="授权用户">
-        <NSelect v-model:value="wsModalForm.user_ids" :options="userOptions" multiple placeholder="选择用户" filterable />
+      <NFormItem :label="t('views.skill.label_cn_5f07f1ad')">
+        <NSelect v-model:value="wsModalForm.user_ids" :options="userOptions" multiple :placeholder="t('views.statistic-center.placeholder_cn_6674b18c')" filterable />
       </NFormItem>
     </NForm>
     <template #footer>
@@ -503,19 +510,19 @@ onMounted(() => loadWorkspaces())
   </NModal>
 
   <!-- AI 分析弹窗 -->
-  <NModal v-model:show="showAnalyzeModal" title="AI 分析" preset="card" style="width: 560px">
+  <NModal v-model:show="showAnalyzeModal" :title="t('views.statistic-center.title_ai_cn_74d49b5a')" preset="card" style="width: 560px">
     <NForm :model="analyzeForm" label-placement="top">
-      <NFormItem label="分析名称" required>
-        <NInput v-model:value="analyzeForm.name" placeholder="分析结果名称" />
+      <NFormItem :label="t('views.statistic-center.label_cn_99757729')" required>
+        <NInput v-model:value="analyzeForm.name" :placeholder="t('views.statistic-center.placeholder_cn_cfd1692e')" />
       </NFormItem>
-      <NFormItem label="AI 代理" required>
-        <NSelect v-model:value="analyzeForm.ai_proxy_id" :options="proxyOptions" placeholder="选择AI代理" />
+      <NFormItem :label="t('views.statistic-center.label_ai_cn_9697e5cf')" required>
+        <NSelect v-model:value="analyzeForm.ai_proxy_id" :options="proxyOptions" :placeholder="t('views.skill.placeholder_cn_523369d2')" />
       </NFormItem>
-      <NFormItem label="辅助 Skill (可选)">
-        <NSelect v-model:value="analyzeForm.skill_id" :options="skillOptions" placeholder="选择 Skill 作为分析框架" clearable />
+      <NFormItem :label="t('views.statistic-center.label_cn_59cd198d')">
+        <NSelect v-model:value="analyzeForm.skill_id" :options="skillOptions" :placeholder="t('views.statistic-center.placeholder_cn_7395e01f')" clearable />
       </NFormItem>
-      <NFormItem label="分析提示词">
-        <NInput v-model:value="analyzeForm.prompt" type="textarea" placeholder="额外的分析要求..." />
+      <NFormItem :label="t('views.statistic-center.label_cn_5d4e5198')">
+        <NInput v-model:value="analyzeForm.prompt" type="textarea" :placeholder="t('views.statistic-center.placeholder_cn_16c348b7')" />
       </NFormItem>
     </NForm>
     <template #footer>
@@ -527,25 +534,25 @@ onMounted(() => loadWorkspaces())
   </NModal>
 
   <!-- 关联分析弹窗 -->
-  <NModal v-model:show="showCorrelateModal" title="关联分析" preset="card" style="width: 560px">
+  <NModal v-model:show="showCorrelateModal" :title="t('views.statistic-center.label_cn_5d47dd27')" preset="card" style="width: 560px">
     <NForm :model="correlateForm" label-placement="top">
-      <NFormItem label="分析名称" required>
-        <NInput v-model:value="correlateForm.name" placeholder="分析结果名称" />
+      <NFormItem :label="t('views.statistic-center.label_cn_99757729')" required>
+        <NInput v-model:value="correlateForm.name" :placeholder="t('views.statistic-center.placeholder_cn_cfd1692e')" />
       </NFormItem>
-      <NFormItem label="表格 A" required>
-        <NSelect v-model:value="correlateForm.sheet_a_id" :options="sheets.map(s=>({label:s.name,value:s.id}))" placeholder="选择表格A" />
+      <NFormItem :label="t('views.statistic-center.label_cn_4f6c09ef')" required>
+        <NSelect v-model:value="correlateForm.sheet_a_id" :options="sheets.map(s=>({label:s.name,value:s.id}))" :placeholder="t('views.statistic-center.placeholder_cn_6d728351')" />
       </NFormItem>
-      <NFormItem label="表格 B" required>
-        <NSelect v-model:value="correlateForm.sheet_b_id" :options="sheets.map(s=>({label:s.name,value:s.id}))" placeholder="选择表格B" />
+      <NFormItem :label="t('views.statistic-center.label_cn_aae5ac8a')" required>
+        <NSelect v-model:value="correlateForm.sheet_b_id" :options="sheets.map(s=>({label:s.name,value:s.id}))" :placeholder="t('views.statistic-center.placeholder_cn_a531dc62')" />
       </NFormItem>
-      <NFormItem label="AI 代理" required>
-        <NSelect v-model:value="correlateForm.ai_proxy_id" :options="proxyOptions" placeholder="选择AI代理" />
+      <NFormItem :label="t('views.statistic-center.label_ai_cn_9697e5cf')" required>
+        <NSelect v-model:value="correlateForm.ai_proxy_id" :options="proxyOptions" :placeholder="t('views.skill.placeholder_cn_523369d2')" />
       </NFormItem>
-      <NFormItem label="辅助 Skill (可选)">
-        <NSelect v-model:value="correlateForm.skill_id" :options="skillOptions" placeholder="选择 Skill" clearable />
+      <NFormItem :label="t('views.statistic-center.label_cn_59cd198d')">
+        <NSelect v-model:value="correlateForm.skill_id" :options="skillOptions" :placeholder="t('views.statistic-center.placeholder_cn_e2dd3849')" clearable />
       </NFormItem>
-      <NFormItem label="分析提示词">
-        <NInput v-model:value="correlateForm.prompt" type="textarea" placeholder="额外的分析要求..." />
+      <NFormItem :label="t('views.statistic-center.label_cn_5d4e5198')">
+        <NInput v-model:value="correlateForm.prompt" type="textarea" :placeholder="t('views.statistic-center.placeholder_cn_16c348b7')" />
       </NFormItem>
     </NForm>
     <template #footer>

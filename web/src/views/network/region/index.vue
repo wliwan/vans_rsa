@@ -1,8 +1,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { useRoute } from 'vue-router'
 import {
+
+
   NButton,
   NForm,
   NFormItem,
@@ -22,11 +25,12 @@ import {
 import CommonPage from '@/components/page/CommonPage.vue'
 import TheIcon from '@/components/icon/TheIcon.vue'
 import { useTaskProgressStore } from '@/store/modules/taskProgress'
+const { t } = useI18n()
+
 import api from '@/api'
 
-defineOptions({ name: '全球国家及行政区管理' })
+defineOptions({ name: i18n.global.t('views.network.region.title') })
 
-const { t } = useI18n()
 
 const message = useMessage()
 const route = useRoute()

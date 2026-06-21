@@ -63,6 +63,23 @@ class DocumentController:
         return doc
 
     @staticmethod
+    async def create_from_text(workspace_id: int, name: str, content: str) -> Document:
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        safe_name = name.replace("/", "_").replace("\\", "_")[:100]
+        unique_name = f"{uuid.uuid4().hex}_{safe_name}.md"
+        file_path = os.path.join(UPLOAD_DIR, unique_name)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return await Document.create(
+            workspace_id=workspace_id,
+            name=name if name.endswith('.md') else name + '.md',
+            file_path=file_path,
+            file_size=os.path.getsize(file_path),
+            char_count=len(content),
+            source_type="original",
+        )
+
+    @staticmethod
     async def delete(document_id: int):
         doc = await Document.filter(id=document_id).first()
         if doc:

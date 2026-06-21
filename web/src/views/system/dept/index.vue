@@ -1,4 +1,6 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { h, onMounted, ref, resolveDirective, withDirectives } from 'vue'
 import { NButton, NForm, NFormItem, NInput, NInputNumber, NPopconfirm, NTreeSelect } from 'naive-ui'
 
@@ -12,8 +14,10 @@ import { renderIcon } from '@/utils'
 import { useCRUD } from '@/composables'
 // import { loginTypeMap, loginTypeOptions } from '@/constant/data'
 import api from '@/api'
+const { t } = useI18n()
 
-defineOptions({ name: '部门管理' })
+
+defineOptions({ name: i18n.global.t('views.system.title_cn_36805751') })
 
 const $table = ref(null)
 const queryItems = ref({})
@@ -50,7 +54,7 @@ const deptRules = {
   name: [
     {
       required: true,
-      message: '请输入部门名称',
+      message: t('views.system.placeholder_cn_81e98e81'),
       trigger: ['input', 'blur', 'change'],
     },
   ],
@@ -63,21 +67,21 @@ async function addDepts() {
 
 const columns = [
   {
-    title: '部门名称',
+    title: t('views.system.title_cn_44dbfcab'),
     key: 'name',
     width: 'auto',
     align: 'center',
     ellipsis: { tooltip: true },
   },
   {
-    title: '备注',
+    title: t('views.system.title_cn_2432b575'),
     key: 'desc',
     align: 'center',
     width: 'auto',
     ellipsis: { tooltip: true },
   },
   {
-    title: '操作',
+    title: t('views.network.roadNetworkWorkbench.tabs.fields.colActions'),
     key: 'actions',
     width: 'auto',
     align: 'center',
@@ -102,7 +106,7 @@ const columns = [
               },
             },
             {
-              default: () => '编辑',
+              default: () => t('views.workbench.label_edit'),
               icon: renderIcon('material-symbols:edit', { size: 16 }),
             }
           ),
@@ -125,13 +129,13 @@ const columns = [
                     style: 'margin-left: 8px;',
                   },
                   {
-                    default: () => '删除',
+                    default: () => t('views.network.roadNetworkWorkbench.tabs.filter.delete'),
                     icon: renderIcon('material-symbols:delete-outline', { size: 16 }),
                   }
                 ),
                 [[vPermission, 'delete/api/v1/dept/delete']]
               ),
-            default: () => h('div', {}, '确定删除该部门吗?'),
+            default: () => h('div', {}, t('views.system.label_cn_32def2e1')),
           }
         ),
       ]
@@ -142,7 +146,7 @@ const columns = [
 
 <template>
   <!-- 业务页面 -->
-  <CommonPage show-footer title="部门列表">
+  <CommonPage show-footer :title="t('views.system.title_cn_570e9168')">
     <template #action>
       <div>
         <NButton
@@ -163,12 +167,12 @@ const columns = [
       :get-data="api.getDepts"
     >
       <template #queryBar>
-        <QueryBarItem label="部门名称" :label-width="80">
+        <QueryBarItem :label="t('views.system.title_cn_44dbfcab')" :label-width="80">
           <NInput
             v-model:value="queryItems.name"
             clearable
             type="text"
-            placeholder="请输入部门名称"
+            :placeholder="t('views.system.placeholder_cn_81e98e81')"
             @keypress.enter="$table?.handleSearch()"
           />
         </QueryBarItem>
@@ -190,25 +194,25 @@ const columns = [
         :model="modalForm"
         :rules="deptRules"
       >
-        <NFormItem label="父级部门" path="parent_id">
+        <NFormItem :label="t('views.system.label_cn_62512e16')" path="parent_id">
           <NTreeSelect
             v-model:value="modalForm.parent_id"
             :options="deptOption"
             key-field="id"
             label-field="name"
-            placeholder="请选择父级部门"
+            :placeholder="t('views.system.placeholder_cn_ac2b65ce')"
             clearable
             default-expand-all
             :disabled="isDisabled"
           ></NTreeSelect>
         </NFormItem>
-        <NFormItem label="部门名称" path="name">
-          <NInput v-model:value="modalForm.name" clearable placeholder="请输入部门名称" />
+        <NFormItem :label="t('views.system.title_cn_44dbfcab')" path="name">
+          <NInput v-model:value="modalForm.name" clearable :placeholder="t('views.system.placeholder_cn_81e98e81')" />
         </NFormItem>
-        <NFormItem label="备注" path="desc">
+        <NFormItem :label="t('views.system.title_cn_2432b575')" path="desc">
           <NInput v-model:value="modalForm.desc" type="textarea" clearable />
         </NFormItem>
-        <NFormItem label="排序" path="order">
+        <NFormItem :label="t('views.system.label_cn_c360e994')" path="order">
           <NInputNumber v-model:value="modalForm.order" min="0"></NInputNumber>
         </NFormItem>
       </NForm>

@@ -2,6 +2,7 @@ import io
 import logging
 import os
 import zipfile
+from typing import List
 
 from fastapi import APIRouter, File, Query, UploadFile
 from app.controllers.workspace import (
@@ -97,6 +98,38 @@ async def upload_sheet(
         return Fail(code=400, msg="仅支持 .xlsx / .xls / .csv 格式")
     sheet = await SheetService.upload_sheet(workspace_id, file)
     return Success(data=await sheet.to_dict(), msg="上传成功")
+
+
+@router.post("/sheet/batch-upload", summary="批量上传表格")
+async def batch_upload_sheets(
+    workspace_id: int = Query(..., description="工作区ID"),
+    files: List[UploadFile] = File(..., description="Excel文件列表"),
+):
+    user_id = CTX_USER_ID.get()
+    ws = await workspace_controller.check_permission(workspace_id, user_id)
+    if not ws:
+        return Fail(code=403, msg="无权操作该工作区")
+    success_list, error_list = [], []
+    for file in files:
+        if not file.filename or not file.filename.endswith((".xlsx", ".xls", ".csv")):
+            error_list.append({"filename": file.filename or "未知", "reason": "格式不支持，仅支持 .xlsx/.xls/.csv"})
+            continue
+        try:
+            sheet = await SheetService.upload_sheet(workspace_id, file)
+            success_list.append(await sheet.to_dict())
+        except Exception as e:
+            logger.warning(f"批量上传表格失败 [{file.filename}]: {e}")
+            error_list.append({"filename": file.filename or "未知", "reason": str(e)})
+    return Success(
+        data={
+            "success": success_list,
+            "errors": error_list,
+            "total": len(files),
+            "success_count": len(success_list),
+            "error_count": len(error_list),
+        },
+        msg=f"上传完成：成功 {len(success_list)} 个，失败 {len(error_list)} 个",
+    )
 
 
 @router.get("/sheet/list", summary="原始表格列表")
@@ -283,3 +316,30 @@ async def batch_export_analyses(req: BatchDeleteRequest):
         content=buf.getvalue(),
         filename="分析表格批量导出.zip",
         media_type="application/zip")
+
+
+@router.post("/copy-to-workspace", summary="复制数据到其他工作区")
+async def copy_to_workspace(req: CopyToWorkspaceRequest):
+    user_id = CTX_USER_ID.get()
+    # 检查目标工作区权限
+    target_ws = await workspace_controller.check_permission(req.target_workspace_id, user_id)
+    if not target_ws:
+        return Fail(code=403, msg="无权访问目标工作区")
+    try:
+        from app.controllers.workspace import CopyService
+        result = await CopyService.copy_to_workspace(
+            target_workspace_id=req.target_workspace_id,
+            sheet_ids=req.sheet_ids or [],
+            analysis_ids=req.analysis_ids or [],
+            document_ids=req.document_ids or [],
+            static_file_ids=req.static_file_ids or [],
+        )
+        total = result["sheets"] + result["analyses"] + result["documents"] + result["static_files"]
+        skipped = result.get("skipped", [])
+        if skipped:
+            names = ", ".join(s["name"] for s in skipped)
+            return Success(data=result, msg=f"成功复制 {total} 项，{len(skipped)} 项跳过（源文件丢失: {names}）")
+        return Success(data=result, msg=f"成功复制 {total} 项数据")
+    except Exception as e:
+        logger.error(f"复制数据失败: {e}")
+        return Fail(code=500, msg=f"复制失败: {e}")

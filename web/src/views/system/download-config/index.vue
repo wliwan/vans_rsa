@@ -1,6 +1,11 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { onMounted, ref } from 'vue'
 import {
+
+
+
   NButton, NCard, NForm, NFormItem, NInput, NInputNumber, NPopconfirm,
   NSpace, NTag, NSlider, NSwitch, NDivider, useMessage,
 } from 'naive-ui'
@@ -8,7 +13,9 @@ import CommonPage from '@/components/page/CommonPage.vue'
 import TheIcon from '@/components/icon/TheIcon.vue'
 import api from '@/api'
 
-defineOptions({ name: '系统下载配置' })
+const { t } = useI18n()
+
+defineOptions({ name: i18n.global.t('views.system.title_cn_6da31e6c') })
 
 const message = useMessage()
 
@@ -47,14 +54,14 @@ async function onSave() {
       }
     }
     if (!Object.keys(updates).length) {
-      message.info('没有变更')
+      message.info(t('views.system.label_cn_257b9c3a'))
       return
     }
     await api.updateDownloadConfig(updates)
-    message.success('保存成功')
+    message.success(t('views.skill.message_cn_3b108349'))
     originalConfig.value = JSON.parse(JSON.stringify(config.value))
   } catch (_) {
-    message.error('保存失败')
+    message.error(t('views.network.roadNetworkWorkbench.messages.saveFail'))
   } finally {
     saveLoading.value = false
   }
@@ -63,7 +70,7 @@ async function onSave() {
 async function onTestProxy() {
   const proxy = config.value.download_proxy
   if (!proxy || !proxy.trim()) {
-    message.warning('请先填写代理地址')
+    message.warning(t('views.system.message_cn_b12be20d'))
     return
   }
   proxyTesting.value = true
@@ -77,7 +84,7 @@ async function onTestProxy() {
       message.error(res.data.error)
     }
   } catch (_) {
-    proxyTestResult.value = { success: false, error: '测试请求失败' }
+    proxyTestResult.value = { success: false, error: t('views.system.label_cn_b9ba20b2') }
   } finally {
     proxyTesting.value = false
   }
@@ -89,7 +96,7 @@ function isChanged(key) {
 </script>
 
 <template>
-  <CommonPage title="系统下载配置">
+  <CommonPage :title="t('views.system.title_cn_6da31e6c')">
     <template #action>
       <NButton type="primary" :loading="saveLoading" @click="onSave">
         <TheIcon icon="material-symbols:save" :size="18" class="mr-5" />保存配置
@@ -97,13 +104,13 @@ function isChanged(key) {
     </template>
 
     <div class="config-container">
-      <NCard size="small" title="代理配置" :bordered="true">
+      <NCard size="small" :title="t('views.system.title_cn_95bf0bfd')" :bordered="true">
         <NForm label-placement="left" label-width="130">
-          <NFormItem label="HTTP 代理地址">
+          <NFormItem :label="t('views.system.label_http_cn_5b2abce3')">
             <NSpace align="center">
               <NInput
                 v-model:value="config.download_proxy"
-                placeholder="如 http://127.0.0.1:7890"
+                :placeholder="t('views.system.placeholder_cn_ef8dec06')"
                 style="width: 380px"
                 :status="isChanged('download_proxy') ? 'warning' : undefined"
               />
@@ -118,7 +125,7 @@ function isChanged(key) {
 
           <div v-if="proxyTestResult" style="margin-top: 8px">
             <NTag :type="proxyTestResult.success ? 'success' : 'error'" size="small">
-              {{ proxyTestResult.success ? '✓ 连通' : '✗ 失败' }}
+              {{ proxyTestResult.success ? '✓ 连通' : t('views.system.label_cn_3dc27dd7') }}
             </NTag>
             <span v-if="proxyTestResult.success" style="margin-left: 8px; font-size: 12px; color: #999">
               响应码 {{ proxyTestResult.status_code }}，耗时 {{ proxyTestResult.elapsed_ms }}ms
@@ -130,9 +137,9 @@ function isChanged(key) {
         </NForm>
       </NCard>
 
-      <NCard size="small" title="分块下载" :bordered="true" style="margin-top: 12px">
+      <NCard size="small" :title="t('views.system.title_cn_a4b7e1d4')" :bordered="true" style="margin-top: 12px">
         <NForm label-placement="left" label-width="130">
-          <NFormItem label="线程数 (1-8)">
+          <NFormItem :label="t('views.system.label_cn_c1555cf6')">
             <NSpace align="center">
               <NSlider
                 v-model:value="config.download_chunk_count"
@@ -145,7 +152,7 @@ function isChanged(key) {
             </NSpace>
           </NFormItem>
 
-          <NFormItem label="块大小 (MB)">
+          <NFormItem :label="t('views.system.label_cn_1949301e')">
             <NSpace align="center">
               <NInputNumber
                 v-model:value="config.download_chunk_size_mb"
@@ -158,9 +165,9 @@ function isChanged(key) {
         </NForm>
       </NCard>
 
-      <NCard size="small" title="重试与超时" :bordered="true" style="margin-top: 12px">
+      <NCard size="small" :title="t('views.system.title_cn_15b4408d')" :bordered="true" style="margin-top: 12px">
         <NForm label-placement="left" label-width="130">
-          <NFormItem label="最大重试次数 (0-10)">
+          <NFormItem :label="t('views.system.label_cn_efa1500a')">
             <NSpace align="center">
               <NInputNumber
                 v-model:value="config.download_max_retries"
@@ -172,7 +179,7 @@ function isChanged(key) {
             </NSpace>
           </NFormItem>
 
-          <NFormItem label="超时时间 (秒)">
+          <NFormItem :label="t('views.system.label_cn_e2e97eee')">
             <NSpace align="center">
               <NInputNumber
                 v-model:value="config.download_timeout_seconds"
@@ -184,14 +191,14 @@ function isChanged(key) {
             </NSpace>
           </NFormItem>
 
-          <NFormItem label="SSL 证书验证">
+          <NFormItem :label="t('views.system.label_ssl_cn_854ee827')">
             <NSpace align="center">
               <NSwitch
                 :value="config.download_ssl_verify !== 'false'"
                 @update:value="(v) => config.download_ssl_verify = v ? 'true' : 'false'"
               />
               <span style="font-size: 12px; color: #999">
-                {{ config.download_ssl_verify !== 'false' ? '开启（安全）' : '关闭（仅代理环境出现 SSL 错误时使用）' }}
+                {{ config.download_ssl_verify !== 'false' ? '开启（安全）' : t('views.system.label_cn_dddc5e68') }}
               </span>
               <NTag v-if="isChanged('download_ssl_verify')" type="warning" size="small">已修改</NTag>
             </NSpace>

@@ -781,5 +781,21 @@ web/public/lib/
 |---|---|---|---|
 | Skill 管理 | `/skill` | Skill (title, content, users M2M) | vditor 所见即所得编辑器 |
 | AI 代理管理 | `/ai-proxy` | AIProxy (name, url, token, model, users M2M) | 标准 CrudTable 页面 |
-| 统计中心-Excel解析 | `/workspace` | Workspace → OriginalSheet / AnalysisSheet | 多文件 AI 分析，多 sheet 独立文件输出 |
-| 统计中心-报告生成 | `/report` | Report (workspace FK, content HTML) | AI 生成 HTML → CodeMirror 编辑 → PDF/Word/HTML 导出 |
+| 数据工作台 | `/workspace` | Workspace → 多数据源 (Excel/文档/数据库/静态文件) | 左侧工作区 + 右侧 NTabs 多数据源，卡片式布局 |
+| 统计中心（报告生成） | `/report` | Report (workspace FK, content HTML) | CodeMirror 编辑 → PDF/Word/HTML 导出 |
+| 路网数据中心 | `/region` | Region 自引用树 + RegionBoundary + RoadNetwork | NTree 双面板 + OSMnx 下载 |
+| 路网工作台 | `/region/road-network` | RoadNetwork 瓦片预览 + 边数据编辑 | Leaflet 多底图 + 瓦片叠加 + 图层导出 + AI/CV 处理 |
+| 路网素材 | `/region/road-material` | RoadMaterial (图片+EXIF+短链接) | 上传/编辑/删除 + AI/CV 处理 + 预览工作区（缩放旋转+GPS地图） |
+
+### 前端库本地化
+
+| 库 | 路径 | 用途 |
+|---|---|---|
+| Leaflet 1.9.4 | `web/public/lib/leaflet/` | 地图渲染 (CSS/JS/marker 图标) |
+| html-to-image 1.11.11 | `web/public/lib/html-to-image/` | DOM → Canvas/PNG 截取（图层导出） |
+| Vditor | `web/public/lib/vditor/` | Markdown 所见即所得编辑器 |
+| CodeMirror | `web/public/lib/codemirror/` | 代码/HTML 编辑器 |
+
+### UnoCSS 字体注意事项
+
+全局 `html { font-size: 4px }` 使 1rem=4px，UnoCSS 的 `text-*` 类（rem）全部缩到 1/4。新建页面时**必须在 `<style scoped>` 中用 `!important` + px 覆盖 `text-xs` 到 `text-xl` 的 `font-size` 和 `line-height`**，禁止直接改全局 `html` 基准。

@@ -113,7 +113,7 @@ export const basicRoutes = [
     component: () => import('@/views/login/index.vue'),
     isHidden: true,
     meta: {
-      title: '登录页',
+      title: t('common.title_cn_7de2898d'),
     },
   },
 ]

@@ -1,9 +1,12 @@
 import { isNullOrWhitespace } from '@/utils'
+import i18n from '~/i18n'
+
+const { t } = i18n.global
 
 const ACTIONS = {
-  view: '查看',
-  edit: '编辑',
-  add: '新增',
+  view: t('common.label_cn_607e7a4f'),
+  edit: t('views.workbench.label_edit'),
+  add: t('common.label_cn_66ab5e9f'),
 }
 
 export default function ({ name, initForm = {}, doCreate, doDelete, doUpdate, refresh }) {
@@ -49,14 +52,14 @@ export default function ({ name, initForm = {}, doCreate, doDelete, doUpdate, re
           cb: () => {
             callbacks.forEach((callback) => callback && callback())
           },
-          msg: () => $message.success('新增成功'),
+          msg: () => $message.success(t('views.network.region.messages.createSuccess')),
         },
         edit: {
           api: () => doUpdate(modalForm.value),
           cb: () => {
             callbacks.forEach((callback) => callback && callback())
           },
-          msg: () => $message.success('编辑成功'),
+          msg: () => $message.success(t('common.message_cn_3bb47b67')),
         },
       }
       const action = actions[modalAction.value]
@@ -80,7 +83,7 @@ export default function ({ name, initForm = {}, doCreate, doDelete, doUpdate, re
     try {
       modalLoading.value = true
       const data = await doDelete(params)
-      $message.success('删除成功')
+      $message.success(t('views.network.roadNetwork.messages.deleteSuccess'))
       modalLoading.value = false
       refresh(data)
     } catch (error) {

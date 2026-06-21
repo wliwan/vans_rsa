@@ -1,4 +1,6 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { computed, onMounted, onBeforeUnmount, ref, nextTick, reactive } from 'vue'
 import { useBreakpoints } from '@vueuse/core'
 import {
@@ -22,7 +24,9 @@ import {
 import TheIcon from '@/components/icon/TheIcon.vue'
 import api from '@/api'
 
-defineOptions({ name: '技能管理' })
+const { t } = useI18n()
+
+defineOptions({ name: i18n.global.t('views.skill.title_cn_735ac607') })
 
 const message = useMessage()
 
@@ -66,7 +70,7 @@ async function loadSkills() {
     const res = await api.getSkillList({ page: 1, page_size: 9999 })
     skills.value = res.data || []
   } catch (e) {
-    message.error('加载技能列表失败')
+    message.error(t('views.skill.message_cn_4a844e29'))
   } finally {
     loading.value = false
   }
@@ -81,7 +85,7 @@ function initVditor(markdown) {
     vditorInstance = new Vditor(editorContainer.value, {
       mode: 'wysiwyg',
       height: '100%',
-      placeholder: '在此输入 Markdown 内容...',
+      placeholder: t('views.skill.placeholder_cn_7de77ab9'),
       value: markdown || '',
       toolbar: [
         'emoji', 'headings', 'bold', 'italic', 'strike', 'link', '|',
@@ -109,14 +113,14 @@ async function selectSkill(skill) {
     const res = await api.getSkillById({ skill_id: skill.id })
     initVditor(res.data.content)
   } catch (e) {
-    message.error('加载技能内容失败')
+    message.error(t('views.skill.message_cn_f21a879a'))
   }
 }
 
 // ---- 新建 Skill ----
 function openCreate() {
   isEditing.value = false
-  modalTitle.value = '新建技能'
+  modalTitle.value = t('views.skill.title_cn_8c339e83')
   modalForm.value = { title: '', user_ids: [] }
   // 重置 AI 创建表单
   activeTab.value = 'manual'
@@ -130,11 +134,11 @@ function openCreate() {
 // ---- 编辑 Skill ----
 function openEdit() {
   if (!selectedSkill.value) {
-    message.warning('请先选择一个技能')
+    message.warning(t('views.skill.message_cn_5c2179ff'))
     return
   }
   isEditing.value = true
-  modalTitle.value = '编辑技能'
+  modalTitle.value = t('views.skill.title_cn_50b11c40')
   const skill = selectedSkill.value
   const userIds = (skill.users || []).map((u) => u.id)
   modalForm.value = {
@@ -193,7 +197,7 @@ function getEditorContent() {
 // ---- 提交创建/更新（手动模式） ----
 async function handleModalSubmit() {
   if (!modalForm.value.title) {
-    message.warning('请输入标题')
+    message.warning(t('views.skill.placeholder_cn_96641a78'))
     return
   }
   try {
@@ -205,7 +209,7 @@ async function handleModalSubmit() {
         content: editorContent,
         user_ids: modalForm.value.user_ids,
       })
-      message.success('更新成功')
+      message.success(t('views.network.region.messages.updateSuccess'))
       selectedSkill.value.title = modalForm.value.title
       // 重新加载内容
       await selectSkill(selectedSkill.value)
@@ -215,23 +219,23 @@ async function handleModalSubmit() {
         content: editorContent,
         user_ids: modalForm.value.user_ids,
       })
-      message.success('创建成功')
+      message.success(t('views.skill.message_cn_04a691b3'))
     }
     showModal.value = false
     await loadSkills()
   } catch (e) {
-    message.error('操作失败')
+    message.error(t('views.skill.message_cn_5fa802be'))
   }
 }
 
 // ---- AI 创建提交 ----
 async function handleAICreate() {
   if (!aiForm.value.proxy_name) {
-    message.warning('请选择AI代理')
+    message.warning(t('views.skill.placeholder_cn_ee488ec6'))
     return
   }
   if (!aiForm.value.prompt.trim()) {
-    message.warning('请输入提示词')
+    message.warning(t('views.skill.placeholder_cn_d47ed976'))
     return
   }
   aiCreating.value = true
@@ -242,7 +246,7 @@ async function handleAICreate() {
       prompt: aiForm.value.prompt,
       user_ids: aiForm.value.user_ids,
     })
-    message.success('AI创建成功')
+    message.success(t('views.skill.message_cn_0c12e89f'))
     showModal.value = false
     await loadSkills()
     // 自动选中新创建的技能
@@ -253,7 +257,7 @@ async function handleAICreate() {
       }
     }
   } catch (e) {
-    message.error(e?.message || 'AI创建失败')
+    message.error(e?.message || t('views.skill.message_cn_6c952981'))
   } finally {
     aiCreating.value = false
   }
@@ -270,33 +274,33 @@ async function saveContent() {
       content: editorContent,
       user_ids: (selectedSkill.value.users || []).map((u) => u.id),
     })
-    message.success('保存成功')
+    message.success(t('views.skill.message_cn_3b108349'))
   } catch (e) {
-    message.error('保存失败')
+    message.error(t('views.network.roadNetworkWorkbench.messages.saveFail'))
   }
 }
 
 // ---- 删除 Skill ----
 async function deleteSkill() {
   if (!selectedSkill.value) {
-    message.warning('请先选择一个技能')
+    message.warning(t('views.skill.message_cn_5c2179ff'))
     return
   }
   try {
     await api.deleteSkill({ skill_id: selectedSkill.value.id })
-    message.success('删除成功')
+    message.success(t('views.network.roadNetwork.messages.deleteSuccess'))
     selectedSkill.value = null
     destroyVditor()
     await loadSkills()
   } catch (e) {
-    message.error('删除失败')
+    message.error(t('views.network.roadNetworkWorkbench.messages.deleteFail'))
   }
 }
 
 // ---- 导出 Skill ----
 async function exportSkill() {
   if (!selectedSkill.value) {
-    message.warning('请先选择一个技能')
+    message.warning(t('views.skill.message_cn_5c2179ff'))
     return
   }
   try {
@@ -308,9 +312,9 @@ async function exportSkill() {
     a.download = `${selectedSkill.value.title}.md`
     a.click()
     URL.revokeObjectURL(url)
-    message.success('导出成功')
+    message.success(t('views.network.roadNetworkWorkbench.messages.exportSuccess'))
   } catch (e) {
-    message.error('导出失败')
+    message.error(t('views.network.roadNetworkWorkbench.messages.exportFail'))
   }
 }
 
@@ -423,15 +427,15 @@ onBeforeUnmount(() => {
         :model="modalForm"
         label-placement="top"
       >
-        <NFormItem label="标题" required>
-          <NInput v-model:value="modalForm.title" placeholder="请输入技能标题" />
+        <NFormItem :label="t('views.skill.label_cn_32c65d8d')" required>
+          <NInput v-model:value="modalForm.title" :placeholder="t('views.skill.placeholder_cn_d6b4ce19')" />
         </NFormItem>
-        <NFormItem label="授权用户">
+        <NFormItem :label="t('views.skill.label_cn_5f07f1ad')">
           <NSelect
             v-model:value="modalForm.user_ids"
             :options="userOptions"
             multiple
-            placeholder="选择可访问该技能的用户"
+            :placeholder="t('views.skill.placeholder_cn_faa6f8dc')"
             filterable
           />
         </NFormItem>
@@ -442,21 +446,21 @@ onBeforeUnmount(() => {
     <template v-else>
       <NTabs v-model:value="activeTab" type="line">
         <!-- 手动创建 Tab -->
-        <NTabPane name="manual" tab="手动创建">
+        <NTabPane name="manual" :tab="t('views.skill.label_cn_4364e2f1')">
           <NForm
             ref="modalFormRef"
             :model="modalForm"
             label-placement="top"
           >
-            <NFormItem label="标题" required>
-              <NInput v-model:value="modalForm.title" placeholder="请输入技能标题" />
+            <NFormItem :label="t('views.skill.label_cn_32c65d8d')" required>
+              <NInput v-model:value="modalForm.title" :placeholder="t('views.skill.placeholder_cn_d6b4ce19')" />
             </NFormItem>
-            <NFormItem label="授权用户">
+            <NFormItem :label="t('views.skill.label_cn_5f07f1ad')">
               <NSelect
                 v-model:value="modalForm.user_ids"
                 :options="userOptions"
                 multiple
-                placeholder="选择可访问该技能的用户"
+                :placeholder="t('views.skill.placeholder_cn_faa6f8dc')"
                 filterable
               />
             </NFormItem>
@@ -464,43 +468,43 @@ onBeforeUnmount(() => {
         </NTabPane>
 
         <!-- AI 创建 Tab -->
-        <NTabPane name="ai" tab="AI创建">
+        <NTabPane name="ai" :tab="t('views.skill.label_cn_d9a6b4ad')">
           <NForm
             :model="aiForm"
             label-placement="top"
           >
-            <NFormItem label="AI代理" required>
+            <NFormItem :label="t('views.skill.label_cn_c1dfc5cf')" required>
               <NSelect
                 v-model:value="aiForm.proxy_name"
                 :options="proxyOptions"
-                placeholder="选择AI代理"
+                :placeholder="t('views.skill.placeholder_cn_523369d2')"
                 filterable
               />
             </NFormItem>
-            <NFormItem label="参考技能（可选）">
+            <NFormItem :label="t('views.skill.label_cn_bae20831')">
               <NSelect
                 v-model:value="aiForm.source_skill_id"
                 :options="skillOptions"
-                placeholder="选择一个现有技能作为参考风格"
+                :placeholder="t('views.skill.placeholder_cn_00ca7a96')"
                 filterable
                 clearable
                 @focus="loadSkillOptions"
               />
             </NFormItem>
-            <NFormItem label="提示词" required>
+            <NFormItem :label="t('views.skill.label_cn_47b7af95')" required>
               <NInput
                 v-model:value="aiForm.prompt"
                 type="textarea"
-                placeholder="描述你想要创建的技能，例如：生成一个关于 Python 数据分析的技能文档，包含数据清洗、可视化和统计分析方法"
+                :placeholder="t('views.skill.placeholder_cn_bf0d0c57')"
                 :autosize="{ minRows: 4, maxRows: 10 }"
               />
             </NFormItem>
-            <NFormItem label="授权用户">
+            <NFormItem :label="t('views.skill.label_cn_5f07f1ad')">
               <NSelect
                 v-model:value="aiForm.user_ids"
                 :options="userOptions"
                 multiple
-                placeholder="选择可访问该技能的用户"
+                :placeholder="t('views.skill.placeholder_cn_faa6f8dc')"
                 filterable
               />
             </NFormItem>

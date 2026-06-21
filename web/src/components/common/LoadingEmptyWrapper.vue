@@ -26,18 +26,22 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
+
+
+const { t } = useI18n()
 
 defineOptions({ name: 'LoadingEmptyWrapper' })
 
-const NETWORK_ERROR_MSG = '网络似乎开了小差~'
+const NETWORK_ERROR_MSG = t('common.label_cn_cd662c4a')
 
 const props = {
   loading: false,
   empty: false,
   loadingSize: 'medium',
   placeholderClass: 'bg-white dark:bg-dark transition-background-color duration-300 ease-in-out',
-  emptyDesc: '暂无数据',
+  emptyDesc: t('views.tool.vehicle.no_data'),
   iconClass: 'text-320px text-primary',
   descClass: 'text-16px text-#666',
   showNetworkReload: false,

@@ -899,6 +899,10 @@ if verify_password(plain, hashed):
 | 耗时任务切换页面后进度条消失 | 进度条嵌入页面内，路由跳转时组件销毁 | 参考 3.4：使用全局 TaskProgressPanel + Pinia store，Layout 级 Teleport 渲染 |
 | 下载失败后前端无法感知错误 | 后端异常被 try/except 吞掉，前端无反馈 | 后端失败写进度状态文件 `_update_progress("error", ..., detail=...)`，前端轮询感知并显示重试按钮 |
 | 大文件下载速度慢（单线程） | `urlretrieve` / 单流下载受单连接带宽限制 | 参考 3.6：多线程分块下载，`Range: bytes=start-end` 并行获取，完成后合并 |
+| Leaflet 瓦片 Canvas 截取返回 0 | Leaflet 用 CSS `transform: translate3d()` 定位瓦片，`style.left/top` 为空 | 用 `getBoundingClientRect()` 获取实际位置 |
+| Leaflet `tile.el` 不是 `<img>` | Leaflet 用 `<div class="leaflet-tile"><img/></div>` 包裹 | 用 `el.querySelector('img')` 递归取 `<img>` |
+| Canvas 绘制跨域瓦片报 SecurityError | 底图瓦片来自外部 CDN，无 CORS 头 | 用 `html-to-image` 库截取完整 DOM（或仅导出同源路网瓦片） |
+| **UnoCSS `text-*` 字体极小（如 `text-base` 只显示 4px）** | `web/src/styles/global.scss` 设 `html { font-size: 4px }`，导致 1rem=4px，UnoCSS 的 rem 字体类全部缩到 1/4 | 在该页面加 `<style scoped>` 用 `!important` + px 覆盖：`.text-base { font-size: 16px !important; line-height: 24px !important; }` 等。禁止直接改全局 `html` 基准 |
 
 ---
 
@@ -941,6 +945,11 @@ if verify_password(plain, hashed):
 19. **断点续传**：大文件下载（> 50MB）失败保留 `.tmp` 文件，重试用 `Range` 头续传
 20. **分块下载**：超大文件（> 200MB）用多线程分块（`Range: bytes=start-end`），并行下载后合并
 21. **下载失败通知**：后端失败写进度状态文件 `_update_progress("error", ..., detail=...)`，前端轮询感知并显示重试
+22. **Leaflet 本地化**：所有 Leaflet 资源（CSS/JS/marker 图标）下载到 `web/public/lib/leaflet/`，index.html 引用本地路径
+23. **Leaflet 瓦片截取**：用 `getBoundingClientRect()` 获取瓦片位置（非 `style.left/top`），用 `el.querySelector('img')` 取 img 元素
+24. **图层导出**：包含跨域瓦片或 DOM 控件时用 `html-to-image` 库，纯同源路网可用 Canvas
+25. **PNG 元数据**：导出图片的描述（description）写入 JSON 元数据（中心点、作者、路网统计），后端用 Pillow `PngInfo` 写入 tEXt 块
+26. **UnoCSS 字体**：全局 `html { font-size: 4px }` 使 1rem=4px，UnoCSS 的 `text-*` 类（rem）全部缩到 1/4。新建页面时**必须在 `<style scoped>` 中用 `!important` + px 覆盖 `text-xs` 到 `text-xl` 的 `font-size` 和 `line-height`**，禁止直接改全局 `html` 基准
 
 ---
 

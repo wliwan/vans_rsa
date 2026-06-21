@@ -58,8 +58,14 @@ def make_middlewares():
                 "/api/v1/region/road-network/tiles/",
                 "/api/v1/region/road-material/upload",
                 "/api/v1/region/road-material/download-file",
+                "/api/v1/workspace/static-file/upload",
+                "/api/v1/workspace/static-file/batch-upload",
+                "/api/v1/workspace/static-file/download-file",
+                "/api/v1/workspace/sheet/batch-upload",
+                "/api/v1/workspace/document/batch-upload",
                 "/api/v1/i18n/export",
                 "/api/s/",
+                "/api/sf/",
                 "/docs",
                 "/openapi.json",
             ],
@@ -79,8 +85,10 @@ def register_exceptions(app: FastAPI):
 def register_routers(app: FastAPI, prefix: str = "/api"):
     app.include_router(api_router, prefix=prefix)
     # 短链接公开访问 — 挂载在 /api/s 下，无鉴权，可被 Vite/Nginx 代理
-    from app.api.v1.regions.road_material import short_router
-    app.include_router(short_router, prefix="/api/s", tags=["路网素材短链接"])
+    from app.api.v1.regions.road_material import short_router as road_material_short_router
+    from app.api.v1.workspace.static_file import short_router as static_file_short_router
+    app.include_router(road_material_short_router, prefix="/api/s", tags=["路网素材短链接"])
+    app.include_router(static_file_short_router, prefix="/api/sf", tags=["静态文件短链接"])
 
 
 def register_static(app: FastAPI):

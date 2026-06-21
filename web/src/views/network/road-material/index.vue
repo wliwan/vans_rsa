@@ -1,7 +1,10 @@
 <script setup>
 import { computed, h, onMounted, onBeforeUnmount, ref, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import {
+
+
   NButton, NCard, NDataTable, NInput, NInputNumber,
   NModal, NSelect, NSpace, NTag, NUpload, NPopconfirm,
   NForm, NFormItem, NColorPicker,
@@ -14,10 +17,11 @@ import TheIcon from '@/components/icon/TheIcon.vue'
 import api from '@/api'
 import { useTaskProgressStore } from '@/store/modules/taskProgress'
 
-defineOptions({ name: '路网素材管理' })
+const { t } = useI18n()
+
+defineOptions({ name: i18n.global.t('views.network.title_cn_3cbec9cc') })
 
 const message = useMessage()
-const { t } = useI18n()
 
 // ── 三级下拉选择器 ──
 const treeData = ref([])
@@ -74,21 +78,21 @@ const previewMaterial = ref(null)
 
 const columns = [
   { type: 'selection' },
-  { title: '图片名称', key: 'name', ellipsis: { tooltip: true }, width: 180 },
-  { title: '大小', key: 'file_size_str', width: 90, align: 'center', sorter: (a, b) => a.file_size - b.file_size },
-  { title: '分辨率', key: 'resolution', width: 110, align: 'center' },
-  { title: '格式', key: 'format_type', width: 80, align: 'center' },
-  { title: '来源', key: 'source_label', width: 90, align: 'center' },
+  { title: t('views.network.title_cn_d4761865'), key: 'name', ellipsis: { tooltip: true }, width: 180 },
+  { title: t('views.network.roadNetwork.fileColumns.fileSize'), key: 'file_size_str', width: 90, align: 'center', sorter: (a, b) => a.file_size - b.file_size },
+  { title: t('views.network.title_cn_874a5816'), key: 'resolution', width: 110, align: 'center' },
+  { title: t('views.network.roadNetwork.fileColumns.fileType'), key: 'format_type', width: 80, align: 'center' },
+  { title: t('views.network.title_cn_26ca20b1'), key: 'source_label', width: 90, align: 'center' },
   {
-    title: '短链接', key: 'short_url', width: 60, align: 'center',
+    title: t('views.network.title_cn_d098e4f7'), key: 'short_url', width: 60, align: 'center',
     render: (row) => h(NButton, { size: 'tiny', quaternary: true, onClick: (e) => { e.stopPropagation(); copyShortUrl(row) } },
       { icon: () => h(TheIcon, { icon: 'material-symbols:content-copy-outline', size: 14 }) }),
   },
-  { title: '更新日期', key: 'updated_at', width: 120, align: 'center', sorter: (a, b) => new Date(a.updated_at) - new Date(b.updated_at) },
+  { title: t('views.network.title_cn_a5de870a'), key: 'updated_at', width: 120, align: 'center', sorter: (a, b) => new Date(a.updated_at) - new Date(b.updated_at) },
 ]
 
 const sourceLabels = {
-  upload: '用户上传', import: '外部导入', ai_generated: 'AI生成', cv_processed: 'CV处理', '路网工作台': '路网工作台',
+  upload: '用户上传', import: '外部导入', ai_generated: 'AI生成', cv_processed: 'CV处理', [t('views.network.roadNetworkWorkbench.title')]: '路网工作台',
 }
 
 function formatFileSize(bytes) {
@@ -102,9 +106,9 @@ async function copyShortUrl(row) {
   const url = `${window.location.origin}/api/s/${row.short_url_token}`
   try {
     await navigator.clipboard.writeText(url)
-    message.success('短链接已复制')
+    message.success(t('views.network.message_cn_20ad8798'))
   } catch {
-    message.error('复制失败，请手动复制')
+    message.error(t('views.system.message_cn_41da1ca4'))
   }
 }
 
@@ -162,7 +166,7 @@ const uploadDesc = ref('')
 const uploadFile = ref(null)
 
 function onUploadOpen() {
-  if (!activeRegionId.value) { message.warning('请先选择区域'); return }
+  if (!activeRegionId.value) { message.warning(t('views.network.message_cn_0d71d357')); return }
   uploadName.value = ''
   uploadDesc.value = ''
   uploadFile.value = null
@@ -170,15 +174,15 @@ function onUploadOpen() {
 }
 
 async function onUploadSubmit() {
-  if (!uploadFile.value) { message.warning('请选择文件'); return }
+  if (!uploadFile.value) { message.warning(t('views.network.placeholder_cn_9febf311')); return }
   try {
     const rawFile = uploadFile.value.file || uploadFile.value
     await api.uploadMaterial(activeRegionId.value, uploadName.value, uploadDesc.value, rawFile)
-    message.success('上传成功')
+    message.success(t('views.network.roadNetwork.messages.uploadSuccess'))
     showUploadModal.value = false
     uploadFile.value = null
     loadMaterials(activeRegionId.value)
-  } catch (e) { message.error('上传失败: ' + (e.message || '未知错误')) }
+  } catch (e) { message.error('上传失败: ' + (e.message || t('views.network.roadNetworkWorkbench.messages.unknownError'))) }
 }
 
 // ── 编辑元数据 ──
@@ -186,7 +190,7 @@ const showEditModal = ref(false)
 const editData = ref({ id: 0, name: '', description: '' })
 
 function onEdit() {
-  if (!previewMaterial.value) { message.warning('请先在列表中选择要编辑的素材'); return }
+  if (!previewMaterial.value) { message.warning(t('views.network.message_cn_31e89ba0')); return }
   editData.value = { id: previewMaterial.value.id, name: previewMaterial.value.name, description: previewMaterial.value.description || '' }
   showEditModal.value = true
 }
@@ -194,25 +198,25 @@ function onEdit() {
 async function onEditSubmit() {
   try {
     await api.updateMaterial(editData.value)
-    message.success('更新成功')
+    message.success(t('views.network.region.messages.updateSuccess'))
     showEditModal.value = false
     if (activeRegionId.value) loadMaterials(activeRegionId.value)
-  } catch (e) { message.error('更新失败: ' + (e.message || '未知错误')) }
+  } catch (e) { message.error('更新失败: ' + (e.message || t('views.network.roadNetworkWorkbench.messages.unknownError'))) }
 }
 
 // ── 删除 ──
 async function onDelete(ids) {
   const delIds = ids || selectedMaterialIds.value
-  if (!delIds.length) { message.warning('请先选择素材'); return }
+  if (!delIds.length) { message.warning(t('views.network.message_cn_52ce3aa6')); return }
   try {
     for (const id of delIds) {
       await api.deleteMaterial({ material_id: id })
     }
-    message.success('删除成功')
+    message.success(t('views.network.roadNetwork.messages.deleteSuccess'))
     previewMaterial.value = null
     selectedMaterialIds.value = []
     if (activeRegionId.value) loadMaterials(activeRegionId.value)
-  } catch (e) { message.error('删除失败') }
+  } catch (e) { message.error(t('views.network.roadNetworkWorkbench.messages.deleteFail')) }
 }
 
 // ── AI 处理 ──
@@ -225,7 +229,7 @@ const skillList = ref([])
 const aiLoading = ref(false)
 
 async function onAIOpen() {
-  if (!selectedMaterialIds.value.length) { message.warning('请先选择素材'); return }
+  if (!selectedMaterialIds.value.length) { message.warning(t('views.network.message_cn_52ce3aa6')); return }
   try {
     const [proxyRes, skillRes] = await Promise.all([
       api.getAIProxyList({ page_size: 500 }),
@@ -241,8 +245,8 @@ async function onAIOpen() {
 }
 
 async function onAISubmit() {
-  if (!aiProxyId.value) { message.warning('请选择AI代理'); return }
-  if (!aiPrompt.value && !aiSkillId.value) { message.warning('请输入提示词或选择Skill'); return }
+  if (!aiProxyId.value) { message.warning(t('views.skill.placeholder_cn_ee488ec6')); return }
+  if (!aiPrompt.value && !aiSkillId.value) { message.warning(t('views.network.placeholder_cn_3d6a6a12')); return }
   aiLoading.value = true
   try {
     const res = await api.aiProcessMaterial({
@@ -256,7 +260,7 @@ async function onAISubmit() {
     if (d.error_count > 0) message.warning(`部分失败：${d.error_count} 个`)
     showAIModal.value = false
     if (activeRegionId.value) loadMaterials(activeRegionId.value)
-  } catch (e) { message.error('AI处理失败: ' + (e.message || '未知错误')) }
+  } catch (e) { message.error('AI处理失败: ' + (e.message || t('views.network.roadNetworkWorkbench.messages.unknownError'))) }
   finally { aiLoading.value = false }
 }
 
@@ -272,10 +276,10 @@ const cvPreviewDataUrl = ref('')
 const cvPreviewLoading = ref(false)
 
 const operationGroups = [
-  { label: '几何变换', ops: ['resize', 'rotate', 'crop', 'flip', 'border'] },
-  { label: '色彩光影', ops: ['brightness', 'contrast', 'color_space'] },
-  { label: '图像增强', ops: ['blur', 'morphology', 'smooth', 'histogram_eq'] },
-  { label: '去背景', ops: ['remove_bg'] },
+  { label: t('views.network.label_cn_20cdf86d'), ops: ['resize', 'rotate', 'crop', 'flip', 'border'] },
+  { label: t('views.network.label_cn_99543f13'), ops: ['brightness', 'contrast', 'color_space'] },
+  { label: t('views.network.label_cn_f9854a3e'), ops: ['blur', 'morphology', 'smooth', 'histogram_eq'] },
+  { label: t('views.network.label_cn_a9cec4ef'), ops: ['remove_bg'] },
 ]
 
 function loadCVImage() {
@@ -356,7 +360,7 @@ function drawCanvas(overlayDataUrl) {
 }
 
 async function onCVOpen() {
-  if (!selectedMaterialIds.value.length) { message.warning('请先选择素材'); return }
+  if (!selectedMaterialIds.value.length) { message.warning(t('views.network.message_cn_52ce3aa6')); return }
   if (!previewMaterial.value || !selectedMaterialIds.value.includes(previewMaterial.value.id)) {
     previewMaterial.value = materialList.value.find(m => m.id === selectedMaterialIds.value[0]) || null
   }
@@ -377,7 +381,7 @@ function onCVOpChange(op) {
 
 async function onCVSubmit() {
   const ids = [...selectedMaterialIds.value]
-  if (!ids.length) { message.warning('请先选择素材'); return }
+  if (!ids.length) { message.warning(t('views.network.message_cn_52ce3aa6')); return }
   const taskStore = useTaskProgressStore()
   const taskId = taskStore.startTask(`OpenCV ${cvOperation.value} 处理`)
   showCVModal.value = false
@@ -431,7 +435,7 @@ async function onCVPreview() {
       cvPreviewDataUrl.value = `${import.meta.env.VITE_BASE_API}/region/road-material/download-file?material_id=${newId}`
       drawCanvas(cvPreviewDataUrl.value)
     }
-  } catch (e) { message.error('预览失败: ' + (e.message || '未知错误')) }
+  } catch (e) { message.error('预览失败: ' + (e.message || t('views.network.roadNetworkWorkbench.messages.unknownError'))) }
   finally { cvPreviewLoading.value = false }
 }
 
@@ -596,7 +600,7 @@ function initMap() {
     }).addTo(mapInstance)
     L.marker([gpsLocation.value.lat, gpsLocation.value.lng]).addTo(mapInstance)
   } catch (e) {
-    console.warn('Leaflet 地图初始化失败:', e)
+    console.warn(t('views.network.label_leaflet_cn_92c60fc8'), e)
   }
 }
 
@@ -652,13 +656,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <CommonPage title="路网素材管理">
+  <CommonPage :title="t('views.network.title_cn_3cbec9cc')">
     <!-- ── 三级下拉选择器 ── -->
     <NSpace align="center" wrap style="margin-bottom: 12px;">
       <NSelect
         v-model:value="selectedCountry"
         :options="countryOptions"
-        placeholder="选择国家"
+        :placeholder="t('views.network.placeholder_cn_67eaca9f')"
         style="width: 200px"
         @update:value="onCountryChange"
         clearable filterable
@@ -666,7 +670,7 @@ onMounted(() => {
       <NSelect
         v-model:value="selectedRegion"
         :options="regionOptions"
-        placeholder="选择行政区/城市"
+        :placeholder="t('views.network.placeholder_cn_748ca716')"
         style="width: 240px"
         @update:value="onRegionChange"
         :disabled="!selectedCountry"
@@ -690,7 +694,7 @@ onMounted(() => {
         </template>
 
         <div v-if="!activeRegionId" style="flex: 1; display: flex; align-items: center; justify-content: center; color: #999;">
-          <NEmpty description="请选择国家和行政区查看素材" />
+          <NEmpty :description="t('views.network.placeholder_cn_6b27c45a')" />
         </div>
 
         <div v-else style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
@@ -753,26 +757,26 @@ onMounted(() => {
           <span style="font-weight: 600">预览工作区</span>
         </template>
         <div v-if="!previewMaterial" class="empty-preview">
-          <NEmpty description="请在左侧选择素材查看预览" />
+          <NEmpty :description="t('views.network.label_cn_8369a589')" />
         </div>
         <div v-else class="preview-content">
           <!-- 图片调节工具栏 -->
           <div class="preview-toolbar">
             <NSpace align="center" size="small">
-              <NButton size="tiny" quaternary @click="zoomOut" :disabled="previewScale <= 0.1" title="缩小">
+              <NButton size="tiny" quaternary @click="zoomOut" :disabled="previewScale <= 0.1" :title="t('views.network.title_cn_b21ac253')">
                 <template #icon><TheIcon icon="material-symbols:zoom-out" size="16" /></template>
               </NButton>
               <span class="preview-scale-label">{{ Math.round(previewScale * 100) }}%</span>
-              <NButton size="tiny" quaternary @click="zoomIn" :disabled="previewScale >= 5" title="放大">
+              <NButton size="tiny" quaternary @click="zoomIn" :disabled="previewScale >= 5" :title="t('views.network.title_cn_4f9b192c')">
                 <template #icon><TheIcon icon="material-symbols:zoom-in" size="16" /></template>
               </NButton>
-              <NButton size="tiny" quaternary @click="rotateLeft" title="左转90°">
+              <NButton size="tiny" quaternary @click="rotateLeft" :title="t('views.network.title_cn_ad0bdf9a')">
                 <template #icon><TheIcon icon="material-symbols:rotate-left" size="16" /></template>
               </NButton>
-              <NButton size="tiny" quaternary @click="rotateRight" title="右转90°">
+              <NButton size="tiny" quaternary @click="rotateRight" :title="t('views.network.title_cn_f3f9358b')">
                 <template #icon><TheIcon icon="material-symbols:rotate-right" size="16" /></template>
               </NButton>
-              <NButton size="tiny" quaternary @click="resetPreview" title="重置">
+              <NButton size="tiny" quaternary @click="resetPreview" :title="t('views.network.title_cn_4b9c3271')">
                 <template #icon><TheIcon icon="material-symbols:refresh" size="14" /></template>
                 重置
               </NButton>
@@ -806,23 +810,23 @@ onMounted(() => {
 
           <!-- 元数据 -->
           <NDescriptions :column="1" size="small" label-placement="left" style="margin-top: 16px;">
-            <NDescriptionsItem label="名称">{{ previewMaterial.name }}</NDescriptionsItem>
-            <NDescriptionsItem label="大小">{{ previewMaterial.file_size_str }}</NDescriptionsItem>
-            <NDescriptionsItem label="分辨率">{{ previewMaterial.resolution }}</NDescriptionsItem>
-            <NDescriptionsItem label="色彩模式">{{ previewMaterial.color_mode || '-' }}</NDescriptionsItem>
-            <NDescriptionsItem label="位深度">{{ previewMaterial.bit_depth || '-' }}</NDescriptionsItem>
+            <NDescriptionsItem :label="t('views.network.region.formLabels.name')">{{ previewMaterial.name }}</NDescriptionsItem>
+            <NDescriptionsItem :label="t('views.network.roadNetwork.fileColumns.fileSize')">{{ previewMaterial.file_size_str }}</NDescriptionsItem>
+            <NDescriptionsItem :label="t('views.network.title_cn_874a5816')">{{ previewMaterial.resolution }}</NDescriptionsItem>
+            <NDescriptionsItem :label="t('views.network.label_cn_90b6fb5f')">{{ previewMaterial.color_mode || '-' }}</NDescriptionsItem>
+            <NDescriptionsItem :label="t('views.network.label_cn_beff9059')">{{ previewMaterial.bit_depth || '-' }}</NDescriptionsItem>
             <NDescriptionsItem label="DPI/PPI">{{ previewMaterial.dpi || '-' }}</NDescriptionsItem>
-            <NDescriptionsItem label="格式">{{ previewMaterial.format_type || '-' }}</NDescriptionsItem>
-            <NDescriptionsItem label="来源">{{ previewMaterial.source_label }}</NDescriptionsItem>
-            <NDescriptionsItem label="创建日期">{{ previewMaterial.created_at || '-' }}</NDescriptionsItem>
-            <NDescriptionsItem label="元数据">{{ previewMaterial.description || '-' }}</NDescriptionsItem>
+            <NDescriptionsItem :label="t('views.network.roadNetwork.fileColumns.fileType')">{{ previewMaterial.format_type || '-' }}</NDescriptionsItem>
+            <NDescriptionsItem :label="t('views.network.title_cn_26ca20b1')">{{ previewMaterial.source_label }}</NDescriptionsItem>
+            <NDescriptionsItem :label="t('views.system.title_cn_696f5a97')">{{ previewMaterial.created_at || '-' }}</NDescriptionsItem>
+            <NDescriptionsItem :label="t('views.network.label_cn_34681d7f')">{{ previewMaterial.description || '-' }}</NDescriptionsItem>
             <NDescriptionsItem label="EXIF">
               <span v-if="previewMaterial.exif_data" style="font-size: 11px; word-break: break-all;">
                 {{ JSON.stringify(previewMaterial.exif_data) }}
               </span>
               <span v-else>-</span>
             </NDescriptionsItem>
-            <NDescriptionsItem label="短链接">
+            <NDescriptionsItem :label="t('views.network.title_cn_d098e4f7')">
               <NButton size="tiny" quaternary @click="copyShortUrl(previewMaterial)">
                 <template #icon><TheIcon icon="material-symbols:content-copy-outline" size="12" /></template>
                 复制
@@ -834,15 +838,15 @@ onMounted(() => {
     </div>
 
     <!-- ── 上传弹窗 ── -->
-    <NModal v-model:show="showUploadModal" preset="card" title="上传图片素材" style="width: 500px;">
+    <NModal v-model:show="showUploadModal" preset="card" :title="t('views.network.title_cn_6c9f54c5')" style="width: 500px;">
       <NForm label-placement="left" label-width="80">
-        <NFormItem label="图片名称">
-          <NInput v-model:value="uploadName" placeholder="可选，默认使用文件名" />
+        <NFormItem :label="t('views.network.title_cn_d4761865')">
+          <NInput v-model:value="uploadName" :placeholder="t('views.network.placeholder_cn_2692291e')" />
         </NFormItem>
-        <NFormItem label="元数据">
-          <NInput v-model:value="uploadDesc" type="textarea" placeholder="可选，备注信息" :rows="2" />
+        <NFormItem :label="t('views.network.label_cn_34681d7f')">
+          <NInput v-model:value="uploadDesc" type="textarea" :placeholder="t('views.network.placeholder_cn_a0753482')" :rows="2" />
         </NFormItem>
-        <NFormItem label="选择文件" required>
+        <NFormItem :label="t('views.network.roadNetwork.buttons.selectFile')" required>
           <NUpload
             :show-file-list="false"
             accept="image/*"
@@ -867,13 +871,13 @@ onMounted(() => {
     </NModal>
 
     <!-- ── 编辑弹窗 ── -->
-    <NModal v-model:show="showEditModal" preset="card" title="编辑素材元数据" style="width: 450px;">
+    <NModal v-model:show="showEditModal" preset="card" :title="t('views.network.title_cn_1ad7e5f0')" style="width: 450px;">
       <NForm label-placement="left" label-width="80">
-        <NFormItem label="图片名称">
+        <NFormItem :label="t('views.network.title_cn_d4761865')">
           <NInput v-model:value="editData.name" />
         </NFormItem>
-        <NFormItem label="元数据">
-          <NInput v-model:value="editData.description" type="textarea" placeholder="备注信息" :rows="2" />
+        <NFormItem :label="t('views.network.label_cn_34681d7f')">
+          <NInput v-model:value="editData.description" type="textarea" :placeholder="t('views.network.placeholder_cn_b57447a7')" :rows="2" />
         </NFormItem>
       </NForm>
       <template #footer>
@@ -885,13 +889,13 @@ onMounted(() => {
     </NModal>
 
     <!-- ── AI处理弹窗 ── -->
-    <NModal v-model:show="showAIModal" preset="card" title="AI 图片处理" style="width: 550px;">
+    <NModal v-model:show="showAIModal" preset="card" :title="t('views.network.title_ai_cn_ce365320')" style="width: 550px;">
       <NForm label-placement="left" label-width="80">
-        <NFormItem label="AI代理" required>
+        <NFormItem :label="t('views.skill.label_cn_c1dfc5cf')" required>
           <NSelect
             v-model:value="aiProxyId"
             :options="aiProxyList.map(p => ({ label: p.name, value: p.id }))"
-            placeholder="选择AI代理"
+            :placeholder="t('views.skill.placeholder_cn_523369d2')"
             filterable
           />
         </NFormItem>
@@ -899,16 +903,16 @@ onMounted(() => {
           <NSelect
             v-model:value="aiSkillId"
             :options="skillList.map(s => ({ label: s.title, value: s.id }))"
-            placeholder="可选，从技能库选择提示词模板"
+            :placeholder="t('views.network.placeholder_cn_a7308b85')"
             filterable
             clearable
           />
         </NFormItem>
-        <NFormItem label="提示词">
+        <NFormItem :label="t('views.skill.label_cn_47b7af95')">
           <NInput
             v-model:value="aiPrompt"
             type="textarea"
-            placeholder="手动输入处理提示词（或选择Skill自动填充）"
+            :placeholder="t('views.network.placeholder_cn_a188a7c4')"
             :rows="4"
           />
         </NFormItem>
@@ -922,7 +926,7 @@ onMounted(() => {
     </NModal>
 
     <!-- ── OpenCV处理弹窗 ── -->
-    <NModal v-model:show="showCVModal" preset="card" title="OpenCV 图片处理" style="width: 800px;">
+    <NModal v-model:show="showCVModal" preset="card" :title="t('views.network.title_opencv_cn_65060ed5')" style="width: 800px;">
       <div style="display: flex; gap: 16px;">
         <!-- 左侧：图片预览 Canvas -->
         <div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;">
@@ -942,7 +946,7 @@ onMounted(() => {
         <!-- 右侧：参数面板 -->
         <div style="flex: 1; min-width: 0; overflow-y: auto; max-height: 450px;">
       <NForm label-placement="left" label-width="80">
-        <NFormItem label="操作类型">
+        <NFormItem :label="t('views.network.label_cn_de9cc3dd')">
           <div style="display: flex; flex-direction: column; gap: 8px;">
             <div v-for="group in operationGroups" :key="group.label" style="display: flex; align-items: center; gap: 8px;">
               <span style="font-size: 12px; color: #999; width: 60px;">{{ group.label }}</span>
@@ -957,13 +961,13 @@ onMounted(() => {
             </div>
           </div>
         </NFormItem>
-          <NFormItem v-if="cvOperation === 'resize'" label="尺寸">
+          <NFormItem v-if="cvOperation === 'resize'" :label="t('views.network.label_cn_c8339fd2')">
           <NSpace>
-            <NInputNumber v-model:value="cvParams.width" placeholder="宽度" :min="1" :max="10000" />
-            <NInputNumber v-model:value="cvParams.height" placeholder="高度(0=等比)" :min="0" :max="10000" />
+            <NInputNumber v-model:value="cvParams.width" :placeholder="t('views.network.placeholder_cn_c2847901')" :min="1" :max="10000" />
+            <NInputNumber v-model:value="cvParams.height" :placeholder="t('views.network.placeholder_cn_babae8ea')" :min="0" :max="10000" />
           </NSpace>
         </NFormItem>
-        <NFormItem v-if="cvOperation === 'rotate'" label="角度">
+        <NFormItem v-if="cvOperation === 'rotate'" :label="t('views.network.label_cn_40d39c3b')">
             <NSpace align="center" vertical>
               <div style="font-size: 11px; color: #999;">拖动滑块实时预览旋转效果</div>
               <NSpace align="center">
@@ -973,90 +977,90 @@ onMounted(() => {
               <NButton size="tiny" @click="drawCanvas()">刷新预览</NButton>
           </NSpace>
         </NFormItem>
-          <NFormItem v-if="cvOperation === 'crop'" label="裁剪参数">
+          <NFormItem v-if="cvOperation === 'crop'" :label="t('views.network.label_cn_af67b0a2')">
           <NSpace vertical>
               <div style="font-size: 11px; color: #999;">左侧画布拖动选区后自动同步数值</div>
             <NSpace><span style="width: 30px;">X</span><NInputNumber v-model:value="cvParams.x" :min="0" size="small" /></NSpace>
             <NSpace><span style="width: 30px;">Y</span><NInputNumber v-model:value="cvParams.y" :min="0" size="small" /></NSpace>
-            <NSpace><span style="width: 30px;">宽</span><NInputNumber v-model:value="cvParams.width" :min="1" size="small" /></NSpace>
-            <NSpace><span style="width: 30px;">高</span><NInputNumber v-model:value="cvParams.height" :min="1" size="small" /></NSpace>
+            <NSpace><span style="width: 30px;t('views.network.label_cn_1b54418d')cvParams.width" :min="1" size="small" /></NSpace>
+            <NSpace><span style="width: 30px;t('views.network.label_cn_1b61b036')cvParams.height" :min="1" size="small" /></NSpace>
           </NSpace>
         </NFormItem>
-          <NFormItem v-if="cvOperation === 'flip'" label="方向">
+          <NFormItem v-if="cvOperation === 'flip'" :label="t('views.network.label_cn_a465db53')">
           <NSelect v-model:value="cvParams.direction" :options="[
-            { label: '水平翻转', value: 1 }, { label: '垂直翻转', value: 0 }, { label: '两者都', value: -1 }
+            { label: '水平翻转', value: 1 }, { label: '垂直翻转', value: 0 }, { label: t('views.network.label_cn_a5eac949'), value: -1 }
           ]" />
         </NFormItem>
-          <NFormItem v-if="cvOperation === 'border'" label="边框">
+          <NFormItem v-if="cvOperation === 'border'" :label="t('views.network.label_cn_961534b4')">
           <NSpace vertical>
-            <NSpace><NInputNumber v-model:value="cvParams.top" :min="0" size="small" placeholder="上" /></NSpace>
-            <NSpace align="center"><NInputNumber v-model:value="cvParams.left" :min="0" size="small" placeholder="左" />
+            <NSpace><NInputNumber v-model:value="cvParams.top" :min="0" size="small" :placeholder="t('views.network.placeholder_cn_af767b7e')" /></NSpace>
+            <NSpace align="center"><NInputNumber v-model:value="cvParams.left" :min="0" size="small" :placeholder="t('views.network.placeholder_cn_d2aff141')" />
               <NColorPicker v-model:value="cvParams.color" :default-value="'#000000'" size="small" />
-              <NInputNumber v-model:value="cvParams.right" :min="0" size="small" placeholder="右" /></NSpace>
-            <NSpace><NInputNumber v-model:value="cvParams.bottom" :min="0" size="small" placeholder="下" /></NSpace>
+              <NInputNumber v-model:value="cvParams.right" :min="0" size="small" :placeholder="t('views.network.placeholder_cn_4d9c32c2')" /></NSpace>
+            <NSpace><NInputNumber v-model:value="cvParams.bottom" :min="0" size="small" :placeholder="t('views.network.placeholder_cn_3850a186')" /></NSpace>
           </NSpace>
         </NFormItem>
-          <NFormItem v-if="cvOperation === 'brightness'" label="亮度">
+          <NFormItem v-if="cvOperation === 'brightness'" :label="t('views.network.label_cn_cfd060d8')">
           <NSpace align="center">
             <NSlider v-model:value="cvParams.value" :min="0" :max="5" :step="0.1" style="width: 200px;" @update:value="drawCanvas()" />
             <NInputNumber v-model:value="cvParams.value" :min="0" :max="5" :step="0.1" size="small" style="width: 80px;" />
           </NSpace>
         </NFormItem>
-          <NFormItem v-if="cvOperation === 'contrast'" label="对比度">
+          <NFormItem v-if="cvOperation === 'contrast'" :label="t('views.network.label_cn_adc0d88f')">
           <NSpace align="center">
             <NSlider v-model:value="cvParams.value" :min="0" :max="5" :step="0.1" style="width: 200px;" @update:value="drawCanvas()" />
             <NInputNumber v-model:value="cvParams.value" :min="0" :max="5" :step="0.1" size="small" style="width: 80px;" />
           </NSpace>
         </NFormItem>
-          <NFormItem v-if="cvOperation === 'color_space'" label="色彩空间">
+          <NFormItem v-if="cvOperation === 'color_space'" :label="t('views.network.label_cn_8f5d2fd3')">
           <NSelect v-model:value="cvParams.target" :options="[
-            { label: '灰度 (GRAY)', value: 'GRAY' }, { label: 'HSV', value: 'HSV' }, { label: 'LAB', value: 'LAB' }, { label: 'RGB', value: 'RGB' }
+            { label: t('views.network.label_cn_678ac9a2'), value: 'GRAY' }, { label: 'HSV', value: 'HSV' }, { label: 'LAB', value: 'LAB' }, { label: 'RGB', value: 'RGB' }
           ]" />
         </NFormItem>
-          <NFormItem v-if="cvOperation === 'blur'" label="模糊降噪">
+          <NFormItem v-if="cvOperation === 'blur'" :label="t('views.network.label_cn_6475031d')">
           <NSpace vertical>
-            <NSpace><span style="width: 60px;">核大小</span><NInputNumber v-model:value="cvParams.kernel_size" :min="3" :max="31" size="small" /></NSpace>
+            <NSpace><span style="width: 60px;t('views.network.label_cn_1552aba7')cvParams.kernel_size" :min="3" :max="31" size="small" /></NSpace>
             <NSpace><span style="width: 60px;">类型</span>
               <NSelect v-model:value="cvParams.type" size="small" :options="[
-                { label: '高斯', value: 'gaussian' }, { label: '中值', value: 'median' }, { label: '双边', value: 'bilateral' }
+                { label: '高斯', value: 'gaussian' }, { label: '中值', value: 'median' }, { label: t('views.network.label_cn_8e126ead'), value: 'bilateral' }
               ]" /></NSpace>
           </NSpace>
         </NFormItem>
-          <NFormItem v-if="cvOperation === 'morphology'" label="形态学">
+          <NFormItem v-if="cvOperation === 'morphology'" :label="t('views.network.label_cn_3c343574')">
           <NSpace vertical>
             <NSpace><span style="width: 60px;">操作</span>
               <NSelect v-model:value="cvParams.operation" size="small" :options="[
-                { label: '腐蚀', value: 'erode' }, { label: '膨胀', value: 'dilate' }, { label: '开运算', value: 'open' }, { label: '闭运算', value: 'close' }
+                { label: '腐蚀', value: 'erode' }, { label: '膨胀', value: 'dilate' }, { label: '开运算', value: 'open' }, { label: t('views.network.label_cn_7517eaf0'), value: 'close' }
               ]" /></NSpace>
-            <NSpace><span style="width: 60px;">核大小</span><NInputNumber v-model:value="cvParams.kernel_size" :min="1" :max="15" size="small" /></NSpace>
-            <NSpace><span style="width: 60px;">迭代</span><NInputNumber v-model:value="cvParams.iterations" :min="1" :max="10" size="small" /></NSpace>
+            <NSpace><span style="width: 60px;t('views.network.label_cn_1552aba7')cvParams.kernel_size" :min="1" :max="15" size="small" /></NSpace>
+            <NSpace><span style="width: 60px;t('views.network.label_cn_bc13a83e')cvParams.iterations" :min="1" :max="10" size="small" /></NSpace>
           </NSpace>
         </NFormItem>
-          <NFormItem v-if="cvOperation === 'smooth'" label="纹理平滑">
+          <NFormItem v-if="cvOperation === 'smooth'" :label="t('views.network.label_cn_219fb25a')">
           <NSpace vertical>
             <NSpace><span style="width: 60px;">方法</span>
               <NSelect v-model:value="cvParams.method" size="small" :options="[
-                { label: '双边滤波', value: 'bilateral' }, { label: '非局部均值', value: 'nlmeans' }
+                { label: '双边滤波', value: 'bilateral' }, { label: t('views.network.label_cn_48c27c2e'), value: 'nlmeans' }
               ]" /></NSpace>
-            <NSpace><span style="width: 60px;">强度</span><NInputNumber v-model:value="cvParams.h" :min="1" :max="100" size="small" /></NSpace>
+            <NSpace><span style="width: 60px;t('views.network.label_cn_f068c426')cvParams.h" :min="1" :max="100" size="small" /></NSpace>
           </NSpace>
         </NFormItem>
-          <NFormItem v-if="cvOperation === 'histogram_eq'" label="直方图均衡化">
+          <NFormItem v-if="cvOperation === 'histogram_eq'" :label="t('views.network.label_cn_34bbeded')">
           <NSpace vertical>
             <NSpace><span style="width: 60px;">方法</span>
               <NSelect v-model:value="cvParams.method" size="small" :options="[
-                { label: '全局均衡化', value: 'global' }, { label: 'CLAHE', value: 'clahe' }
+                { label: t('views.network.label_cn_5c4b14f0'), value: 'global' }, { label: 'CLAHE', value: 'clahe' }
               ]" /></NSpace>
-            <NSpace v-if="cvParams.method === 'clahe'"><span style="width: 60px;">裁剪限</span><NInputNumber v-model:value="cvParams.clip_limit" :min="0.1" :max="10" :step="0.1" size="small" /></NSpace>
+            <NSpace v-if="cvParams.method === 'clahe'"><span style="width: 60px;t('views.network.label_cn_c9f59a1e')cvParams.clip_limit" :min="0.1" :max="10" :step="0.1" size="small" /></NSpace>
           </NSpace>
         </NFormItem>
-          <NFormItem v-if="cvOperation === 'remove_bg'" label="去背景">
+          <NFormItem v-if="cvOperation === 'remove_bg'" :label="t('views.network.label_cn_a9cec4ef')">
           <NSpace vertical>
             <NSpace><span style="width: 60px;">方法</span>
               <NSelect v-model:value="cvParams.method" size="small" :options="[
-                { label: 'GrabCut', value: 'grabcut' }, { label: '自适应阈值', value: 'threshold' }
+                { label: 'GrabCut', value: 'grabcut' }, { label: t('views.network.label_cn_e01d3656'), value: 'threshold' }
               ]" /></NSpace>
-            <NSpace><span style="width: 60px;">边距</span><NInputNumber v-model:value="cvParams.margin" :min="0" :max="100" size="small" /></NSpace>
+            <NSpace><span style="width: 60px;t('views.network.label_cn_1663d7c7')cvParams.margin" :min="0" :max="100" size="small" /></NSpace>
           </NSpace>
         </NFormItem>
       </NForm>

@@ -368,6 +368,39 @@ cmInstance.getWrapperElement().style.height = '100%'
 - `web/public/lib/vditor/`
 - `web/public/lib/codemirror/`
 
+### CrudTable 进阶功能
+
+#### `rowClickSelect` — 行点击单选
+
+`CrudTable` 支持 `row-click-select` prop，开启后点击表格行的任意非交互区域（非 checkbox / 按钮 / 开关等），自动单选该行并取消所有其他选中行。再次点击已选中行则取消选中。适用于单选场景（如弹窗中选择一条记录）。
+
+```html
+<CrudTable
+  :columns="[{ type: 'selection' }, ...]"
+  :get-data="api.getList"
+  row-click-select
+  @on-checked="(keys) => { selected = keys }"
+/>
+```
+
+**交互元素过滤**：点击以下元素**不会**触发行选中（通过 `closest()` 过滤）：
+- `button`, `a`, `.n-button`, `.n-switch`, `.n-tag`, `input`, `select`, `textarea`, `[role="button"]`
+- selection 列单元格（`.n-data-table-td--selection`）—— 即 checkbox 本身保持原生多选行为
+
+**注意**：`rowClickSelect` 开启时会绑定 `:checked-row-keys` 使 NDataTable 成为受控组件（编程式修改选中态可反映到 UI）。仅在 `rowClickSelect` 启用时激活，不影响默认行为。
+
+#### `rowKey` prop 使用约束
+
+`CrudTable` 的 `row-key` prop 类型为 **String**（属性名），**不接受函数**。错误用法：
+
+```html
+<!-- ❌ 错误：传函数会被 Vue 强转为字符串，导致所有行 key 为 undefined -->
+<CrudTable :row-key="(row) => row.key" />
+
+<!-- ✅ 正确：传属性名字符串 -->
+<CrudTable row-key="key" />
+```
+
 ---
 
 ## 异步与并发规范
@@ -732,7 +765,7 @@ await obj.save()
 
 ---
 
-## 强制规则汇总（26 条）
+## 强制规则汇总（27 条）
 
 1. **后端**：所有控制器继承 `CRUDBase`，所有路由加 `summary` 中文描述
 2. **前端**：所有列表页必须用 `CrudTable`，禁止手写 `NDataTable` + 分页
@@ -760,20 +793,114 @@ await obj.save()
 24. **图层导出**：包含跨域瓦片或 DOM 控件时用 `html-to-image` 库，纯同源路网可用 Canvas
 25. **PNG 元数据**：导出图片的描述（description）写入 JSON 元数据（中心点、作者、路网统计），后端用 Pillow `PngInfo` 写入 tEXt 块
 26. **UnoCSS 字体**：全局 `html { font-size: 4px }` 使 1rem=4px，UnoCSS 的 `text-*` 类（rem）全部缩到 1/4。新建页面时**必须在 `<style scoped>` 中用 `!important` + px 覆盖 `text-xs` 到 `text-xl` 的 `font-size` 和 `line-height`**，禁止直接改全局 `html` 基准
+27. **CrudTable rowKey**：`row-key` prop 只接受 String（属性名），**不能传函数**。`(row) => row.key` 会被转为字符串导致所有行 key 为 undefined，checkbox 无法选中
 
 ---
 
-## 已实现模块速查
+## 后端功能模块速查
 
-| 模块 | 路由前缀 | 模型 | 特点 |
+### 数据模型总览（`app/models/admin.py`）
+
+| 模型 | 继承 | 关键字段 |
+|---|---|---|
+| User | BaseModel, TimestampMixin | username, email, password_hash, is_superuser, is_active, roles(M2M→Role) |
+| Role | BaseModel, TimestampMixin | name, desc, menus(M2M→Menu), apis(M2M→Api) |
+| Api | BaseModel, TimestampMixin | path, method, summary, tags |
+| Menu | BaseModel, TimestampMixin | title, name, path, component, icon, parent_id, menu_type, order |
+| Dept | BaseModel, TimestampMixin | name, parent_id, leader, phone |
+| DeptClosure | BaseModel, TimestampMixin | ancestor_id, descendant_id, depth |
+| AuditLog | BaseModel, TimestampMixin | user_id, username, method, path, summary, ip, status_code |
+| PixelAccount | BaseModel, TimestampMixin | name, tenant_address, token, users(M2M→User) |
+| Defect | BaseModel, TimestampMixin | pixel_account_id, car_id, defect_type, latitude, longitude, image_url |
+| Track | BaseModel, TimestampMixin | pixel_account_id, car_id, start_time, end_time, distance_km, points(JSON) |
+| Region | BaseModel, TimestampMixin | name, code, iso_alpha2/3, region_type(ENUM), parent_id(self-FK), capital, population, area, lat/lon |
+| RegionBoundary | BaseModel, TimestampMixin | region(FK), file_name, file_type, file_path, download_status |
+| RoadNetwork | BaseModel, TimestampMixin | region(FK), file_name, file_type, file_path, node_count, edge_count, download_status, bbox, stats(JSON) |
+| Skill | BaseModel, TimestampMixin | title, content, users(M2M→User) |
+| AIProxy | BaseModel, TimestampMixin | name, url, token, model, users(M2M→User) |
+| Workspace | BaseModel, TimestampMixin | name, desc, users(M2M→User) |
+| OriginalSheet | BaseModel, TimestampMixin | workspace(FK), file_name, file_path, sheet_names(JSON) |
+| AnalysisSheet | BaseModel, TimestampMixin | workspace(FK), original_sheet(FK), name, prompt, content(JSON), data_hash |
+| Document | BaseModel, TimestampMixin | workspace(FK), name, file_path, file_type, source_type, source(JSON) |
+| Report | BaseModel, TimestampMixin | workspace(FK), title, content(HTML), filter_template(JSON) |
+| SystemConfig | BaseModel, TimestampMixin | key, value |
+
+### 控制器方法速查
+
+#### 基础模块（CRUDBase 继承）
+
+| 模块 | 路由 | 控制器 | 自定义方法（除 CRUD 五件套） |
 |---|---|---|---|
-| Skill 管理 | `/skill` | Skill (title, content, users M2M) | vditor 所见即所得编辑器 |
-| AI 代理管理 | `/ai-proxy` | AIProxy (name, url, token, model, users M2M) | 标准 CrudTable 页面 |
-| 数据工作台 | `/workspace` | Workspace → 多数据源 (Excel/文档/数据库/静态文件) | 左侧工作区 + 右侧 NTabs 多数据源，卡片式布局 |
-| 统计中心（报告生成） | `/report` | Report (workspace FK, content HTML) | CodeMirror 编辑 → PDF/Word/HTML 导出 |
-| 路网数据中心 | `/region` | Region 自引用树 + RegionBoundary + RoadNetwork | NTree 双面板 + OSMnx 下载 |
-| 路网工作台 | `/region/road-network` | RoadNetwork 瓦片预览 + 边数据编辑 | Leaflet 多底图 + 瓦片叠加 + 图层导出 + AI/CV 处理 |
-| 路网素材 | `/region/road-material` | RoadMaterial (图片+EXIF+短链接) | 上传/编辑/删除 + AI/CV 处理 + 预览工作区（缩放旋转+GPS地图） |
+| 用户管理 | `/user` | UserController | `get_by_email`, `get_by_username`, `create_user`, `update_last_login`, `authenticate`, `update_roles` |
+| 角色管理 | `/role` | RoleController | `is_exist`, `update_roles(menu_ids, api_infos)` |
+| 菜单管理 | `/menu` | MenuController | `get_by_menu_path`, `scan_views`（扫描前端视图文件夹） |
+| API 管理 | `/apis` | ApiController | `refresh_api`（扫描所有路由自动注册） |
+| 部门管理 | `/dept` | DeptController | `get_dept_tree`, `get_dept_info`, `update_dept_closure`, `create_dept`, `update_dept`, `delete_dept` |
+| 像素账户 | `/pixel-account` | PixelAccountController | `update_users`, `create_account`, `update_account`（含 Token 自动刷新） |
+| AI 代理 | `/ai-proxy` | AIProxyController | `get_by_name`, `create_or_update`, `get_accessible`, `check_permission`, `update_users` |
+| Skill 管理 | `/skill` | SkillController | `get_accessible_skills`, `check_permission`, `update_users` |
+
+#### 数据工作台模块
+
+| 路由 | 控制器 | 关键方法 |
+|---|---|---|
+| `/workspace` | WorkspaceController (CRUDBase) | `update_users`, `upload_sheet`, `list_sheets`, `delete_sheet`, `export_sheet`, `analyze`（AI 分析表格）, `correlate`（AI 关联分析）, `list_analyses`, `delete_analysis`, `batch_delete_analyses`, `clear_analyses`, `export_analysis`, `batch_export_analyses`, `copy_to_workspace` |
+| `/workspace/static-file` | StaticFileController (CRUDBase) | `upload`, `list_files`（按层级）, `get_file`, `update_file`, `delete_file`, `batch_delete`, `get_by_short_token`, `cv_process`（OpenCV 处理）, `ai_process`（AI 图片优化）, `ocr_extract`, `import_from_road_material`, `list_material_regions`, `list_materials_by_region`, `list_image_files` |
+| `/document` | DocumentController | `list_by_workspace`, `get`, `upload`, `create_from_text`, `delete`, `batch_delete`, `get_content`, `update_content`, `clear_by_workspace`, `ai_analyze` |
+| `/report` | ReportController (CRUDBase) | `export_pdf`, `export_word`, `export_html` |
+
+#### 路网数据中心模块
+
+| 路由 | 控制器 | 关键方法 |
+|---|---|---|
+| `/region` | RegionController | `list_regions`（多条件搜索）, `create_region`, `update_region`, `get_tree`, `get_children`, `import_countries`（pycountry 批量导入三级数据）, `clear_all`, `export_data`, `batch_update`, `fill_geonames`（GeoNames 中文名填充，带进度）, `download_boundary`（GADM API）, `upload_boundary`, `delete_boundary`, `clear_boundaries`, `export_boundary`, `download_road_network`（OSMnx，边界/地名两种模式）, `upload_road_network`, `delete_road_network`, `clear_road_networks`, `export_road_network`, `analyze_road_network`, `filter_road_network`, `segment_road_network`, `get_tile`（瓦片服务）, `warm_tile_cache`, `get_cached_fields` |
+| `/road-material` | RoadMaterialController (→ StaticFileController 代理) | `upload`, `list`, `update`, `delete`, `get_by_short_token`, `cv_process`, `ai_process` |
+
+#### 轨迹 & 病害模块
+
+| 路由 | 控制器 | 关键方法 |
+|---|---|---|
+| `/defect` | DefectController | `get_user_accounts`, `sync`（同步病害数据）, `clear`, `list_defects` |
+| `/track` | TrackController | `get_user_accounts`, `get_car_types`, `get_cars`, `sync`（同步轨迹数据）, `clear`, `list_tracks` |
+| `/vehicle` | VehicleController | `get_user_accounts`, `get_car_types`, `get_cars`, `check_status`, `get_info`, `full_check`（一站式检测）, `refresh_status`, `query_flow`（数据流量） |
+
+#### 系统 & 国际化模块
+
+| 路由 | 控制器 | 关键方法 |
+|---|---|---|
+| `/sysconfig` | SystemConfigController | `init_defaults`, `get_all`, `get_value`, `set_value`, `set_all`, `test_proxy` |
+| `/i18n` | I18nController | `get_all`, `get_list`, `update`, `batch_update`, `export_data`, `import_data`, `ai_generate`（AI 翻译）, `scan_frontend`（扫描硬编码）, `replace_hardcoded` |
+
+### 后端工具类速查（`app/utils/`）
+
+| 工具 | 文件 | 核心功能 |
+|---|---|---|
+| 密码加密 | `password.py` | `get_password_hash`, `verify_password` (argon2 via passlib) |
+| JWT | `jwt_utils.py` | `create_access_token` (PyJWT) |
+| 文档转换 | `doc_to_md.py` | `file_to_markdown` → PDF/DOCX/PPTX/XLSX/CSV → Markdown |
+| 图片处理 | `image_processor.py` | `ImageProcessor`: resize, rotate, crop, flip, add_border, brightness, contrast, color_space, blur, morphology, smooth, histogram_eq, remove_bg (grabcut/threshold) |
+| 路网分析 | `road_network_analyzer.py` | `RoadNetworkAnalyzer`: get_info, to_geojson, get_highway_types, filter_by_highway, segment（GraphML→GPKG 双向转换） |
+| 路网瓦片 | `road_network_tiler.py` | 路网 GPKG → XYZ 瓦片 PNG（多缩放级别，缓存热数据） |
+| OSMnx 下载 | `osmnx_downloader.py` | `OSMnxDownloader`: download_by_boundary (GeoJSON polygon), download_by_name |
+| GADM 下载 | `gadm_downloader.py` | `GADMDownloader`: download (ISO alpha-3 + level), check_available |
+| GeoNames 下载 | `geonames_downloader.py` | `GeoNamesChineseDownloader`: download_and_parse, build_mapping, apply_mapping（断点续传 + 进度状态文件） |
+| 像素 API | `pixel_api.py` | `get_base_info`, `get_user_auth_info`, `reverse_geocode_osm`, `reverse_geocode_mapbox` |
+| 火山引擎视觉 | `volcengine_visual.py` | 火山引擎视觉 API 封装（AI 图片处理） |
+| HTTP 工具 | `http_utils.py` | `make_download_response`（统一文件下载响应） |
+| 外部 API | `xiangsu_api.py` | 像素平台外部 API 封装 |
+
+### 已实现页面速查
+
+| 页面 | 路由 | 前端组件 | 特点 |
+|---|---|---|---|
+| Skill 管理 | `/skill` | `views/skill/index.vue` | vditor 所见即所得编辑器 + CrudTable + useCRUD |
+| AI 代理管理 | `/ai-proxy` | `views/ai-proxy/index.vue` | 标准 CrudTable + useCRUD |
+| 数据工作台 | `/workspace` | `views/statistic-center/data-workbench/index.vue` | 左侧工作区 + 右侧 NTabs 多数据源，卡片式布局 |
+| 统计中心（报告） | `/report` | `views/statistic-center/report/index.vue` | CodeMirror 编辑 → PDF/Word/HTML 导出 |
+| 路网数据中心 | `/region` | `views/network/road-network/index.vue` | NTree 双面板 + OSMnx 下载 |
+| 路网工作台 | `/region/road-network` | `views/network/road-network-workbench/index.vue` | Leaflet 多底图 + 瓦片叠加 + 图层导出 + AI/CV 处理 |
+| 路网素材 | `/region/road-material` | `views/network/road-material/index.vue` | 上传/编辑/删除 + AI/CV 处理 + 预览（缩放旋转+GPS地图） |
+| 国际化 | `/i18n` | `views/system/i18n/index.vue` | 翻译编辑 + AI 批量翻译 + 导入导出 |
 
 ### 路网工作台前端库
 

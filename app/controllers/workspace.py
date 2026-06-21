@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import io
 import json
 import logging
@@ -579,6 +580,633 @@ df = pd.read_csv(io.StringIO(csv_text))
             analyses.append(analysis)
 
         return analyses
+
+
+class CopyService:
+    """跨工作区复制数据"""
+
+    @staticmethod
+    async def copy_to_workspace(
+        target_workspace_id: int,
+        sheet_ids: List[int],
+        analysis_ids: List[int],
+        document_ids: List[int],
+        static_file_ids: List[int],
+    ) -> dict:
+        from app.models.admin import Document, StaticFile
+        copied = {"sheets": 0, "analyses": 0, "documents": 0, "static_files": 0}
+
+        # 复制原始表格
+        for sid in sheet_ids:
+            src = await OriginalSheet.filter(id=sid).first()
+            if src:
+                await OriginalSheet.create(
+                    workspace_id=target_workspace_id,
+                    name=src.name,
+                    file_path=src.file_path,
+                    file_size=src.file_size,
+                )
+                copied["sheets"] += 1
+
+        # 复制分析表格
+        for aid in analysis_ids:
+            src = await AnalysisSheet.filter(id=aid).first()
+            if src:
+                await AnalysisSheet.create(
+                    workspace_id=target_workspace_id,
+                    name=src.name,
+                    file_path=src.file_path,
+                    file_size=src.file_size,
+                    source_type=src.source_type,
+                    ai_proxy_id=src.ai_proxy_id,
+                    skill_id=src.skill_id,
+                    prompt=src.prompt,
+                )
+                copied["analyses"] += 1
+
+        # 复制文档
+        for did in document_ids:
+            src = await Document.filter(id=did).first()
+            if src:
+                await Document.create(
+                    workspace_id=target_workspace_id,
+                    name=src.name,
+                    file_path=src.file_path,
+                    file_size=src.file_size,
+                    char_count=src.char_count,
+                    source_type=src.source_type,
+                    import_source=src.import_source,
+                    source_table=src.source_table,
+                    row_count=src.row_count,
+                    dump_date=src.dump_date,
+                    source_last_updated=src.source_last_updated,
+                    ai_proxy_id=src.ai_proxy_id,
+                    skill_id=src.skill_id,
+                    prompt=src.prompt,
+                )
+                copied["documents"] += 1
+
+        # 复制静态文件
+        import secrets, shutil
+        STATIC_UPLOAD_DIR = os.path.join(settings.BASE_DIR, "uploads", "static_files")
+        skipped_files: List[dict] = []
+        for sfid in static_file_ids:
+            src = await StaticFile.filter(id=sfid).first()
+            if not src:
+                continue
+
+            # 源文件缺失时跳过，不创建无效记录
+            if not os.path.exists(src.file_path):
+                logger.warning(f"复制StaticFile id={sfid} 跳过：源文件不存在 {src.file_path}")
+                skipped_files.append({"id": sfid, "name": src.name, "reason": "源文件已丢失"})
+                continue
+
+            new_token = secrets.token_hex(16)
+
+            # 生成新的物理文件路径并复制文件
+            ext = os.path.splitext(src.file_name)[1] or ".bin"
+            new_filename = f"{uuid.uuid4().hex}{ext}"
+            os.makedirs(STATIC_UPLOAD_DIR, exist_ok=True)
+            new_filepath = os.path.join(STATIC_UPLOAD_DIR, new_filename)
+            shutil.copy2(src.file_path, new_filepath)
+
+            await StaticFile.create(
+                workspace_id=target_workspace_id,
+                name=src.name,
+                description=src.description,
+                file_name=src.file_name,
+                file_path=new_filepath,
+                file_size=src.file_size,
+                source_type=src.source_type,
+                is_image=src.is_image,
+                width=src.width,
+                height=src.height,
+                color_mode=src.color_mode,
+                bit_depth=src.bit_depth,
+                dpi=src.dpi,
+                format_type=src.format_type,
+                exif_data=src.exif_data,
+                source=src.source,
+                short_url_token=new_token,
+            )
+            copied["static_files"] += 1
+
+        if skipped_files:
+            copied["skipped"] = skipped_files
+
+        return copied
+
+
+class DatabaseImportService:
+    """数据库数据导入服务：MySQL / SQLite / 像素平台 / 路网"""
+
+    UPLOAD_DIR = os.path.join(settings.BASE_DIR, "uploads", "sheets")
+
+    @classmethod
+    def _ensure_dir(cls):
+        os.makedirs(cls.UPLOAD_DIR, exist_ok=True)
+
+    @classmethod
+    def _save_csv(cls, df: pd.DataFrame, filename: str) -> tuple:
+        """保存 DataFrame 为 CSV 文件，返回 (file_path, file_size, char_count, row_count)"""
+        cls._ensure_dir()
+        # 确保唯一文件名
+        base, ext = os.path.splitext(filename)
+        unique_id = uuid.uuid4().hex[:8]
+        filename = f"{base}_{unique_id}.csv"
+        filepath = os.path.join(cls.UPLOAD_DIR, filename)
+        df.to_csv(filepath, index=False, encoding="utf-8-sig")
+        file_size = os.path.getsize(filepath)
+        row_count = len(df)
+        # 计算字符数：把所有单元格转为字符串后统计
+        char_count = sum(
+            len(str(val)) if pd.notna(val) else 0
+            for _, row in df.iterrows()
+            for val in row
+        )
+        return filepath, file_size, char_count, row_count
+
+    # ── MySQL ──
+
+    @staticmethod
+    def _mysql_get_connection(host: str, port: int, user: str, password: str, database: str):
+        import pymysql
+        return pymysql.connect(
+            host=host, port=port, user=user, password=password,
+            database=database, charset="utf8mb4",
+            connect_timeout=10, read_timeout=60,
+        )
+
+    @classmethod
+    def _mysql_list_tables_sync(cls, host: str, port: int, user: str, password: str, database: str) -> List[dict]:
+        conn = cls._mysql_get_connection(host, port, user, password, database)
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SHOW TABLES")
+                tables = [{"name": row[0], "label": row[0]} for row in cursor.fetchall()]
+                # 获取每个表的行数估计和更新时间
+                for t in tables:
+                    try:
+                        cursor.execute(
+                            f"SELECT TABLE_ROWS, UPDATE_TIME FROM information_schema.TABLES "
+                            f"WHERE TABLE_SCHEMA=%s AND TABLE_NAME=%s",
+                            (database, t["name"]),
+                        )
+                        row = cursor.fetchone()
+                        if row:
+                            t["estimated_rows"] = row[0] or 0
+                            t["update_time"] = str(row[1]) if row[1] else ""
+                    except Exception:
+                        t["estimated_rows"] = 0
+                        t["update_time"] = ""
+                return tables
+        finally:
+            conn.close()
+
+    @classmethod
+    def _mysql_import_table_sync(cls, host: str, port: int, user: str, password: str,
+                                  database: str, table: str) -> str:
+        """读取 MySQL 表数据并保存为 CSV，返回文件路径"""
+        conn = cls._mysql_get_connection(host, port, user, password, database)
+        try:
+            query = f"SELECT * FROM `{table}`"
+            # 获取原表更新时间
+            update_time = None
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "SELECT UPDATE_TIME FROM information_schema.TABLES "
+                    "WHERE TABLE_SCHEMA=%s AND TABLE_NAME=%s",
+                    (database, table),
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    update_time = row[0]
+
+            df = pd.read_sql(query, conn)
+            filepath, file_size, char_count, row_count = cls._save_csv(df, f"{database}_{table}")
+            return filepath, file_size, char_count, row_count, update_time
+        finally:
+            conn.close()
+
+    @classmethod
+    async def mysql_list_tables(cls, host: str, port: int, user: str, password: str, database: str) -> List[dict]:
+        return await asyncio.to_thread(cls._mysql_list_tables_sync, host, port, user, password, database)
+
+    @classmethod
+    async def mysql_import_tables(
+        cls, workspace_id: int, host: str, port: int, user: str,
+        password: str, database: str, tables: List[str],
+    ) -> List[dict]:
+        """批量导入 MySQL 表数据"""
+        from app.models.admin import Document
+        results = []
+        for table in tables:
+            logger.info(f"导入 MySQL 表: {database}.{table}")
+            filepath, file_size, char_count, row_count, update_time = await asyncio.to_thread(
+                cls._mysql_import_table_sync, host, port, user, password, database, table
+            )
+            doc = await Document.create(
+                workspace_id=workspace_id,
+                name=f"{database}.{table}.csv",
+                file_path=filepath,
+                file_size=file_size,
+                char_count=char_count,
+                source_type="original",
+                import_source="mysql",
+                source_table=f"{database}.{table}",
+                row_count=row_count,
+                dump_date=datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
+                source_last_updated=update_time,
+            )
+            results.append(await doc.to_dict())
+        return results
+
+    # ── SQLite ──
+
+    @staticmethod
+    def _sqlite_list_tables_sync(file_path: str) -> List[dict]:
+        import sqlite3
+        conn = sqlite3.connect(file_path)
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            )
+            tables = [{"name": row[0], "label": row[0]} for row in cursor.fetchall()]
+            # 获取行数
+            for t in tables:
+                try:
+                    cursor.execute(f'SELECT COUNT(*) FROM "{t["name"]}"')
+                    t["estimated_rows"] = cursor.fetchone()[0]
+                except Exception:
+                    t["estimated_rows"] = 0
+                t["update_time"] = ""
+            return tables
+        finally:
+            conn.close()
+
+    @classmethod
+    def _sqlite_import_table_sync(cls, file_path: str, table: str) -> tuple:
+        import sqlite3
+        conn = sqlite3.connect(file_path)
+        try:
+            df = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+            base_name = os.path.basename(file_path).rsplit(".", 1)[0]
+            filepath, file_size, char_count, row_count = cls._save_csv(df, f"{base_name}_{table}")
+            return filepath, file_size, char_count, row_count
+        finally:
+            conn.close()
+
+    @classmethod
+    async def sqlite_list_tables(cls, file_path: str) -> List[dict]:
+        return await asyncio.to_thread(cls._sqlite_list_tables_sync, file_path)
+
+    @classmethod
+    async def sqlite_import_tables(
+        cls, workspace_id: int, file_path: str, tables: List[str],
+    ) -> List[dict]:
+        from app.models.admin import Document
+        results = []
+        base_name = os.path.basename(file_path)
+        for table in tables:
+            logger.info(f"导入 SQLite 表: {file_path} -> {table}")
+            filepath, file_size, char_count, row_count = await asyncio.to_thread(
+                cls._sqlite_import_table_sync, file_path, table
+            )
+            doc = await Document.create(
+                workspace_id=workspace_id,
+                name=f"{base_name}_{table}.csv",
+                file_path=filepath,
+                file_size=file_size,
+                char_count=char_count,
+                source_type="original",
+                import_source="sqlite",
+                source_table=table,
+                row_count=row_count,
+                dump_date=datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
+            )
+            results.append(await doc.to_dict())
+        return results
+
+    # ── 像素平台 ──
+
+    @classmethod
+    async def pixel_list_accounts(cls, user_id: int) -> List[dict]:
+        """列出当前用户有权限访问的像素账户"""
+        from app.models.admin import PixelAccount
+        accounts = await PixelAccount.filter(users__id=user_id).all()
+        return [
+            {
+                "id": a.id,
+                "username": a.username,
+                "tenant_address": a.tenant_address,
+                "country": a.country,
+                "state": a.state,
+                "label": f"{a.username} ({a.tenant_address})",
+            }
+            for a in accounts
+        ]
+
+    @classmethod
+    async def pixel_list_tables(cls, pixel_account_id: int, user_id: int) -> List[dict]:
+        """列出像素平台数据表（缺陷表 / 轨迹表）"""
+        from app.models.admin import PixelAccount
+        acc = await PixelAccount.filter(id=pixel_account_id, users__id=user_id).first()
+        if not acc:
+            raise ValueError("无权访问该像素账户")
+        # 像素平台当前支持两大数据表
+        return [
+            {"name": "defect", "label": "缺陷数据", "description": "路面病害检测数据"},
+            {"name": "track", "label": "轨迹数据", "description": "车辆轨迹数据"},
+        ]
+
+    @classmethod
+    async def pixel_import_table(
+        cls, workspace_id: int, pixel_account_id: int, table_name: str, table_label: str, user_id: int,
+    ) -> dict:
+        """从本地数据库导入像素关联表的全量数据"""
+        from app.models.admin import Defect, Document, PixelAccount, Track
+        acc = await PixelAccount.filter(id=pixel_account_id, users__id=user_id).first()
+        if not acc:
+            raise ValueError("无权访问该像素账户")
+
+        cls._ensure_dir()
+        label = table_label or table_name
+
+        if table_name == "defect":
+            records = await Defect.filter(pixel_account_id=pixel_account_id).all()
+            rows = [
+                {
+                    "remote_id": r.remote_id, "longitude": r.longitude, "latitude": r.latitude,
+                    "status": r.status, "status_name": r.status_name,
+                    "risk_type": r.risk_type, "risk_level": r.risk_level,
+                    "risk_level_name": r.risk_level_name, "risk_name1": r.risk_name1,
+                    "risk_name2": r.risk_name2, "lane": r.lane, "car_no": r.car_no,
+                    "reverse_name": r.reverse_name, "subd_name": r.subd_name,
+                    "track_image": r.track_image, "track_url": r.track_url,
+                    "created_at": str(r.created_at) if r.created_at else "",
+                }
+                for r in records
+            ]
+        elif table_name == "track":
+            records = await Track.filter(pixel_account_id=pixel_account_id).all()
+            rows = [
+                {
+                    "remote_id": r.remote_id, "car_id": r.car_id, "road_name": r.road_name,
+                    "car_type": r.car_type, "longitude": r.longitude, "latitude": r.latitude,
+                    "flag": r.flag, "track_time": str(r.track_time) if r.track_time else "",
+                    "created_at": str(r.created_at) if r.created_at else "",
+                }
+                for r in records
+            ]
+        else:
+            raise ValueError(f"不支持的数据表: {table_name}")
+
+        if not rows:
+            raise ValueError(f"数据表 {label} 无数据")
+
+        df = pd.DataFrame(rows)
+        filepath, file_size, char_count, row_count = cls._save_csv(
+            df, f"pixel_{acc.tenant_address}_{table_name}"
+        )
+        doc = await Document.create(
+            workspace_id=workspace_id,
+            name=f"pixel_{acc.tenant_address}_{table_name}.csv",
+            file_path=filepath,
+            file_size=file_size,
+            char_count=char_count,
+            source_type="original",
+            import_source="pixel",
+            source_table=f"{acc.tenant_address}.{table_name}",
+            row_count=row_count,
+            dump_date=datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
+        )
+        return await doc.to_dict()
+
+    # ── 路网数据 ──
+
+    @classmethod
+    async def road_network_list_regions(cls) -> List[dict]:
+        """列出有路网数据的区域树：含完整层级路径，前端可做面包屑导航"""
+        from app.models.admin import Region, RoadNetwork
+        from app.models.enums import RoadNetworkStatus
+
+        # 找到所有有成功下载路网的区域
+        networks = await RoadNetwork.filter(
+            download_status=RoadNetworkStatus.SUCCESS, is_active=True
+        ).select_related("region").all()
+
+        # 收集区域集合
+        region_map: dict = {}
+        for nw in networks:
+            r = nw.region
+            if r.id not in region_map:
+                region_map[r.id] = {
+                    "id": r.id,
+                    "name": r.name,
+                    "local_name": r.local_name,
+                    "code": r.code,
+                    "region_type": str(r.region_type),
+                    "parent_id": r.parent_id,
+                    "network_count": 0,
+                }
+            region_map[r.id]["network_count"] += 1
+
+        # 构建 parent 查找映射
+        all_parents = set()
+        for r in region_map.values():
+            if r["parent_id"]:
+                all_parents.add(r["parent_id"])
+        # 补全父级区域信息
+        if all_parents:
+            parents = await Region.filter(id__in=list(all_parents)).all()
+            for p in parents:
+                if p.id not in region_map:
+                    region_map[p.id] = {
+                        "id": p.id,
+                        "name": p.name,
+                        "local_name": p.local_name,
+                        "code": p.code,
+                        "region_type": str(p.region_type),
+                        "parent_id": p.parent_id,
+                        "network_count": 0,
+                    }
+
+        # 构建完整路径
+        sorted_regions = sorted(region_map.values(), key=lambda r: (r["region_type"], r["name"]))
+        for r in sorted_regions:
+            path_parts = []
+            cursor = r
+            while cursor:
+                path_parts.insert(0, cursor["name"])
+                pid = cursor["parent_id"]
+                cursor = region_map.get(pid) if pid else None
+            r["full_path"] = " > ".join(path_parts)
+            r["label"] = f'{r["full_path"]} ({r["network_count"]} 路网)'
+
+        return sorted_regions
+
+    @classmethod
+    async def road_network_list_for_region(cls, region_id: int) -> List[dict]:
+        """列出某区域下的路网文件，含 stats 预览"""
+        from app.models.admin import RoadNetwork
+        from app.models.enums import RoadNetworkStatus
+        networks = await RoadNetwork.filter(
+            region_id=region_id,
+            download_status=RoadNetworkStatus.SUCCESS,
+            is_active=True,
+        ).all()
+
+        result = []
+        for n in networks:
+            item = {
+                "id": n.id,
+                "file_name": n.file_name,
+                "file_type": n.file_type,
+                "file_size": n.file_size,
+                "node_count": n.node_count,
+                "edge_count": n.edge_count,
+                "srid": n.srid,
+                "download_mode": n.download_mode,
+                "created_at": str(n.created_at) if n.created_at else "",
+                "label": (
+                    f"{n.file_name} "
+                    f"(节点:{n.node_count or 0} 边:{n.edge_count or 0}"
+                ),
+            }
+
+            # 从 stats_json 提取预览数据
+            if n.stats_json:
+                try:
+                    stats = json.loads(n.stats_json)
+                    info = stats.get("info", {})
+                    item["total_length_km"] = info.get("total_length_km")
+                    item["density_km_per_km2"] = info.get("density_km_per_km2")
+                    item["junction_count"] = info.get("junction_count")
+                    highway_stats = info.get("highway_stats", [])
+                    item["highway_count"] = len(highway_stats)
+                    item["label"] += (
+                        f" 总长:{info.get('total_length_km', '?')}km"
+                        f" 密度:{info.get('density_km_per_km2', '?')}"
+                    )
+                except (json.JSONDecodeError, TypeError, KeyError):
+                    pass
+            item["label"] += ")"
+            result.append(item)
+
+        return result
+
+    @classmethod
+    async def road_network_import_stats(
+        cls, workspace_id: int, region_id: int, road_network_ids: List[int],
+    ) -> List[dict]:
+        """将路网统计数据导入为 CSV 文档（每个路网产生汇总+明细两个 CSV）"""
+        from app.models.admin import Document, Region, RoadNetwork
+        results = []
+        region = await Region.filter(id=region_id).first()
+        region_name = region.name if region else "unknown"
+
+        # 构建区域完整路径
+        region_path = region_name
+        if region and region.parent_id:
+            parent = await Region.filter(id=region.parent_id).first()
+            if parent:
+                region_path = f"{parent.name} > {region_name}"
+                if parent.parent_id:
+                    grandparent = await Region.filter(id=parent.parent_id).first()
+                    if grandparent:
+                        region_path = f"{grandparent.name} > {parent.name} > {region_name}"
+
+        for nw_id in road_network_ids:
+            nw = await RoadNetwork.filter(id=nw_id).first()
+            if not nw:
+                continue
+
+            # 读取 stats_json 获取详细统计
+            stats = {}
+            info = {}
+            if nw.stats_json:
+                try:
+                    stats = json.loads(nw.stats_json)
+                    info = stats.get("info", {})
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+            safe_name = region_name.replace("/", "_").replace(" ", "_")
+            base = f"路网_{safe_name}"
+
+            # ── 1. 汇总 CSV：每个路网一行，含核心指标 ──
+            summary_rows = [{
+                "区域路径": region_path,
+                "区域类型": str(region.region_type) if region else "",
+                "文件名": nw.file_name,
+                "文件类型": nw.file_type,
+                "文件大小_字节": nw.file_size,
+                "下载模式": nw.download_mode,
+                "坐标系": nw.srid,
+                "节点数": nw.node_count,
+                "边数": nw.edge_count,
+                "总里程_km": info.get("total_length_km", ""),
+                "总里程_m": info.get("total_length_m", ""),
+                "路网密度_km每km2": info.get("density_km_per_km2", ""),
+                "路口数": info.get("junction_count", ""),
+                "道路等级种类数": len(info.get("highway_stats", [])),
+                "bbox_W": (info.get("bbox") or [None])[0],
+                "bbox_S": (info.get("bbox") or [None, None])[1],
+                "bbox_E": (info.get("bbox") or [None, None, None])[2],
+                "bbox_N": (info.get("bbox") or [None, None, None, None])[3],
+                "路网创建时间": str(nw.created_at) if nw.created_at else "",
+                "数据导出时间": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat(),
+            }]
+
+            df_summary = pd.DataFrame(summary_rows)
+            fpath_s, fsize_s, ccount_s, rcount_s = cls._save_csv(
+                df_summary, f"{base}_{nw.file_name}_汇总"
+            )
+            doc_summary = await Document.create(
+                workspace_id=workspace_id,
+                name=f"{base}_{nw.file_name}_汇总.csv",
+                file_path=fpath_s, file_size=fsize_s, char_count=ccount_s,
+                source_type="original", import_source="road_network",
+                source_table=f"region_{region_id}.road_network_{nw_id}.summary",
+                row_count=rcount_s, dump_date=datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
+                source_last_updated=nw.created_at,
+            )
+            results.append(await doc_summary.to_dict())
+
+            # ── 2. 明细 CSV：每行一个道路等级，含中文名/边数/占比/里程 ──
+            highway_stats = info.get("highway_stats", [])
+            if highway_stats:
+                detail_rows = []
+                for hs in highway_stats:
+                    # 尝试获取该等级的里程（如果 analyzer 存储了 length）
+                    detail_rows.append({
+                        "区域路径": region_path,
+                        "文件名": nw.file_name,
+                        "道路等级_code": hs.get("type", ""),
+                        "道路等级_中文名": hs.get("name_zh", hs.get("type", "")),
+                        "边数量": hs.get("count", 0),
+                        "占比_pct": hs.get("percent", 0),
+                        "累计长度_m": hs.get("length", ""),
+                        "累计长度_km": round(hs.get("length", 0) / 1000, 2) if hs.get("length") else "",
+                    })
+
+                df_detail = pd.DataFrame(detail_rows)
+                fpath_d, fsize_d, ccount_d, rcount_d = cls._save_csv(
+                    df_detail, f"{base}_{nw.file_name}_道路等级明细"
+                )
+                doc_detail = await Document.create(
+                    workspace_id=workspace_id,
+                    name=f"{base}_{nw.file_name}_道路等级明细.csv",
+                    file_path=fpath_d, file_size=fsize_d, char_count=ccount_d,
+                    source_type="original", import_source="road_network",
+                    source_table=f"region_{region_id}.road_network_{nw_id}.detail",
+                    row_count=rcount_d, dump_date=datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
+                    source_last_updated=nw.created_at,
+                )
+                results.append(await doc_detail.to_dict())
+
+        return results
 
 
 workspace_controller = WorkspaceController()

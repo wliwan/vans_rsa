@@ -1,6 +1,10 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { computed, h, onMounted, ref } from 'vue'
 import {
+
+
+
   NButton,
   NDataTable,
   NInput,
@@ -15,6 +19,8 @@ import CommonPage from '@/components/page/CommonPage.vue'
 import CrudTable from '@/components/table/CrudTable.vue'
 import api from '@/api'
 import TheIcon from '@/components/icon/TheIcon.vue'
+
+const { t } = useI18n()
 
 defineOptions({ name: '国际化管理' })
 
@@ -59,7 +65,7 @@ const columns = computed(() => {
       },
     },
     {
-      title: '类型',
+      title: t('views.network.regionBoundary.fileColumns.fileType'),
       key: 'type',
       width: 70,
       align: 'center',
@@ -73,7 +79,7 @@ const columns = computed(() => {
   ]
 
   locales.value.forEach((loc) => {
-    const langNames = { cn: '中文', en: 'English', tr: 'Türkçe', jp: '日本語', fr: 'Français', de: 'Deutsch', ko: '한국어', es: 'Español', ru: 'Русский', ar: 'العربية' }
+    const langNames = { cn: t('lang'), en: 'English', tr: 'Türkçe', jp: '日本語', fr: 'Français', de: 'Deutsch', ko: '한국어', es: 'Español', ru: 'Русский', ar: 'العربية' }
     cols.push({
       title: langNames[loc] || loc.toUpperCase(),
       key: `locale_${loc}`,
@@ -155,7 +161,7 @@ async function commitEdit(row, loc) {
     row.translations[loc] = newValue
     message.success('已保存')
   } catch (e) {
-    message.error('保存失败')
+    message.error(t('views.network.roadNetworkWorkbench.messages.saveFail'))
   }
 }
 
@@ -170,9 +176,9 @@ async function handleExport() {
     a.download = `i18n_export_${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
-    message.success('导出成功')
+    message.success(t('views.network.roadNetworkWorkbench.messages.exportSuccess'))
   } catch (e) {
-    message.error('导出失败')
+    message.error(t('views.network.roadNetworkWorkbench.messages.exportFail'))
   }
 }
 
@@ -207,7 +213,7 @@ async function handleImport() {
     importVisible.value = false
     $table.value?.handleSearch()
   } catch (e) {
-    message.error('导入失败')
+    message.error(t('views.network.region.messages.importFail'))
   } finally {
     importLoading.value = false
   }
@@ -256,7 +262,7 @@ async function handleAIGenerate() {
     aiVisible.value = false
     $table.value?.handleSearch()
   } catch (e) {
-    message.error('AI 翻译生成失败: ' + (e.message || '未知错误'))
+    message.error('AI 翻译生成失败: ' + (e.message || t('views.network.roadNetworkWorkbench.messages.unknownError')))
   } finally {
     aiGenerating.value = false
   }
@@ -284,7 +290,7 @@ async function handleScanFrontend() {
 }
 
 const scanColumns = [
-  { title: '文件', key: 'file', width: 200, ellipsis: { tooltip: true } },
+  { title: t('views.network.roadNetworkWorkbench.stats.fileSize'), key: 'file', width: 200, ellipsis: { tooltip: true } },
   { title: '行号', key: 'line', width: 60, align: 'center' },
   { title: '文本', key: 'text', width: 150, ellipsis: { tooltip: true } },
   { title: '建议 Key', key: 'suggested_key', width: 200, ellipsis: { tooltip: true } },
@@ -361,7 +367,7 @@ onMounted(() => {
         <NSelect
           v-model:value="aiProxyName"
           :options="proxyOptions"
-          placeholder="选择 AI 代理"
+          :placeholder="t('views.network.roadNetworkWorkbench.tabs.fields.selectAIProxy')"
           filterable
         />
       </div>

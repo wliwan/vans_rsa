@@ -1,7 +1,12 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { computed, onMounted, onBeforeUnmount, onActivated, onDeactivated, ref, nextTick, watch } from 'vue'
 import { useBreakpoints } from '@vueuse/core'
 import {
+
+
+
   NButton, NInput, NLayout, NLayoutSider, NLayoutContent,
   NList, NListItem, NModal, NSpace, NSelect, NPopconfirm,
   NForm, NFormItem, NTag, NDivider, NSpin, NSwitch, useMessage,
@@ -9,7 +14,9 @@ import {
 import TheIcon from '@/components/icon/TheIcon.vue'
 import api from '@/api'
 
-defineOptions({ name: '报告生成' })
+const { t } = useI18n()
+
+defineOptions({ name: i18n.global.t('views.statistic-center.title_cn_c56cb26a') })
 
 const message = useMessage()
 
@@ -58,7 +65,7 @@ async function loadWorkspaces() {
   try {
     const res = await api.getWorkspaceList({ page: 1, page_size: 9999 })
     workspaces.value = res.data || []
-  } catch (e) { message.error('加载工作区失败') }
+  } catch (e) { message.error(t('views.statistic-center.message_cn_17eec3f1')) }
 }
 
 async function selectWorkspace(ws) {
@@ -74,7 +81,7 @@ async function loadReports() {
   try {
     const res = await api.getReportList({ workspace_id: selectedWs.value.id })
     reports.value = res.data || []
-  } catch (e) { message.error('加载报告失败') }
+  } catch (e) { message.error(t('views.statistic-center.message_cn_8fc82eb8')) }
 }
 
 // 选中报告
@@ -84,7 +91,7 @@ async function selectReport(r) {
     const res = await api.getReportById({ report_id: r.id })
     editContent.value = res.data.content || ''
     initCodeMirror()
-  } catch (e) { message.error('加载报告内容失败') }
+  } catch (e) { message.error(t('views.statistic-center.message_cn_9e2437e3')) }
 }
 
 function initCodeMirror() {
@@ -110,7 +117,7 @@ function initCodeMirror() {
         editContent.value = cmInstance.getValue()
       })
     } catch (e) {
-      console.error('CodeMirror 初始化失败:', e)
+      console.error(t('views.statistic-center.label_codemirror_cn_381dcca2'), e)
       cmInstance = null
     }
   })
@@ -126,7 +133,7 @@ function destroyCodeMirror() {
 // 生成报告
 function openGenerate() {
   generateForm.value = {
-    workspace_id: selectedWs.value?.id || null, name: '数据分析报告',
+    workspace_id: selectedWs.value?.id || null, name: t('views.statistic-center.label_cn_ad2f550c'),
     source_sheet_ids: [], source_analysis_ids: [],
     ai_proxy_id: null, skill_id: null, prompt: '',
   }
@@ -173,18 +180,18 @@ async function loadGenerateDataSources(wsId) {
 }
 
 async function handleGenerate() {
-  if (!generateForm.value.workspace_id) { message.warning('请选择数据工作区'); return }
-  if (!generateForm.value.ai_proxy_id) { message.warning('请选择AI代理'); return }
+  if (!generateForm.value.workspace_id) { message.warning(t('views.statistic-center.placeholder_cn_9d91d621')); return }
+  if (!generateForm.value.ai_proxy_id) { message.warning(t('views.skill.placeholder_cn_ee488ec6')); return }
   if (!generateForm.value.source_sheet_ids.length && !generateForm.value.source_analysis_ids.length) {
-    message.warning('请至少选择一个数据源'); return
+    message.warning(t('views.statistic-center.message_cn_6d9dacc5')); return
   }
   try {
     loading.value = true
     showGenerateModal.value = false
     await api.generateReport(generateForm.value)
-    message.success('报告生成成功')
+    message.success(t('views.statistic-center.message_cn_23799178'))
     await loadReports()
-  } catch (e) { message.error('生成失败') }
+  } catch (e) { message.error(t('views.statistic-center.message_cn_7f7de8a2')) }
   loading.value = false
 }
 
@@ -202,25 +209,25 @@ async function saveEdit() {
   if (!selectedReport.value) return
   try {
     await api.updateReport({ id: selectedReport.value.id, content: editContent.value })
-    message.success('保存成功')
+    message.success(t('views.skill.message_cn_3b108349'))
     if (cmInstance) cmInstance.setValue(editContent.value)
-  } catch (e) { message.error('保存失败') }
+  } catch (e) { message.error(t('views.network.roadNetworkWorkbench.messages.saveFail')) }
 }
 
 // 克隆
 function openClone() {
-  if (!selectedReport.value) { message.warning('请选择报告'); return }
-  cloneForm.value = { id: selectedReport.value.id, name: selectedReport.value.name + ' (副本)' }
+  if (!selectedReport.value) { message.warning(t('views.statistic-center.placeholder_cn_0feed934')); return }
+  cloneForm.value = { id: selectedReport.value.id, name: selectedReport.value.name + t('views.statistic-center.label_cn_a3033ebf') }
   showCloneModal.value = true
 }
 
 async function handleClone() {
   try {
     await api.cloneReport(cloneForm.value)
-    message.success('克隆成功')
+    message.success(t('views.statistic-center.message_cn_473604c8'))
     showCloneModal.value = false
     await loadReports()
-  } catch (e) { message.error('克隆失败') }
+  } catch (e) { message.error(t('views.statistic-center.message_cn_6dc5b375')) }
 }
 
 // 删除
@@ -231,7 +238,7 @@ async function deleteReport() {
     selectedReport.value = null
     editContent.value = ''
     await loadReports()
-  } catch (e) { message.error('删除失败') }
+  } catch (e) { message.error(t('views.network.roadNetworkWorkbench.messages.deleteFail')) }
 }
 
 // 导出
@@ -363,7 +370,7 @@ onBeforeUnmount(() => destroyCodeMirror())
             v-show="viewMode !== 'edit'"
             ref="previewFrame"
             style="position: absolute; inset: 0; width: 100%; height: 100%; border: none"
-            title="报告预览"
+            :title="t('views.statistic-center.title_cn_e450da0e')"
           />
         </template>
         <!-- Loading 覆盖层 -->
@@ -375,28 +382,28 @@ onBeforeUnmount(() => destroyCodeMirror())
   </NLayout>
 
   <!-- 生成弹窗 -->
-  <NModal v-model:show="showGenerateModal" title="生成报告" preset="card" style="width: 640px">
+  <NModal v-model:show="showGenerateModal" :title="t('views.statistic-center.title_cn_ca40d85d')" preset="card" style="width: 640px">
     <NForm :model="generateForm" label-placement="top">
-      <NFormItem label="报告名称" required>
-        <NInput v-model:value="generateForm.name" placeholder="报告名称" />
+      <NFormItem :label="t('views.statistic-center.label_cn_affac2ba')" required>
+        <NInput v-model:value="generateForm.name" :placeholder="t('views.statistic-center.label_cn_affac2ba')" />
       </NFormItem>
-      <NFormItem label="数据工作区" required>
-        <NSelect v-model:value="generateForm.workspace_id" :options="workspaceOptions" placeholder="选择Excel数据工作区" @update:value="onGenerateWsChange" />
+      <NFormItem :label="t('views.statistic-center.label_cn_4f361b2d')" required>
+        <NSelect v-model:value="generateForm.workspace_id" :options="workspaceOptions" :placeholder="t('views.statistic-center.placeholder_cn_1adeb1bd')" @update:value="onGenerateWsChange" />
       </NFormItem>
-      <NFormItem label="原始表格">
-        <NSelect v-model:value="generateForm.source_sheet_ids" :options="sheetOptions" multiple placeholder="选择原始表格" />
+      <NFormItem :label="t('views.statistic-center.label_cn_07c80637')">
+        <NSelect v-model:value="generateForm.source_sheet_ids" :options="sheetOptions" multiple :placeholder="t('views.statistic-center.placeholder_cn_8a928698')" />
       </NFormItem>
-      <NFormItem label="分析表格">
-        <NSelect v-model:value="generateForm.source_analysis_ids" :options="analysisOptions" multiple placeholder="选择分析表格" />
+      <NFormItem :label="t('views.statistic-center.label_cn_efa08a89')">
+        <NSelect v-model:value="generateForm.source_analysis_ids" :options="analysisOptions" multiple :placeholder="t('views.statistic-center.placeholder_cn_41f91e6d')" />
       </NFormItem>
-      <NFormItem label="AI 代理" required>
-        <NSelect v-model:value="generateForm.ai_proxy_id" :options="proxyOptions" placeholder="选择AI代理" />
+      <NFormItem :label="t('views.statistic-center.label_ai_cn_9697e5cf')" required>
+        <NSelect v-model:value="generateForm.ai_proxy_id" :options="proxyOptions" :placeholder="t('views.skill.placeholder_cn_523369d2')" />
       </NFormItem>
-      <NFormItem label="辅助 Skill">
-        <NSelect v-model:value="generateForm.skill_id" :options="skillOptions" placeholder="选择Skill" clearable />
+      <NFormItem :label="t('views.statistic-center.label_cn_998c41f2')">
+        <NSelect v-model:value="generateForm.skill_id" :options="skillOptions" :placeholder="t('views.statistic-center.placeholder_cn_c0447839')" clearable />
       </NFormItem>
-      <NFormItem label="提示词">
-        <NInput v-model:value="generateForm.prompt" type="textarea" placeholder="额外分析要求..." />
+      <NFormItem :label="t('views.skill.label_cn_47b7af95')">
+        <NInput v-model:value="generateForm.prompt" type="textarea" :placeholder="t('views.statistic-center.placeholder_cn_a65aaee5')" />
       </NFormItem>
     </NForm>
     <template #footer>
@@ -409,10 +416,10 @@ onBeforeUnmount(() => destroyCodeMirror())
   </NModal>
 
   <!-- 克隆弹窗 -->
-  <NModal v-model:show="showCloneModal" title="克隆报告" preset="card" style="width: 400px">
+  <NModal v-model:show="showCloneModal" :title="t('views.statistic-center.title_cn_a3ce620d')" preset="card" style="width: 400px">
     <NForm :model="cloneForm" label-placement="top">
-      <NFormItem label="新名称" required>
-        <NInput v-model:value="cloneForm.name" placeholder="新报告名称" />
+      <NFormItem :label="t('views.statistic-center.label_cn_e4decf94')" required>
+        <NInput v-model:value="cloneForm.name" :placeholder="t('views.statistic-center.placeholder_cn_dace5c08')" />
       </NFormItem>
     </NForm>
     <template #footer>

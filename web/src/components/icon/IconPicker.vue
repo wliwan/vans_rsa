@@ -36,7 +36,7 @@ watchDebounced(
   <div class="w-full">
     <NPopover trigger="click" placement="bottom-start">
       <template #trigger>
-        <NInput v-model:value="choosed" placeholder="请输入图标名称" @update:value="filterIcons">
+        <NInput v-model:value="choosed" :placeholder="t('common.placeholder_cn_d03d66bc')" @update:value="filterIcons">
           <template #prefix>
             <span class="i-mdi:magnify text-18" />
           </template>

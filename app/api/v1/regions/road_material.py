@@ -106,6 +106,7 @@ async def download_file(material_id: int = Query(..., description="素材ID")):
     if not obj or not os.path.exists(obj.file_path):
         return Fail(code=404, msg="文件不存在")
     ext = os.path.splitext(obj.file_name)[1] or ".png"
+    base = obj.name or os.path.splitext(obj.file_name)[0]
     media_type_map = {
         ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
         ".gif": "image/gif", ".bmp": "image/bmp", ".tiff": "image/tiff",
@@ -115,7 +116,7 @@ async def download_file(material_id: int = Query(..., description="素材ID")):
     return FileResponse(
         obj.file_path,
         media_type=media_type,
-        filename=obj.file_name,
+        filename=base + ext,
     )
 
 
@@ -318,6 +319,7 @@ async def short_url_access(token: str):
         return Fail(code=404, msg="文件不存在或链接已失效")
 
     ext = os.path.splitext(obj.file_name)[1] or ".png"
+    base = obj.name or os.path.splitext(obj.file_name)[0]
     media_type_map = {
         ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
         ".gif": "image/gif", ".bmp": "image/bmp", ".tiff": "image/tiff",
@@ -327,5 +329,5 @@ async def short_url_access(token: str):
     return FileResponse(
         obj.file_path,
         media_type=media_type,
-        filename=obj.file_name,
+        filename=base + ext,
     )

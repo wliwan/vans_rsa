@@ -1,6 +1,11 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { h, onMounted, ref, resolveDirective, withDirectives } from 'vue'
 import {
+
+
+
   NButton,
   NInput,
   NSelect,
@@ -17,10 +22,12 @@ import CrudTable from '@/components/table/CrudTable.vue'
 
 import { renderIcon } from '@/utils'
 import { useCRUD } from '@/composables'
+const { t } = useI18n()
+
 import api from '@/api'
 import TheIcon from '@/components/icon/TheIcon.vue'
 
-defineOptions({ name: 'AI代理管理' })
+defineOptions({ name: i18n.global.t('views.system.title_cn_ca9a28fd') })
 
 const $table = ref(null)
 const queryItems = ref({})
@@ -40,7 +47,7 @@ const {
   handleDelete,
   handleAdd,
 } = useCRUD({
-  name: 'AI代理',
+  name: t('views.skill.label_cn_c1dfc5cf'),
   initForm: { name: '', url: '', token: '', model: '', user_ids: [] },
   doCreate: api.createAIProxy,
   doUpdate: api.updateAIProxy,
@@ -75,9 +82,9 @@ function handleEditOverride(row) {
 function handleClone(row) {
   loadUserOptions()
   modalAction.value = 'add'
-  modalTitle.value = '克隆AI代理'
+  modalTitle.value = t('views.system.title_cn_07d17e16')
   modalForm.value = {
-    name: row.name + '_副本',
+    name: row.name + t('views.system.label_cn_33d1acb7'),
     url: row.url || '',
     token: row.token || '',
     model: row.model || '',
@@ -88,47 +95,47 @@ function handleClone(row) {
 
 const columns = [
   {
-    title: '名称', key: 'name', width: 60, align: 'center', ellipsis: { tooltip: true },
+    title: t('views.network.region.formLabels.name'), key: 'name', width: 60, align: 'center', ellipsis: { tooltip: true },
   },
   {
-    title: '接口地址', key: 'url', width: 120, align: 'center', ellipsis: { tooltip: true },
+    title: t('views.system.title_cn_85624c8e'), key: 'url', width: 120, align: 'center', ellipsis: { tooltip: true },
   },
   {
-    title: '模型', key: 'model', width: 60, align: 'center', ellipsis: { tooltip: true },
+    title: t('views.system.title_cn_8000f187'), key: 'model', width: 60, align: 'center', ellipsis: { tooltip: true },
   },
   {
-    title: '令牌', key: 'token', width: 70, align: 'center',
+    title: t('views.system.title_cn_9f66731b'), key: 'token', width: 70, align: 'center',
     render(row) {
       if (!row.token) return '-'
       return h(NTag, { type: 'info' }, { default: () => '****' + row.token.slice(-4) })
     },
   },
   {
-    title: '授权用户', key: 'users', width: 80, align: 'center',
+    title: t('views.skill.label_cn_5f07f1ad'), key: 'users', width: 80, align: 'center',
     render(row) {
       const names = (row.users || []).map((u) => u.username).join(', ')
       return names || '-'
     },
   },
   {
-    title: '更新时间', key: 'updated_at', width: 80, align: 'center',
+    title: t('views.system.title_cn_a001a226'), key: 'updated_at', width: 80, align: 'center',
   },
   {
-    title: '操作', key: 'actions', width: 120, align: 'center', fixed: 'right',
+    title: t('views.network.roadNetworkWorkbench.tabs.fields.colActions'), key: 'actions', width: 120, align: 'center', fixed: 'right',
     render(row) {
       return [
         withDirectives(
           h(NButton, {
             size: 'small', type: 'primary', style: 'margin-right: 8px;',
             onClick: () => handleEditOverride(row),
-          }, { default: () => '编辑', icon: renderIcon('material-symbols:edit', { size: 16 }) }),
+          }, { default: () => t('views.workbench.label_edit'), icon: renderIcon('material-symbols:edit', { size: 16 }) }),
           [[vPermission, 'post/api/v1/ai-proxy/update']],
         ),
         withDirectives(
           h(NButton, {
             size: 'small', style: 'margin-right: 8px;',
             onClick: () => handleClone(row),
-          }, { default: () => '克隆', icon: renderIcon('material-symbols:content-copy', { size: 16 }) }),
+          }, { default: () => t('views.system.label_cn_25fe25ae'), icon: renderIcon('material-symbols:content-copy', { size: 16 }) }),
           [[vPermission, 'post/api/v1/ai-proxy/create']],
         ),
         h(NPopconfirm, {
@@ -137,7 +144,7 @@ const columns = [
           trigger: () =>
             withDirectives(
               h(NButton, { size: 'small', type: 'error' }, {
-                default: () => '删除',
+                default: () => t('views.network.roadNetworkWorkbench.tabs.filter.delete'),
                 icon: renderIcon('material-symbols:delete-outline', { size: 16 }),
               }),
               [[vPermission, 'delete/api/v1/ai-proxy/delete']],
@@ -150,7 +157,7 @@ const columns = [
 </script>
 
 <template>
-  <CommonPage title="AI代理管理">
+  <CommonPage :title="t('views.system.title_cn_ca9a28fd')">
     <template #action>
       <NButton
         v-permission="'post/api/v1/ai-proxy/create'"
@@ -175,24 +182,24 @@ const columns = [
       @save="handleSave"
     >
       <NForm ref="modalFormRef" :model="modalForm">
-        <NFormItem label="代理名称" required>
-          <NInput v-model:value="modalForm.name" placeholder="代理名称" :disabled="modalAction === 'update'" />
+        <NFormItem :label="t('views.system.label_cn_00d24bdf')" required>
+          <NInput v-model:value="modalForm.name" :placeholder="t('views.system.label_cn_00d24bdf')" :disabled="modalAction === 'update'" />
         </NFormItem>
-        <NFormItem label="接口地址">
-          <NInput v-model:value="modalForm.url" placeholder="接口地址（可选）" />
+        <NFormItem :label="t('views.system.title_cn_85624c8e')">
+          <NInput v-model:value="modalForm.url" :placeholder="t('views.system.placeholder_cn_f35edb23')" />
         </NFormItem>
-        <NFormItem label="认证令牌">
-          <NInput v-model:value="modalForm.token" placeholder="认证令牌（可选）" />
+        <NFormItem :label="t('views.system.label_cn_9add30c8')">
+          <NInput v-model:value="modalForm.token" :placeholder="t('views.system.placeholder_cn_402a74ed')" />
         </NFormItem>
-        <NFormItem label="模型名称">
-          <NInput v-model:value="modalForm.model" placeholder="如 gpt-4（可选）" />
+        <NFormItem :label="t('views.system.label_cn_920fe38e')">
+          <NInput v-model:value="modalForm.model" :placeholder="t('views.system.placeholder_cn_5b6e06ac')" />
         </NFormItem>
-        <NFormItem label="授权用户">
+        <NFormItem :label="t('views.skill.label_cn_5f07f1ad')">
           <NSelect
             v-model:value="modalForm.user_ids"
             :options="userOptions"
             multiple
-            placeholder="选择可访问的用户"
+            :placeholder="t('views.system.placeholder_cn_ddc1aac1')"
             filterable
           />
         </NFormItem>

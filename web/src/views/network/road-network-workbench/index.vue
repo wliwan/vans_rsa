@@ -1,7 +1,10 @@
 <script setup>
 import { computed, h, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import {
+
+
   NButton, NCard, NCheckbox, NDataTable, NInput, NInputNumber,
   NModal, NSelect, NSpace, NSpin, NTabPane, NTabs, NTag, useMessage,
 } from 'naive-ui'
@@ -9,9 +12,10 @@ import CommonPage from '@/components/page/CommonPage.vue'
 import api from '@/api'
 import { useTaskProgressStore } from '@/store/modules/taskProgress'
 
-defineOptions({ name: '路网工作台' })
-const message = useMessage()
 const { t } = useI18n()
+
+defineOptions({ name: i18n.global.t('views.network.roadNetworkWorkbench.title') })
+const message = useMessage()
 
 // ── 底图图层 ──
 const baseLayers = [
@@ -25,10 +29,10 @@ const baseLayers = [
   { label: 'OpenStreetMap', value: 'osm', url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; OSM' },
   { label: 'Google Satellite', value: 'google-sat', url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attribution: '&copy; Google' },
   // ── 通过后端代理转发的底图（后端从系统配置读取 download_proxy 发起请求）──
-  { label: 'Google Sat (代理)', value: 'google-sat-proxy', targetTemplate: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attribution: '&copy; Google', proxy: true },
-  { label: 'Bing Sat (代理)', value: 'bing-proxy', targetTemplate: 'https://ecn.t3.tiles.virtualearth.net/tiles/a{q}.jpeg?g=0&dir=dir_n{z}', attribution: '&copy; Microsoft', proxy: true, quadkey: true },
-  { label: 'Yandex Map (代理)', value: 'yandex-proxy', targetTemplate: 'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=3.2008.0&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', attribution: '&copy; Yandex', proxy: true },
-  { label: 'Yandex Sat (代理)', value: 'yandex-sat-proxy', targetTemplate: 'https://core-sat.maps.yandex.net/tiles?l=sat&v=3.2008.0&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', attribution: '&copy; Yandex', proxy: true },
+  { label: t('views.network.label_google_sat_cn_2a004f97'), value: 'google-sat-proxy', targetTemplate: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attribution: '&copy; Google', proxy: true },
+  { label: t('views.network.label_bing_sat_cn_814bdbcf'), value: 'bing-proxy', targetTemplate: 'https://ecn.t3.tiles.virtualearth.net/tiles/a{q}.jpeg?g=0&dir=dir_n{z}', attribution: '&copy; Microsoft', proxy: true, quadkey: true },
+  { label: t('views.network.label_yandex_map_cn_afaa6170'), value: 'yandex-proxy', targetTemplate: 'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=3.2008.0&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', attribution: '&copy; Yandex', proxy: true },
+  { label: t('views.network.label_yandex_sat_cn_e9a6bd97'), value: 'yandex-sat-proxy', targetTemplate: 'https://core-sat.maps.yandex.net/tiles?l=sat&v=3.2008.0&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', attribution: '&copy; Yandex', proxy: true },
 ]
 const selectedBaseLayer = ref('outdoors')
 
@@ -287,7 +291,7 @@ function initMap() {
   const ExportControl = L.Control.extend({
     onAdd: function () {
       const div = L.DomUtil.create('div', 'leaflet-export-btn')
-      div.title = '导出图层为PNG'
+      div.title = t('views.network.title_cn_d35c5853')
       div.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="#555"><path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/></svg>'
       L.DomEvent.on(div, 'click', function (e) {
         L.DomEvent.stopPropagation(e)
@@ -380,16 +384,16 @@ const exportLayerOptions = computed(() => {
   }
   // 控件图层
   layers.push(
-    { key: 'compass', label: '方位罗盘', type: 'control' },
-    { key: 'legend', label: '路网图例', type: 'control' },
-    { key: 'scale', label: '比例尺', type: 'control' },
-    { key: 'coords', label: '中心点坐标/缩放等级', type: 'control' },
+    { key: 'compass', label: t('views.network.label_cn_5bc1ed6c'), type: 'control' },
+    { key: 'legend', label: t('views.network.label_cn_9d7b554a'), type: 'control' },
+    { key: 'scale', label: t('views.network.label_cn_3aefa0b5'), type: 'control' },
+    { key: 'coords', label: t('views.network.label_cn_8ba51a39'), type: 'control' },
   )
   return layers
 })
 
 function openExportModal() {
-  if (!selectedRegion.value) { message.warning('请先选择行政区'); return }
+  if (!selectedRegion.value) { message.warning(t('views.network.message_cn_f13e2993')); return }
   selectedExportLayers.value = exportLayerOptions.value.map(l => l.key)
   exportLayerPreview.value = false
   exportName.value = `地图导出_${new Date().toLocaleString('zh-CN')}`
@@ -423,11 +427,11 @@ function restoreAllLayers() {
 }
 
 async function doExportLayers() {
-  if (!selectedExportLayers.value.length) { message.warning('请至少选择一个图层'); return }
-  if (!selectedRegion.value) { message.warning('请先选择行政区'); return }
+  if (!selectedExportLayers.value.length) { message.warning(t('views.network.message_cn_a4ea0f49')); return }
+  if (!selectedRegion.value) { message.warning(t('views.network.message_cn_f13e2993')); return }
 
   exportLoading.value = true
-  exportProgress.value = '正在截取地图...'
+  exportProgress.value = t('views.network.label_cn_eaeef6e8')
 
   try {
     // Canvas 仅能处理同源路网瓦片；底图（跨域）或控件需 html-to-image
@@ -460,7 +464,7 @@ async function doExportLayers() {
     }
 
     // 上传到路网素材
-    exportProgress.value = '正在上传...'
+    exportProgress.value = t('views.network.label_cn_d790356c')
 
     // 构建元数据
     const center = mapInstance ? mapInstance.getCenter() : null
@@ -482,12 +486,12 @@ async function doExportLayers() {
     const description = JSON.stringify(meta, null, 2)
 
     const file = new File([blob], `road_export_${Date.now()}.png`, { type: 'image/png' })
-    await api.uploadMaterial(selectedRegion.value, exportName.value, description, file, '路网工作台')
-    message.success('图层已保存到路网素材')
+    await api.uploadMaterial(selectedRegion.value, exportName.value, description, file, t('views.network.roadNetworkWorkbench.title'))
+    message.success(t('views.network.message_cn_26ea4d51'))
     showExportModal.value = false
   } catch (e) {
     restoreAllExportVisibility()
-    message.error('导出失败: ' + (e?.message || e))
+    message.error(t('views.network.message_cn_2e0d8c60') + (e?.message || e))
   } finally {
     exportLoading.value = false
     exportProgress.value = ''
@@ -1361,15 +1365,15 @@ async function runAIProcess() {
                 </template>
               </NModal>
             </NTabPane>
-            <NTabPane name="controls" tab="控件">
+            <NTabPane name="controls" :tab="t('views.network.label_cn_e1b2f870')">
               <NSpace vertical>
                 <div style="font-size:13px;color:#666;margin-bottom:4px">显示/隐藏地图控件</div>
                 <NCheckbox
                   v-for="item in [
-                    { key: 'compass', label: '方位罗盘' },
-                    { key: 'legend', label: '路网图例' },
-                    { key: 'scale', label: '比例尺' },
-                    { key: 'coords', label: '中心点坐标/缩放等级' },
+                    { key: 'compass', label: t('views.network.label_cn_5bc1ed6c') },
+                    { key: 'legend', label: t('views.network.label_cn_9d7b554a') },
+                    { key: 'scale', label: t('views.network.label_cn_3aefa0b5') },
+                    { key: 'coords', label: t('views.network.label_cn_8ba51a39') },
                   ]"
                   :key="item.key"
                   :checked="controlVisible[item.key]"
@@ -1383,10 +1387,10 @@ async function runAIProcess() {
     </div>
 
     <!-- 图层导出弹窗 -->
-    <NModal v-model:show="showExportModal" preset="card" title="导出图层为PNG" style="width: 420px;" :to="isFullscreen ? fullscreenRef : undefined" @update:show="(v) => { if (!v) onExportModalClose() }">
+    <NModal v-model:show="showExportModal" preset="card" :title="t('views.network.title_cn_d35c5853')" style="width: 420px;" :to="isFullscreen ? fullscreenRef : undefined" @update:show="(v) => { if (!v) onExportModalClose() }">
       <NSpace vertical>
         <NDataTable
-          :columns="[{ type: 'selection' }, { title: '图层名称', key: 'label' }]"
+          :columns="[{ type: 'selection' }, { title: t('views.network.title_cn_12f5177d'), key: 'label' }]"
           :data="exportLayerOptions"
           :row-key="(row) => row.key"
           :checked-row-keys="selectedExportLayers"
@@ -1396,19 +1400,19 @@ async function runAIProcess() {
           max-height="260"
           @update:checked-row-keys="(keys) => { selectedExportLayers = keys }"
         />
-        <NFormItem label="保存名称" label-placement="left" label-width="80">
-          <NInput v-model:value="exportName" placeholder="输入图片名称" />
+        <NFormItem :label="t('views.network.label_cn_160f1630')" label-placement="left" label-width="80">
+          <NInput v-model:value="exportName" :placeholder="t('views.network.placeholder_cn_7cc5266d')" />
         </NFormItem>
         <div style="font-size: 12px; color: #999;">提示：路网图层为同源瓦片，导出效果最佳。底图可能因跨域无法完整截取。</div>
         <NButton size="small" quaternary @click="toggleExportPreview" :type="exportLayerPreview ? 'warning' : 'default'">
-          {{ exportLayerPreview ? '取消预览' : '在地图上预览选中图层' }}
+          {{ exportLayerPreview ? '取消预览' : t('views.network.label_cn_84ba804e') }}
         </NButton>
       </NSpace>
       <template #footer>
         <NSpace justify="end">
           <NButton @click="showExportModal = false; onExportModalClose()">取消</NButton>
           <NButton type="primary" :loading="exportLoading" @click="doExportLayers">
-            {{ exportLoading ? exportProgress : '导出并保存' }}
+            {{ exportLoading ? exportProgress : t('views.network.label_cn_d1a0b055') }}
           </NButton>
         </NSpace>
       </template>

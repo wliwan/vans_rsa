@@ -22,6 +22,7 @@ from .users import users_router
 from .vehicle import vehicle_router
 from .report import report_router
 from .workspace import workspace_router
+from .database import router as database_router
 
 v1_router = APIRouter()
 
@@ -43,6 +44,7 @@ v1_router.include_router(road_network_tile_router, prefix="/region/road-network"
 v1_router.include_router(skills_router, prefix="/skill", dependencies=[DependPermission])
 v1_router.include_router(workspace_router, prefix="/workspace", dependencies=[DependPermission])
 v1_router.include_router(document_router, prefix="/workspace/document", dependencies=[DependPermission])
+v1_router.include_router(database_router, prefix="/workspace/database", dependencies=[DependPermission])
 v1_router.include_router(vehicle_router, prefix="/vehicle", dependencies=[DependPermission])
 v1_router.include_router(report_router, prefix="/report", dependencies=[DependPermission])
 v1_router.include_router(system_config_router, prefix="/system-config", dependencies=[DependPermission])

@@ -42,6 +42,13 @@ class RoadMaterialOut(BaseModel):
     updated_at: Optional[str] = None
 
 
+# ── 批量删除 ──
+
+class BatchDeleteRequest(BaseModel):
+    """批量删除素材请求"""
+    material_ids: List[int] = Field(..., min_length=1, description="素材ID列表")
+
+
 # ── AI 处理 ──
 
 class AIMaterialProcessRequest(BaseModel):

@@ -1,7 +1,12 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { computed, h, onMounted, ref, resolveDirective, withDirectives } from 'vue'
 import { useBreakpoints } from '@vueuse/core'
 import {
+
+
+
   NButton,
   NCheckbox,
   NCheckboxGroup,
@@ -31,7 +36,9 @@ import api from '@/api'
 import TheIcon from '@/components/icon/TheIcon.vue'
 import { useUserStore } from '@/store'
 
-defineOptions({ name: '用户管理' })
+const { t } = useI18n()
+
+defineOptions({ name: i18n.global.t('views.system.title_cn_7d94de1c') })
 
 // 移动端适配：默认折叠左侧部门树
 const bp = reactive(useBreakpoints({ sm: 666, md: 991 }))
@@ -53,7 +60,7 @@ const {
   handleDelete,
   handleAdd,
 } = useCRUD({
-  name: '用户',
+  name: t('views.system.label_cn_1fd02a90'),
   initForm: {},
   doCreate: api.createUser,
   doUpdate: api.updateUser,
@@ -72,21 +79,21 @@ onMounted(() => {
 
 const columns = [
   {
-    title: '名称',
+    title: t('views.network.region.formLabels.name'),
     key: 'username',
     width: 60,
     align: 'center',
     ellipsis: { tooltip: true },
   },
   {
-    title: '邮箱',
+    title: t('views.profile.label_email'),
     key: 'email',
     width: 60,
     align: 'center',
     ellipsis: { tooltip: true },
   },
   {
-    title: '用户角色',
+    title: t('views.system.title_cn_6d92fef0'),
     key: 'role',
     width: 60,
     align: 'center',
@@ -101,14 +108,14 @@ const columns = [
     },
   },
   {
-    title: '部门',
+    title: t('views.system.title_cn_1e1459ee'),
     key: 'dept.name',
     align: 'center',
     width: 40,
     ellipsis: { tooltip: true },
   },
   {
-    title: '超级用户',
+    title: t('views.system.title_cn_e5846bb9'),
     key: 'is_superuser',
     align: 'center',
     width: 40,
@@ -116,12 +123,12 @@ const columns = [
       return h(
         NTag,
         { type: 'info', style: { margin: '2px 3px' } },
-        { default: () => (row.is_superuser ? '是' : '否') }
+        { default: () => (row.is_superuser ? '是' : t('views.system.label_cn_c9744f45')) }
       )
     },
   },
   {
-    title: '上次登录时间',
+    title: t('views.system.title_cn_7d3f013e'),
     key: 'last_login',
     align: 'center',
     width: 80,
@@ -138,7 +145,7 @@ const columns = [
     },
   },
   {
-    title: '禁用',
+    title: t('views.system.title_cn_710ad08b'),
     key: 'is_active',
     width: 50,
     align: 'center',
@@ -155,7 +162,7 @@ const columns = [
     },
   },
   {
-    title: '操作',
+    title: t('views.network.roadNetworkWorkbench.tabs.fields.colActions'),
     key: 'actions',
     width: 80,
     align: 'center',
@@ -177,7 +184,7 @@ const columns = [
               },
             },
             {
-              default: () => '编辑',
+              default: () => t('views.workbench.label_edit'),
               icon: renderIcon('material-symbols:edit', { size: 16 }),
             }
           ),
@@ -200,13 +207,13 @@ const columns = [
                     style: 'margin-right: 8px;',
                   },
                   {
-                    default: () => '删除',
+                    default: () => t('views.network.roadNetworkWorkbench.tabs.filter.delete'),
                     icon: renderIcon('material-symbols:delete-outline', { size: 16 }),
                   }
                 ),
                 [[vPermission, 'delete/api/v1/user/delete']]
               ),
-            default: () => h('div', {}, '确定删除该用户吗?'),
+            default: () => h('div', {}, t('views.system.label_cn_9b8553f7')),
           }
         ),
         !row.is_superuser && h(
@@ -215,10 +222,10 @@ const columns = [
             onPositiveClick: async () => {
               try {
                 await api.resetPassword({ user_id: row.id });
-                $message.success('密码已成功重置为123456');
+                $message.success(t('views.system.message_cn_b6bd80b4'));
                 await $table.value?.handleSearch();
               } catch (error) {
-                $message.error('重置密码失败: ' + error.message);
+                $message.error(t('views.system.message_cn_629a946b') + error.message);
               }
             },
             onNegativeClick: () => {},
@@ -234,13 +241,13 @@ const columns = [
                     style: 'margin-right: 8px;',
                   },
                   {
-                    default: () => '重置密码',
+                    default: () => t('views.system.label_cn_0719aa2b'),
                     icon: renderIcon('material-symbols:lock-reset', { size: 16 }),
                   }
                 ),
                 [[vPermission, 'post/api/v1/user/reset_password']]
               ),
-            default: () => h('div', {}, '确定重置用户密码为123456吗?'),
+            default: () => h('div', {}, t('views.system.label_cn_57d34a47')),
           }
         ),
       ]
@@ -253,7 +260,7 @@ async function handleUpdateDisable(row) {
   if (!row.id) return
   const userStore = useUserStore()
   if (userStore.userId === row.id) {
-    $message.error('当前登录用户不可禁用！')
+    $message.error(t('views.system.message_cn_60c25c26'))
     return
   }
   row.publishing = true
@@ -267,7 +274,7 @@ async function handleUpdateDisable(row) {
   row.dept_id = row.dept?.id
   try {
     await api.updateUser(row)
-    $message?.success(row.is_active ? '已取消禁用该用户' : '已禁用该用户')
+    $message?.success(row.is_active ? '已取消禁用该用户' : t('views.system.label_cn_ab7d8ae3'))
     $table.value?.handleSearch()
   } catch (err) {
     // 有异常恢复原来的状态
@@ -299,14 +306,14 @@ const validateAddUser = {
   username: [
     {
       required: true,
-      message: '请输入名称',
+      message: t('views.network.region.formRules.nameRequired'),
       trigger: ['input', 'blur'],
     },
   ],
   email: [
     {
       required: true,
-      message: '请输入邮箱地址',
+      message: t('views.system.placeholder_cn_2ba4c815'),
       trigger: ['input', 'change'],
     },
     {
@@ -314,7 +321,7 @@ const validateAddUser = {
       validator: (rule, value, callback) => {
         const re = /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/
         if (!re.test(modalForm.value.email)) {
-          callback('邮箱格式错误')
+          callback(t('views.system.label_cn_561caaea'))
           return
         }
         callback()
@@ -324,21 +331,21 @@ const validateAddUser = {
   password: [
     {
       required: true,
-      message: '请输入密码',
+      message: t('views.system.placeholder_cn_e39ffe99'),
       trigger: ['input', 'blur', 'change'],
     },
   ],
   confirmPassword: [
     {
       required: true,
-      message: '请再次输入密码',
+      message: t('views.profile.message_password_confirmation_required'),
       trigger: ['input'],
     },
     {
       trigger: ['blur'],
       validator: (rule, value, callback) => {
         if (value !== modalForm.value.password) {
-          callback('两次密码输入不一致')
+          callback(t('views.profile.message_password_confirmation_diff'))
           return
         }
         callback()
@@ -349,7 +356,7 @@ const validateAddUser = {
     {
       type: 'array',
       required: true,
-      message: '请至少选择一个角色',
+      message: t('views.system.label_cn_00b4db25'),
       trigger: ['blur', 'change'],
     },
   ],
@@ -379,7 +386,7 @@ const validateAddUser = {
       </NTree>
     </NLayoutSider>
     <NLayoutContent>
-      <CommonPage show-footer title="用户列表">
+      <CommonPage show-footer :title="t('views.system.title_cn_6b045a51')">
         <template #action>
           <NButton v-permission="'post/api/v1/user/create'" type="primary" @click="handleAdd">
             <TheIcon icon="material-symbols:add" :size="18" class="mr-5" />新建用户
@@ -393,21 +400,21 @@ const validateAddUser = {
           :get-data="api.getUserList"
         >
           <template #queryBar>
-            <QueryBarItem label="名称" :label-width="40">
+            <QueryBarItem :label="t('views.network.region.formLabels.name')" :label-width="40">
               <NInput
                 v-model:value="queryItems.username"
                 clearable
                 type="text"
-                placeholder="请输入用户名称"
+                :placeholder="t('views.system.placeholder_cn_fd18aaf5')"
                 @keypress.enter="$table?.handleSearch()"
               />
             </QueryBarItem>
-            <QueryBarItem label="邮箱" :label-width="40">
+            <QueryBarItem :label="t('views.profile.label_email')" :label-width="40">
               <NInput
                 v-model:value="queryItems.email"
                 clearable
                 type="text"
-                placeholder="请输入邮箱"
+                :placeholder="t('views.system.placeholder_cn_dbf6d02a')"
                 @keypress.enter="$table?.handleSearch()"
               />
             </QueryBarItem>
@@ -429,31 +436,31 @@ const validateAddUser = {
             :model="modalForm"
             :rules="validateAddUser"
           >
-            <NFormItem label="用户名称" path="username">
-              <NInput v-model:value="modalForm.username" clearable placeholder="请输入用户名称" />
+            <NFormItem :label="t('views.system.title_cn_dfb8d511')" path="username">
+              <NInput v-model:value="modalForm.username" clearable :placeholder="t('views.system.placeholder_cn_fd18aaf5')" />
             </NFormItem>
-            <NFormItem label="邮箱" path="email">
-              <NInput v-model:value="modalForm.email" clearable placeholder="请输入邮箱" />
+            <NFormItem :label="t('views.profile.label_email')" path="email">
+              <NInput v-model:value="modalForm.email" clearable :placeholder="t('views.system.placeholder_cn_dbf6d02a')" />
             </NFormItem>
-            <NFormItem v-if="modalAction === 'add'" label="密码" path="password">
+            <NFormItem v-if="modalAction === 'add'" :label="t('views.system.label_cn_a8105204')" path="password">
               <NInput
                 v-model:value="modalForm.password"
                 show-password-on="mousedown"
                 type="password"
                 clearable
-                placeholder="请输入密码"
+                :placeholder="t('views.system.placeholder_cn_e39ffe99')"
               />
             </NFormItem>
-            <NFormItem v-if="modalAction === 'add'" label="确认密码" path="confirmPassword">
+            <NFormItem v-if="modalAction === 'add'" :label="t('views.profile.label_confirm_password')" path="confirmPassword">
               <NInput
                 v-model:value="modalForm.confirmPassword"
                 show-password-on="mousedown"
                 type="password"
                 clearable
-                placeholder="请确认密码"
+                :placeholder="t('views.system.placeholder_cn_a0fcd66a')"
               />
             </NFormItem>
-            <NFormItem label="角色" path="role_ids">
+            <NFormItem :label="t('views.system.label_cn_464f3d4e')" path="role_ids">
               <NCheckboxGroup v-model:value="modalForm.role_ids">
                 <NSpace item-style="display: flex;">
                   <NCheckbox
@@ -465,7 +472,7 @@ const validateAddUser = {
                 </NSpace>
               </NCheckboxGroup>
             </NFormItem>
-            <NFormItem label="超级用户" path="is_superuser">
+            <NFormItem :label="t('views.system.title_cn_e5846bb9')" path="is_superuser">
               <NSwitch
                 v-model:value="modalForm.is_superuser"
                 size="small"
@@ -473,7 +480,7 @@ const validateAddUser = {
                 :unchecked-value="false"
               ></NSwitch>
             </NFormItem>
-            <NFormItem label="禁用" path="is_active">
+            <NFormItem :label="t('views.system.title_cn_710ad08b')" path="is_active">
               <NSwitch
                 v-model:value="modalForm.is_active"
                 :checked-value="false"
@@ -481,13 +488,13 @@ const validateAddUser = {
                 :default-value="true"
               />
             </NFormItem>
-            <NFormItem label="部门" path="dept_id">
+            <NFormItem :label="t('views.system.title_cn_1e1459ee')" path="dept_id">
               <NTreeSelect
                 v-model:value="modalForm.dept_id"
                 :options="deptOption"
                 key-field="id"
                 label-field="name"
-                placeholder="请选择部门"
+                :placeholder="t('views.system.placeholder_cn_71ac13d3')"
                 clearable
                 default-expand-all
               ></NTreeSelect>

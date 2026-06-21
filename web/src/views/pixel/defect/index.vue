@@ -1,6 +1,11 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
+import i18n from '~/i18n'
 import { h, onMounted, ref, reactive } from 'vue'
 import {
+
+
+
   NButton,
   NDatePicker,
   NSelect,
@@ -16,7 +21,9 @@ import CrudTable from '@/components/table/CrudTable.vue'
 import TheIcon from '@/components/icon/TheIcon.vue'
 import api from '@/api'
 
-defineOptions({ name: '病害数据管理' })
+const { t } = useI18n()
+
+defineOptions({ name: i18n.global.t('views.pixel.title_cn_32c6db68') })
 
 const message = useMessage()
 const $table = ref(null)
@@ -40,10 +47,10 @@ const queryItems = ref({
 
 // 表格列
 const columns = [
-  { title: '风险时间', key: 'risk_time', width: 160, ellipsis: { tooltip: true } },
-  { title: '道路名称', key: 'road_name', width: 140, ellipsis: { tooltip: true } },
+  { title: t('views.pixel.title_cn_311a9e48'), key: 'risk_time', width: 160, ellipsis: { tooltip: true } },
+  { title: t('views.pixel.title_cn_3f25ec9e'), key: 'road_name', width: 140, ellipsis: { tooltip: true } },
   {
-    title: '风险等级',
+    title: t('views.pixel.title_cn_25eb6ba3'),
     key: 'risk_level_name',
     width: 90,
     render(row) {
@@ -52,20 +59,20 @@ const columns = [
       return h(NTag, { type: color, size: 'small' }, { default: () => row.risk_level_name || '-' })
     },
   },
-  { title: '风险分类', key: 'risk_name3', width: 120, ellipsis: { tooltip: true } },
+  { title: t('views.pixel.title_cn_13514198'), key: 'risk_name3', width: 120, ellipsis: { tooltip: true } },
   {
-    title: '状态',
+    title: t('views.network.roadNetwork.fileColumns.status'),
     key: 'status_name',
     width: 100,
     render(row) {
       return h(NTag, { type: 'info', size: 'small' }, { default: () => row.status_name || '-' })
     },
   },
-  { title: '数据来源', key: 'data_from_name', width: 100, ellipsis: { tooltip: true } },
-  { title: '城市', key: 'city_name', width: 80 },
-  { title: '车牌号', key: 'car_no', width: 100 },
-  { title: '经度', key: 'longitude', width: 90 },
-  { title: '纬度', key: 'latitude', width: 90 },
+  { title: t('views.pixel.title_cn_a094e5b7'), key: 'data_from_name', width: 100, ellipsis: { tooltip: true } },
+  { title: t('views.tool.vehicle.label_city'), key: 'city_name', width: 80 },
+  { title: t('views.pixel.title_cn_188c235b'), key: 'car_no', width: 100 },
+  { title: t('views.network.region.formLabels.longitude'), key: 'longitude', width: 90 },
+  { title: t('views.network.region.formLabels.latitude'), key: 'latitude', width: 90 },
 ]
 
 // 加载账户列表
@@ -78,7 +85,7 @@ async function loadAccounts() {
       value: a.id,
     }))
   } catch (e) {
-    message.error('获取账户列表失败')
+    message.error(t('views.pixel.message_cn_819b786c'))
   }
 }
 
@@ -93,11 +100,11 @@ function getData(params) {
 // 同步数据
 async function handleSync() {
   if (!selectedAccount.value) {
-    message.warning('请先选择像素账户')
+    message.warning(t('views.pixel.message_cn_9ba8511a'))
     return
   }
   if (!dateRange.value || dateRange.value.length !== 2) {
-    message.warning('请选择同步时间段')
+    message.warning(t('views.pixel.placeholder_cn_0e49c6f7'))
     return
   }
 
@@ -121,7 +128,7 @@ async function handleSync() {
     )
     $table.value?.handleSearch()
   } catch (e) {
-    message.error('同步失败：' + (e.response?.data?.msg || e.message))
+    message.error(t('views.pixel.message_cn_a0f67c55') + (e.response?.data?.msg || e.message))
   } finally {
     syncing.value = false
   }
@@ -130,7 +137,7 @@ async function handleSync() {
 // 清除数据
 async function handleClear() {
   if (!selectedAccount.value) {
-    message.warning('请先选择像素账户')
+    message.warning(t('views.pixel.message_cn_9ba8511a'))
     return
   }
   try {
@@ -140,7 +147,7 @@ async function handleClear() {
     message.success(`已清除 ${res.data.data?.deleted || 0} 条数据`)
     $table.value?.handleSearch()
   } catch (e) {
-    message.error('清除失败')
+    message.error(t('views.network.roadNetworkWorkbench.messages.clearCacheFail'))
   }
 }
 
@@ -156,14 +163,14 @@ onMounted(async () => {
 </script>
 
 <template>
-  <CommonPage title="病害数据管理">
+  <CommonPage :title="t('views.pixel.title_cn_32c6db68')">
     <!-- 操作区：账户选择 + 日期选择 + 同步/清除 -->
     <NSpace align="center" style="margin-bottom: 12px">
       <span style="font-weight: 500">像素账户：</span>
       <NSelect
         v-model:value="selectedAccount"
         :options="accountOptions"
-        placeholder="选择像素平台账户"
+        :placeholder="t('views.pixel.placeholder_cn_7f19cdb7')"
         clearable
         style="width: 260px"
         @update:value="onAccountChange"
@@ -174,7 +181,7 @@ onMounted(async () => {
         type="daterange"
         clearable
         style="width: 260px"
-        placeholder="选择同步时间段"
+        :placeholder="t('views.pixel.placeholder_cn_542fdf02')"
       />
       <NButton type="primary" :loading="syncing" @click="handleSync">
         <TheIcon icon="material-symbols:sync" :size="18" class="mr-5" />同步数据
@@ -197,27 +204,27 @@ onMounted(async () => {
       :get-data="getData"
     >
       <template #queryBar>
-        <QueryBarItem label="道路名称" :content="queryItems.road_name">
+        <QueryBarItem :label="t('views.pixel.title_cn_3f25ec9e')" :content="queryItems.road_name">
           <NInput
             v-model:value="queryItems.road_name"
             clearable
-            placeholder="请输入道路名称"
+            :placeholder="t('views.pixel.placeholder_cn_33c3deb4')"
             @keydown.enter="$table.handleSearch()"
           />
         </QueryBarItem>
-        <QueryBarItem label="风险等级" :content="queryItems.risk_level_name">
+        <QueryBarItem :label="t('views.pixel.title_cn_25eb6ba3')" :content="queryItems.risk_level_name">
           <NInput
             v-model:value="queryItems.risk_level_name"
             clearable
-            placeholder="请输入风险等级"
+            :placeholder="t('views.pixel.placeholder_cn_77b366c3')"
             @keydown.enter="$table.handleSearch()"
           />
         </QueryBarItem>
-        <QueryBarItem label="状态" :content="queryItems.status_name">
+        <QueryBarItem :label="t('views.network.roadNetwork.fileColumns.status')" :content="queryItems.status_name">
           <NInput
             v-model:value="queryItems.status_name"
             clearable
-            placeholder="请输入状态"
+            :placeholder="t('views.pixel.placeholder_cn_bcc12ba0')"
             @keydown.enter="$table.handleSearch()"
           />
         </QueryBarItem>

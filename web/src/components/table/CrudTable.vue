@@ -22,7 +22,7 @@
     <div v-else class="mobile-card-list">
       <n-spin :show="loading">
         <template v-if="tableData.length === 0 && !loading">
-          <n-empty description="暂无数据" />
+          <n-empty :description="$t('views.tool.vehicle.no_data')" />
         </template>
         <template v-else-if="tableData.length > 0">
           <n-card
