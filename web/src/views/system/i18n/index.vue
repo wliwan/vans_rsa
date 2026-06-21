@@ -4,6 +4,7 @@ import { computed, h, onMounted, ref } from 'vue'
 import { useTaskProgressStore } from '@/store/modules/taskProgress'
 import {
   NButton,
+  NCheckbox,
   NDataTable,
   NInput,
   NModal,
@@ -361,12 +362,25 @@ const scanAddLoading = ref(false)
 const scanAddScanning = ref(false)
 const scanAddProxyOptions = ref([])
 
+const hideMixedFields = ref(false)
+
 const scanAddColumns = [
   { title: '文件', key: 'file', width: 200, ellipsis: { tooltip: true } },
   { title: '行号', key: 'line', width: 60, align: 'center' },
   { title: '中文文本', key: 'text', width: 240, ellipsis: { tooltip: true } },
   { title: '检测来源', key: 'source', width: 100, align: 'center' },
 ]
+
+// 根据开关过滤显示结果
+const scanAddDisplayed = computed(() => {
+  if (!hideMixedFields.value) return scanAddResults.value
+  return scanAddResults.value.filter(it => {
+    if ((it.source === 'html-inline' || it.source === 'html-attribute') && it.text.length < 20) {
+      return !/\b[$\w]*t\s*\(/.test(it._lineContent || '')
+    }
+    return true
+  })
+})
 
 async function openScanAdd() {
   scanAddProxyName.value = null
@@ -387,13 +401,9 @@ async function doScan() {
   scanAddScanning.value = true
   try {
     const res = await api.scanDetectI18n()
-    const items = (res && res.items) || []
-    scanAddResults.value = items
-    scanAddTotal.value = res.total || items.length
+    scanAddResults.value = res.items || []
+    scanAddTotal.value = res.total || scanAddResults.value.length
   } catch (e) {
-    // 回退：Vite 端点不可用时使用旧后端扫描
-    try { const fallback = await api.scanFrontendNewI18n(); scanAddResults.value = fallback.data.items || []; scanAddTotal.value = fallback.data.total || 0; }
-    catch (_) { /* ignore */ }
     message.error('扫描失败: ' + (e.message || '未知错误'))
   } finally {
     scanAddScanning.value = false
@@ -579,20 +589,23 @@ onMounted(() => {
     <NModal v-model:show="scanAddVisible" preset="card" title="扫描新字段并添加" style="width: 800px">
       <div style="margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between">
         <span v-if="scanAddScanning" style="color: #888">正在扫描前端代码...</span>
-        <span v-else style="color: #666">共发现 <b>{{ scanAddTotal }}</b> 条待翻译字段</span>
+        <span v-else style="color: #666">共发现 <b>{{ scanAddTotal }}</b> 条待翻译字段，显示 <b>{{ scanAddDisplayed.length }}</b> 条</span>
         <NButton size="small" @click="doScan" :loading="scanAddScanning">重新扫描</NButton>
       </div>
+      <div v-if="!scanAddScanning && scanAddTotal > 0" style="margin-bottom: 4px">
+        <NCheckbox v-model:checked="hideMixedFields" size="small">隐藏已混用 i18n 的组合字段</NCheckbox>
+      </div>
       <NDataTable
-        v-if="scanAddResults.length > 0"
+        v-if="scanAddDisplayed.length > 0"
         :columns="scanAddColumns"
-        :data="scanAddResults"
+        :data="scanAddDisplayed"
         :max-height="320"
         virtual-scroll
         size="small"
         striped
       />
       <div v-else-if="!scanAddScanning" style="text-align: center; padding: 40px; color: #999">
-        暂无待翻译字段
+        {{ scanAddTotal > 0 ? '已全部过滤' : '暂无待翻译字段' }}
       </div>
       <div style="margin-top: 12px; display: flex; align-items: center; gap: 12px">
         <label style="white-space: nowrap; font-weight: 600">AI 代理</label>

@@ -53,34 +53,6 @@ class I18nAIGenerateRequest(BaseModel):
     mode: str = Field("full", description="翻译模式: full=全量替换, incremental=增量补充（只翻译缺失条目）")
 
 
-class HardcodedString(BaseModel):
-    """前端硬编码字符串扫描结果"""
-    file: str = Field(..., description="文件路径（相对 web/src）")
-    line: int = Field(..., description="行号")
-    text: str = Field(..., description="硬编码中文文本")
-    context: str = Field(..., description="所在行的上下文代码")
-    suggested_key: str = Field(..., description="建议的 i18n key")
-
-
-class ScanResult(BaseModel):
-    """前端扫描结果"""
-    total: int = Field(..., description="发现的总数")
-    items: List[HardcodedString] = Field(..., description="硬编码字符串列表")
-
-
-class HardcodedReplaceRequest(BaseModel):
-    """替换硬编码字符串为 i18n 调用"""
-    file: str = Field(..., description="文件路径（相对 web/src）")
-    line: int = Field(..., description="行号")
-    original: str = Field(..., description="原始行内容")
-    replacement: str = Field(..., description="替换后的行内容")
-
-
-class ScanAndAddRequest(BaseModel):
-    """扫描前端硬编码中文，AI 生成 key 并追加到 cn.json"""
-    ai_proxy_name: str = Field(..., description="AI 代理名称")
-
-
 class ProcessScanRequest(BaseModel):
     """接收前端 AST 扫描结果，AI 生成 key 并追加到 cn.json"""
     ai_proxy_name: str = Field(..., description="AI 代理名称")

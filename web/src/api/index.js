@@ -288,10 +288,7 @@ export default {
   exportI18n: () => request.get('/i18n/export'),
   importI18n: (data = {}) => request.post('/i18n/import', data),
   aiGenerateI18n: (data = {}) => request.post('/i18n/ai-generate', data, { timeout: 0 }),
-  scanFrontendI18n: () => request.get('/i18n/scan-frontend'),
-  replaceHardcodedI18n: (data = {}) => request.post('/i18n/replace-hardcoded', data),
-  scanFrontendNewI18n: () => request.get('/i18n/scan-frontend-new'),
-  scanAndAddI18n: (data = {}) => request.post('/i18n/scan-and-add', data, { timeout: 0 }),
+
   scanDetectI18n: () => fetch('/__i18n-scan').then(r => r.json()),
   processScanI18n: (data = {}) => request.post('/i18n/process-scan', data, { timeout: 0 }),
   batchDeleteI18n: (data = {}) => request.post('/i18n/batch-delete', data),

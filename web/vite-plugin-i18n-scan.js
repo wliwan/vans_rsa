@@ -46,18 +46,19 @@ export function i18nScanPlugin() {
               const relPath = relative(root, filePath)
 
               for (const d of detections) {
-                const line = content.substring(0, d.start).split('\n').length
+                const lineNo = content.substring(0, d.start).split('\n').length
                 // 规范化文本
                 let text = (d.text || '').replace(/\s+/g, ' ').trim()
                 if (!text) continue
 
                 allDetections.push({
                   file: relPath,
-                  line,
+                  line: lineNo,
                   start: d.start,
                   end: d.end,
                   text,
                   source: d.source || 'unknown',
+                  _lineContent: content.split('\n')[lineNo - 1]?.slice(0, 200) || '',
                 })
               }
             } catch (e) {

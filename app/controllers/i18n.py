@@ -13,24 +13,13 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.schemas.i18n import HardcodedString, I18nEntry
+
 
 logger = logging.getLogger(__name__)
 
 # i18n 消息文件目录（相对于项目根目录）
 _MESSAGES_DIR = Path(__file__).resolve().parent.parent.parent / "web" / "i18n" / "messages"
 _INDEX_JS = _MESSAGES_DIR / "index.js"
-
-# 需要忽略的前端扫描目录/文件
-_SCAN_EXCLUDE_DIRS = {
-    "node_modules", "dist", "public", "lib", "__pycache__", ".git", "uploads",
-    "cache", "i18n",  # i18n 目录本身就是翻译文件
-}
-_SCAN_EXCLUDE_FILES = {
-    "pnpm-lock.yaml", "package-lock.json", "yarn.lock",
-}
-_SCAN_INCLUDE_EXTS = {".vue", ".js", ".ts", ".jsx", ".tsx"}
-
 
 def _get_project_root() -> Path:
     """获取项目根目录"""
@@ -593,144 +582,6 @@ class I18nController:
         _replace(result)
         return result
 
-    # ─── 扫描新字段并添加 ────────────────────────────────────────
-    def _scan_chinese_texts(self) -> List[dict]:
-        """扫描前端代码中所有直接使用中文的 UI 元素
-
-        返回 [{"text":..., "file":..., "line":..., "prefix":...}, ...]
-        """
-        project_root = _get_project_root()
-        src_dir = project_root / "web" / "src"
-        results = []
-        chinese_re = re.compile(r"[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]+")
-
-        # 已收录的源文本池：仅从 cn.json（源语言）取值，不参考翻译文件
-        # 因为 en/tr 等翻译文件中可能含有中文作为翻译值（如 zh-CN→en 的对照），
-        # 若用全部 locale 的值池会误过滤掉尚未收录到 cn.json 的中文 UI 文本。
-        existing_texts = set()
-        _locales = self._get_locales()
-        _source_locales = ["cn"] if "cn" in _locales else (_locales[:1] if _locales else [])
-        for loc in _source_locales:
-            data = self._load_locale(loc)
-            for _k, v, _t in self._flatten(data):
-                if isinstance(v, str) and v.strip():
-                    existing_texts.add(v)
-
-        for filepath in sorted(src_dir.rglob("*")):
-            if not filepath.is_file():
-                continue
-            parts = tuple(filepath.relative_to(src_dir).parts)
-            if any(p in _SCAN_EXCLUDE_DIRS for p in parts):
-                continue
-            if filepath.suffix not in _SCAN_INCLUDE_EXTS:
-                continue
-            try:
-                content = filepath.read_text(encoding="utf-8")
-            except Exception:
-                continue
-
-            prefix = self._derive_prefix(parts)
-            rel_path = str(filepath.relative_to(src_dir))
-
-            # —— 逐行扫描（引号字符串 + 模板字符串）——
-            seen_in_file = {(r["text"], r["file"]) for r in results if r["file"] == rel_path}
-
-            for line_no, line in enumerate(content.split("\n"), 1):
-                # 跳过注释行
-                stripped = line.strip()
-                if stripped.startswith(("//", "#", "/*", "*")):
-                    continue
-                if not chinese_re.search(line):
-                    continue
-
-                # 预处理：剥离 t()/$t() 调用，避免整行跳过
-                cleaned = self._strip_i18n_calls(line)
-                texts = self._extract_chinese_strings(cleaned, chinese_re)
-                for text in texts:
-                    if text in existing_texts:
-                        continue
-                    if (text, rel_path) in seen_in_file:
-                        continue
-                    seen_in_file.add((text, rel_path))
-                    results.append({"file": rel_path, "line": line_no, "text": text, "prefix": prefix})
-
-            # —— 跨行 HTML 文本内容扫描（>中文< 可能跨行）——
-            # 仅扫描 <template> 区域，避免误抓 <script>/<style> 内容
-            # 按嵌套深度匹配外层 <template>...</template>（避免内部 <template #slot> 干扰）
-            tmpl_start = None
-            tmpl_end = None
-            depth = 0
-            for m in re.finditer(r"</?template[^>]*>", content):
-                tag = m.group()
-                if tag == "<template>":
-                    if depth == 0:
-                        tmpl_start = m.end()  # 正文起始 = <template> 之后
-                    depth += 1
-                elif tag == "</template>":
-                    depth -= 1
-                    if depth == 0:
-                        tmpl_end = m.start()
-                        break
-            if tmpl_start is not None and tmpl_end is not None:
-                tmpl_body = content[tmpl_start:tmpl_end]
-                # 剥离 {{ }} 后扫描，避免误抓模板表达式中的代码
-                tmpl_clean = re.sub(r"\{\{[^}]*\}\}", " ", tmpl_body)
-                for m in re.finditer(r"(?<!=)>\s*([^<]*[\u4e00-\u9fff][^<]*)<", tmpl_clean, re.DOTALL):
-                    t = m.group(1).strip()
-                    # 规范化空白：合并连续空白为单个空格
-                    t = re.sub(r"\s+", " ", t).strip()
-                    if not chinese_re.search(t) or len(t) < 1:
-                        continue
-                    if t in existing_texts:
-                        continue
-                    if (t, rel_path) in seen_in_file:
-                        continue
-                    seen_in_file.add((t, rel_path))
-                    # 行号：template 正文起始偏移 + 子串内偏移
-                    abs_pos = tmpl_start + m.start()
-                    approx_line = content[:abs_pos].count("\n") + 1
-                    results.append({"file": rel_path, "line": approx_line, "text": t, "prefix": prefix})
-        return results
-
-    def _extract_chinese_strings(self, line: str, chinese_re) -> List[str]:
-        """提取一行代码中含中文的字符串字面量（引号 + 模板字符串 + HTML 文本内容）"""
-        texts = []
-        # 先剥离 {{ }} Vue 模板表达式（避免误提取）
-        no_mustache = re.sub(r"\{\{[^}]*\}\}", " ", line)
-
-        # 模式1：单/双引号包裹的字符串
-        # [^<>] 限定不跨越 HTML 标签边界，避免在无换行长行中误匹配属性值
-        for m in re.finditer(r"""(["'])((?:(?!\1)[^<>])*?[\u4e00-\u9fff](?:(?!\1)[^<>])*?)\1""", no_mustache):
-            t = m.group(2).strip()
-            if chinese_re.search(t) and len(t) >= 1:
-                texts.append(t)
-        for m in re.finditer(r"`([^`]*[\u4e00-\u9fff][^`]*)`", line):
-            raw = m.group(1)
-            if not chinese_re.search(raw):
-                continue
-            # 将 ${expr} 替换为 {0}, {1}... 占位符，保留结构含义
-            _cnt = [0]
-            def _repl(_m):
-                _cnt[0] += 1
-                return "{%d}" % (_cnt[0] - 1)
-            normalized = re.sub(r"\$\{[^}]*\}", _repl, raw)
-            normalized = normalized.strip()
-            if chinese_re.search(normalized) and len(normalized) >= 1:
-                texts.append(normalized)
-
-        # 模式3：HTML 文本内容 >中文< （模板中未加引号的 UI 文本）
-        for m in re.finditer(r"(?<!=)>\s*([^<]*[\u4e00-\u9fff][^<]*)<", no_mustache):
-            t = m.group(1).strip()
-            # 清理嵌套的 HTML 标签残留（如 >中文</span> 已经由 < 边界处理）
-            # 过滤纯数字/符号
-            if not chinese_re.search(t):
-                continue
-            # 去掉可能残留的 {{ }} 片段
-            t = re.sub(r"\{\{[^}]*\}\}", "", t).strip()
-            if chinese_re.search(t) and len(t) >= 2:
-                texts.append(t)
-        return texts
-
     def _derive_prefix(self, parts: tuple) -> str:
         """从文件路径推导 key 前缀"""
         prefix_parts = []
@@ -747,16 +598,6 @@ class I18nController:
                 prefix_parts.append(p)
                 started = True
         return ".".join(prefix_parts) if prefix_parts else "common"
-
-    def _strip_i18n_calls(self, line: str) -> str:
-        """剥离行内的 t('...') / $t('...') 调用，替换为空格，保留其余文本"""
-        # 匹配 t('...') 或 t("...")
-        line = re.sub(r"\bt\s*\(\s*'[^']*'\s*\)", " ", line)
-        line = re.sub(r'\bt\s*\(\s*"[^"]*"\s*\)', " ", line)
-        # 匹配 $t('...') 或 $t("...")
-        line = re.sub(r"\$t\s*\(\s*'[^']*'\s*\)", " ", line)
-        line = re.sub(r'\$t\s*\(\s*"[^"]*"\s*\)', " ", line)
-        return line
 
 
     # ─── AI 扫描添加 ────────────────────────────────────────────
@@ -788,68 +629,6 @@ class I18nController:
             "## 输出\n"
             "仅返回 JSON 对象: {key: 原始text}。不解释，不改 value。"
         )
-
-    async def scan_frontend_new(self) -> Dict[str, Any]:
-        """扫描前端硬编码中文，返回待翻译列表（不执行 AI 处理）"""
-        items = self._scan_chinese_texts()
-        # 按文件分组排序
-        items.sort(key=lambda x: (x["file"], x["line"]))
-        return {"total": len(items), "items": items}
-
-    async def scan_and_add(self, ai_proxy_name: str) -> Dict[str, Any]:
-        """扫描前端硬编码中文 → AI 生成 key → 追加到 cn.json"""
-        from app.controllers.ai_proxy import ai_proxy_controller
-        proxy = await ai_proxy_controller.get_by_name(ai_proxy_name)
-        if not proxy:
-            raise ValueError(f"AI 代理 '{ai_proxy_name}' 不存在")
-
-        raw_items = self._scan_chinese_texts()
-        if not raw_items:
-            return {"scanned_count": 0, "added_count": 0, "skipped_count": 0, "batch_count": 0, "failed_batches": None}
-
-        batches = [raw_items[i:i + self._SCAN_BATCH_SIZE] for i in range(0, len(raw_items), self._SCAN_BATCH_SIZE)]
-        sys_prompt = self._build_scan_add_system_prompt()
-        sem = asyncio.Semaphore(self._SCAN_MAX_CONCURRENT)
-
-        async def _proc(idx: int, batch: list) -> Tuple[int, dict, str | None]:
-            async with sem:
-                inp = [{"text": it["text"], "prefix": it["prefix"], "file": it["file"]} for it in batch]
-                user = f"请为以下中文 UI 文本生成合适的 i18n key：\n{json.dumps(inp, ensure_ascii=False, indent=2)}"
-                try:
-                    r = await self._call_ai(proxy, sys_prompt, user)
-                    p = self._extract_json(r)
-                    return (idx, p if isinstance(p, dict) else {}, None if isinstance(p, dict) else f"批次 {idx} 非字典")
-                except Exception as e:
-                    logger.error(f"扫描添加批次 {idx} 失败: {e}")
-                    return (idx, {}, str(e))
-
-        results_list = await asyncio.gather(*[_proc(i, b) for i, b in enumerate(batches)])
-
-        new_entries: dict = {}
-        failed: list = []
-        for idx, r, err in results_list:
-            if err:
-                failed.append({"batch": idx, "count": len(batches[idx]), "error": err})
-            else:
-                new_entries.update(r)
-
-        cn_data = self._load_locale("cn")
-        existing_keys = {k for k, _v, _t in self._flatten(cn_data)}
-        added = 0
-        skipped = 0
-        for key, value in new_entries.items():
-            if not isinstance(value, str) or key in existing_keys:
-                skipped += 1
-                continue
-            await self._set_value_by_key(cn_data, key, value)
-            existing_keys.add(key)
-            added += 1
-
-        self._save_locale("cn", cn_data)
-        return {
-            "scanned_count": len(raw_items), "added_count": added, "skipped_count": skipped,
-            "batch_count": len(batches), "failed_batches": failed if failed else None,
-        }
 
     async def process_scan(self, ai_proxy_name: str, items: List[dict]) -> Dict[str, Any]:
         """接收前端 AST 扫描结果，AI 生成 key 后追加到 cn.json
@@ -1101,133 +880,6 @@ class I18nController:
             if modified:
                 filepath.write_text(content, encoding="utf-8")
                 logger.info(f"_ensure_i18n_imports: 补全 {rel_path}")
-
-    # ─── 前端硬编码扫描（旧，保留兼容） ──────────────────────────
-    async def scan_frontend(self) -> Dict[str, Any]:
-        """扫描前端代码中的硬编码中文字符串
-
-        扫描 web/src/ 下所有 .vue/.js/.ts 文件，查找未使用 $t()/t() 的中文硬编码。
-        """
-        project_root = _get_project_root()
-        src_dir = project_root / "web" / "src"
-
-        results = []
-        # 中文正则：匹配中文字符、中文标点
-        chinese_pattern = re.compile(r"[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]+")
-
-        # 已存在的 i18n key 用于排除
-        existing_keys = set()
-        for loc in self._get_locales():
-            data = self._load_locale(loc)
-            for key, value, _ in self._flatten(data):
-                if isinstance(value, str) and value.strip():
-                    existing_keys.add(value)
-
-        for filepath in src_dir.rglob("*"):
-            if not filepath.is_file():
-                continue
-
-            # 排除目录
-            parts = filepath.relative_to(src_dir).parts
-            if any(p in _SCAN_EXCLUDE_DIRS for p in parts):
-                continue
-            if filepath.suffix not in _SCAN_INCLUDE_EXTS:
-                continue
-            if filepath.name in _SCAN_EXCLUDE_FILES:
-                continue
-
-            try:
-                content = filepath.read_text(encoding="utf-8")
-            except Exception:
-                continue
-
-            lines = content.split("\n")
-            for line_no, line in enumerate(lines, 1):
-                # 跳过注释行
-                stripped = line.strip()
-                if stripped.startswith("//") or stripped.startswith("#"):
-                    continue
-                if stripped.startswith("/*") or stripped.startswith("*"):
-                    continue
-
-                # 跳过包含 $t( 或 t( 或 useI18n 的行
-                if "$t(" in line or " t(" in line or "t(" in line or "useI18n" in line:
-                    continue
-
-                # 查找中文字符串
-                matches = re.findall(r"""[“"'`]([^"'`]*[\u4e00-\u9fff][^"'`]*)["'`]""", line)
-                for match in matches:
-                    # 过滤已存在的翻译值
-                    if match in existing_keys:
-                        continue
-                    # 过滤纯数字/英文字符
-                    chinese_chars = chinese_pattern.findall(match)
-                    if not chinese_chars:
-                        continue
-                    suggested_key = self._suggest_key(match, filepath)
-                    results.append(
-                        {
-                            "file": str(filepath.relative_to(src_dir)),
-                            "line": line_no,
-                            "text": match,
-                            "context": line.strip()[:200],
-                            "suggested_key": suggested_key,
-                        }
-                    )
-
-        return {"total": len(results), "items": results}
-
-    async def replace_hardcoded(
-        self, items: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """批量替换硬编码字符串为 i18n 调用"""
-        project_root = _get_project_root()
-        src_dir = project_root / "web" / "src"
-        success_count = 0
-        errors = []
-
-        for item in items:
-            file_path = src_dir / item["file"]
-            if not file_path.exists():
-                errors.append(f"文件不存在: {item['file']}")
-                continue
-
-            try:
-                content = file_path.read_text(encoding="utf-8")
-                lines = content.split("\n")
-                line_idx = item["line"] - 1
-                if line_idx < 0 or line_idx >= len(lines):
-                    errors.append(f"行号超范围: {item['file']}:{item['line']}")
-                    continue
-
-                old_line = lines[line_idx]
-                new_line = item.get("replacement", old_line)
-                lines[line_idx] = new_line
-                file_path.write_text("\n".join(lines), encoding="utf-8")
-                success_count += 1
-            except Exception as e:
-                errors.append(f"替换失败 {item['file']}:{item['line']}: {e}")
-
-        return {"success": success_count, "errors": errors}
-
-    def _suggest_key(self, text: str, filepath: Path) -> str:
-        """根据文本内容和文件路径建议 i18n key"""
-        # 简化文本作为 key 的一部分
-        short = text[:20].strip()
-        # 根据文件路径推断模块名
-        parts = filepath.parts
-        module = "common"
-        for part in parts:
-            if part in ("views", "components", "layout"):
-                idx = list(parts).index(part)
-                if idx + 1 < len(parts):
-                    module = parts[idx + 1]
-                break
-        # 生成 key
-        key_part = re.sub(r"[^\w]", "_", short).strip("_").lower()
-        if not key_part:
-            key_part = "text"
-        return f"views.{module}.{key_part}"
 
 
 # 单例

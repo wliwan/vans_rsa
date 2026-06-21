@@ -341,17 +341,8 @@
         "process_complete_summary": "İşlem tamamlandı: {0} başarılı, {1} başarısız",
         "success_process_images": "{0} görüntü başarıyla işlendi",
         "success_process_images_detail": "{0} görüntü başarıyla işlendi",
-        "upload_failed": "Yükleme başarısız:",
-        "update_failed": "Güncelleme başarısız:",
         "ai_processing_failed": "AI işleme başarısız:",
-        "preview_failed": "Önizleme başarısız:",
-        "material_list": "Malzeme listesi",
-        "preview_workspace": "Önizleme çalışma alanı",
-        "start_processing": "İşlemeyi başlat",
-        "drag_slider_preview_rotation": "Kaydırıcıyı sürükleyerek döndürme efektini canlı önizle",
-        "refresh_preview": "Önizlemeyi yenile",
-        "drag_selection_auto_sync_values": "Sol tuvalde seçim sürüklendiğinde değerleri otomatik senkronize et",
-        "preview_effect": "Önizleme efekti"
+        "drag_selection_auto_sync_values": "Sol tuvalde seçim sürüklendiğinde değerleri otomatik senkronize et"
       },
       "road-network-workbench": {
         "base_map_label": ", label: `Taban harita — ${bl.label}`, type:",
@@ -359,7 +350,6 @@
         "road_network_label": ", label: `Yol ağı — ${nw?.file_name ||",
         "road_network": "Yol ağı — {0}",
         "map_export": "Harita dışa aktar_{0}",
-        "toggle_map_controls": "Harita kontrollerini göster/gizle",
         "tip_road_network_layer_tiles_same_origin_export_best": "İpucu: Yol ağı katmanı aynı kaynaktan gelen döşemelerdir, dışa aktarma en iyi sonucu verir. Temel harita çapraz kaynak nedeniyle tamamen yakalanamayabilir."
       }
     },
@@ -418,9 +408,7 @@
         "sync_complete": "Senkronizasyon tamamlandı: {0} yeni, {1} güncellenmiş, API'de toplam {2}",
         "cleared_data": "{0} veri temizlendi",
         "pixel_account": "Piksel hesabı:",
-        "time_period": "Zaman aralığı:",
-        "sync_data": "Verileri senkronize et",
-        "clear_data": "Verileri temizle"
+        "time_period": "Zaman aralığı:"
       },
       "track": {
         "type": "Tür {0}",
@@ -429,12 +417,7 @@
         "pixel_account": "Piksel hesabı:",
         "vehicle_model": "Araç modeli:",
         "vehicle": "Araç:",
-        "time_period": "Zaman aralığı:",
-        "sync_data": "Verileri senkronize et",
-        "clear_data": "Verileri temizle"
-      },
-      "account": {
-        "new_account": "Yeni hesap"
+        "time_period": "Zaman aralığı:"
       }
     },
     "profile": {
@@ -1373,14 +1356,10 @@
         "parsed_tables_count": "Ayrıştırma başarılı, toplam {0} tablo",
         "imported_road_network_statistics_count": "{0} yol ağı istatistiği başarıyla içe aktarıldı",
         "opencv_processing": "OpenCV işleme ({0})",
-        "opencv_processing_complete": "OpenCV işleme tamamlandı: {0} başarılı",
-        "ai_processing_complete": "AI işleme tamamlandı: {0} başarılı",
-        "ocr_extraction_complete": "OCR çıkarma tamamlandı: {0} başarılı",
         "exported_count": "{0} veri dışa aktarıldı",
         "delete": "Sil( )",
         "selected_slash": "Seçili   /",
         "export": "Dışa aktar( )",
-        "upload_file_to_directory": "Dosyayı dizine yükle",
         "process_count_images": "İşle (   görsel)",
         "ai_optimize_count_images": "AI optimizasyon (   görsel)",
         "select_all_with_selected": "Tümünü seç (Seçili   /  )",
@@ -1558,8 +1537,7 @@
       "title_cn_f39bf763": "Bileşen yolu",
       "title_cn_f53b5122": "Rol listesi",
       "api": {
-        "new_api": "Yeni API",
-        "refresh_api": "API'yi Yenile"
+        "new_api": "Yeni API"
       },
       "dept": {
         "new_dept": "Yeni Departman"
@@ -1572,9 +1550,7 @@
         "save_config": "Yapılandırmayı Kaydet"
       },
       "menu": {
-        "selected_path": "Seçilen yol:",
-        "new_root_menu": "Yeni Kök Menü",
-        "scan_views": "Görünümleri Tara"
+        "new_root_menu": "Yeni Kök Menü"
       },
       "role": {
         "new_role": "Yeni Rol"
@@ -1662,21 +1638,12 @@
         "click_retry": "{0}, yeniden dene"
       },
       "task_progress_panel": {
-        "background_tasks": "Arka Plan Görevleri ( )",
-        "clear_completed": "Tamamlananları Temizle",
-        "collapse": "Daralt",
-        "retry": "Tekrar Dene",
         "background_tasks_with_count": "Arka Plan Görevleri ({{ tasks.length }})"
       }
     },
     "table": {
       "crud_table": {
         "total_count": "Toplam {0}"
-      }
-    },
-    "query-bar": {
-      "query_bar": {
-        "search": "Ara"
       }
     }
   },
