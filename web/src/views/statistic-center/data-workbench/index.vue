@@ -853,7 +853,7 @@ async function handleBaseUrlSubmit() {
 }
 
 const _originalSelectWorkspace = selectWorkspace
-selectWorkspace = async function(ws) { await _originalSelectWorkspace(ws); await loadStaticFiles(); await loadDatabaseDocs() }
+selectWorkspace = async function(ws) { await _originalSelectWorkspace(ws); await loadStaticFiles(); await loadDatabaseDocs(); if (isMobileCollapsed.value) { sidebarVisible.value = false } }
 
 // ── 数据库数据状态 ──
 const databaseDocs = ref([])
