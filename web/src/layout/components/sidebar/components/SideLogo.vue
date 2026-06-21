@@ -1,6 +1,6 @@
 <template>
   <router-link h-60 f-c-c to="/">
-    <icon-custom-logo color-primary style="font-size: 15rem"></icon-custom-logo>
+    <icon-custom-logo color-primary style="font-size: 9rem"></icon-custom-logo>
     <h2
       v-show="!appStore.collapsed"
       ml-2
@@ -9,7 +9,7 @@
       flex-shrink-0
       font-bold
       color-primary
-      style="font-size: 6rem"
+      style="font-size: 4rem"
     >
       {{ title }}
     </h2>

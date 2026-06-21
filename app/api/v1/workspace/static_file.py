@@ -1,21 +1,24 @@
 """静态文件数据 API"""
+import io
 import os
+import zipfile
 from typing import List
 
 from fastapi import APIRouter, File, Form, Query, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from app.controllers.ai_proxy import ai_proxy_controller
 from app.controllers.skill import skill_controller
 from app.controllers.static_file import static_file_controller
+from app.controllers.system_config import system_config_controller
 from app.controllers.workspace import workspace_controller
 from app.core.ctx import CTX_USER_ID
 from app.log import logger
 from app.schemas.base import Fail, Success, SuccessExtra
 from app.schemas.static_file import (
-    AIProcessRequest, BatchDeleteRequest, CVProcessRequest,
+    AIProcessRequest, BatchDeleteRequest, CopyRecordsRequest, CVProcessRequest,
     CV_OPERATIONS, ImportRoadMaterialRequest, OCRRequest,
-    StaticFileUpdate,
+    SetBaseUrlRequest, StaticFileUpdate,
 )
 
 router = APIRouter()
@@ -159,6 +162,67 @@ async def delete_file(file_id: int = Query(..., description="文件ID")):
 async def batch_delete_files(req: BatchDeleteRequest):
     deleted = await static_file_controller.batch_delete(req.file_ids)
     return Success(data={"deleted": deleted}, msg=f"已删除 {deleted} 个文件")
+
+
+# ── 复制到工作区 ──
+
+@router.post("/copy-records", summary="复制文件记录到另一工作区（不拷贝物理文件）")
+async def copy_records(req: CopyRecordsRequest):
+    """只创建数据库记录指向同一物理文件，生成新短链接令牌"""
+    user_id = CTX_USER_ID.get()
+    ws = await workspace_controller.check_permission(req.target_workspace_id, user_id)
+    if not ws:
+        return Fail(code=403, msg="无权操作目标工作区")
+    results, errors = await static_file_controller.copy_records(
+        file_ids=req.file_ids, target_workspace_id=req.target_workspace_id,
+    )
+    return Success(data={
+        "results": results, "errors": errors,
+        "total": len(req.file_ids), "success_count": len(results), "error_count": len(errors),
+    }, msg=f"复制完成：成功 {len(results)} 个，失败 {len(errors)} 个")
+
+
+# ── 批量导出 ──
+
+@router.post("/batch-export", summary="批量导出静态文件（ZIP压缩包）")
+async def batch_export_files(req: BatchDeleteRequest):
+    """批量导出选中的静态文件为 ZIP 压缩包，返回下载"""
+    user_id = CTX_USER_ID.get()
+    buf = io.BytesIO()
+    exported = 0
+    skipped = []
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for fid in req.file_ids:
+            obj = await static_file_controller.get(id=fid)
+            if not obj:
+                skipped.append({"file_id": fid, "reason": "文件不存在"})
+                continue
+            ws = await workspace_controller.check_permission(obj["workspace_id"], user_id)
+            if not ws:
+                skipped.append({"file_id": fid, "reason": "无权访问该工作区"})
+                continue
+            filepath = obj["file_path"]
+            if not os.path.exists(filepath):
+                skipped.append({"file_id": fid, "reason": "文件已丢失"})
+                continue
+            arcname = obj["file_name"]
+            # 处理重名
+            counter = 1
+            name_part, ext_part = os.path.splitext(arcname)
+            existing_names = {n for n in zf.namelist()}
+            while arcname in existing_names:
+                arcname = f"{name_part}_{counter}{ext_part}"
+                counter += 1
+            zf.write(filepath, arcname=arcname)
+            exported += 1
+    if exported == 0:
+        return Fail(code=404, msg="没有可导出的文件", data={"skipped": skipped})
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="static_files_{exported}.zip"'},
+    )
 
 
 # ── 下载 ──
@@ -309,6 +373,22 @@ async def list_image_files(
         workspace_id=workspace_id, source_type=source_type,
     )
     return Success(data=data)
+
+
+# ── BaseUrl 配置 ──
+
+_BASE_URL_KEY = "static_file_base_url"
+
+@router.get("/base-url", summary="获取静态文件 BaseUrl")
+async def get_base_url():
+    url = await system_config_controller.get_value(_BASE_URL_KEY, "")
+    return Success(data={"base_url": url})
+
+
+@router.put("/base-url", summary="设置静态文件 BaseUrl")
+async def set_base_url(req: SetBaseUrlRequest):
+    await system_config_controller.set_value(_BASE_URL_KEY, req.base_url.strip())
+    return Success(msg="BaseUrl 已更新", data={"base_url": req.base_url.strip()})
 
 
 # ── 短链接访问（独立 router，无鉴权）──

@@ -50,6 +50,17 @@ class BatchDeleteRequest(BaseModel):
     file_ids: List[int] = Field(..., description="文件ID列表")
 
 
+class CopyRecordsRequest(BaseModel):
+    """复制文件记录到另一工作区（不拷贝物理文件）"""
+    file_ids: List[int] = Field(..., description="文件ID列表")
+    target_workspace_id: int = Field(..., description="目标工作区ID")
+
+
+class SetBaseUrlRequest(BaseModel):
+    """设置静态文件 BaseUrl"""
+    base_url: str = Field("", description="公网访问基础地址，如 http://example.com:9999")
+
+
 # 支持的 OpenCV 操作及参数说明
 CV_OPERATIONS = {
     # 几何变换

@@ -6,11 +6,12 @@ import { useBreakpoints } from '@vueuse/core'
 import {
 
 
-  NButton, NInput, NLayout, NLayoutSider, NLayoutContent,
-  NList, NListItem, NModal, NSpace, NSelect, NPopconfirm,
+  NButton, NInput,
+  NModal, NSpace, NSelect, NPopconfirm,
   NForm, NFormItem, NTag, NDivider, NSpin, NSwitch, useMessage,
 } from 'naive-ui'
 import TheIcon from '@/components/icon/TheIcon.vue'
+import DocWorkbenchSidebar from '@/components/common/DocWorkbenchSidebar.vue'
 import api from '@/api'
 import { useTaskProgressStore } from '@/store/modules/taskProgress'
 
@@ -21,10 +22,11 @@ defineOptions({ name: i18n.global.t('views.statistic-center.title_cn_c56cb26a') 
 
 const message = useMessage()
 
-// 移动端适配：默认折叠左侧 Sider
+// 移动端适配
 const bp = reactive(useBreakpoints({ sm: 666, md: 991 }))
 const isMobile = computed(() => bp.isSmaller('sm') || bp.between('sm', 'md'))
-const siderCollapsed = ref(isMobile.value)
+const panelVisible = ref(true)
+watch(isMobile, (val) => { if (val) panelVisible.value = false })
 
 // 数据源总数
 const totalDataSourceCount = computed(() => {
@@ -61,7 +63,6 @@ function formatFileSize(bytes) {
 // 状态
 const workspaces = ref([])
 const selectedWs = ref(null)
-const reports = ref([])
 const selectedReport = ref(null)
 const loading = ref(false)
 const viewMode = ref('preview') // 'edit' | 'preview'
@@ -117,37 +118,20 @@ async function loadWorkspaces() {
   } catch (e) { message.error(t('views.statistic-center.message_cn_17eec3f1')) }
 }
 
-async function selectWorkspace(ws) {
-  selectedWs.value = ws
-  selectedReport.value = null
-  editContent.value = ''
-  await loadReports()
-}
-
-function backToWorkspaces() {
-  selectedWs.value = null
-  selectedReport.value = null
-  editContent.value = ''
-  reports.value = []
-}
-
-// 报告列表
-async function loadReports() {
-  if (!selectedWs.value) return
-  try {
-    const res = await api.getReportList({ workspace_id: selectedWs.value.id })
-    reports.value = res.data || []
-  } catch (e) { message.error(t('views.statistic-center.message_cn_8fc82eb8')) }
-}
-
-// 选中报告
-async function selectReport(r) {
+async function onReportSelect(r) {
   selectedReport.value = r
+  panelVisible.value = false
   try {
     const res = await api.getReportById({ report_id: r.id })
     editContent.value = res.data.content || ''
     initCodeMirror()
   } catch (e) { message.error(t('views.statistic-center.message_cn_9e2437e3')) }
+}
+
+function onContentClick() {
+  if (panelVisible.value && isMobile.value) {
+    panelVisible.value = false
+  }
 }
 
 function initCodeMirror() {
@@ -512,70 +496,36 @@ onBeforeUnmount(() => destroyCodeMirror())
 </script>
 
 <template>
-  <NLayout has-sider style="height: calc(100vh - 120px)">
-    <!-- 左侧 -->
-    <NLayoutSider bordered width="300" :collapsed-width="0" v-model:collapsed="siderCollapsed" show-trigger="arrow-circle" :native-scrollbar="false" content-style="padding: 12px">
-      <NSpace vertical>
-        <NButton type="primary" block @click="openGenerate">
-          <TheIcon icon="material-symbols:smart-toy" :size="18" class="mr-5" />生成报告
-        </NButton>
+  <div class="flex" style="height: calc(100vh - 120px)">
+    <!-- 左侧侧边栏 -->
+    <DocWorkbenchSidebar
+      v-model:visible="panelVisible"
+      :is-mobile="isMobile"
+      :workspaces="workspaces"
+      style="width: 300px; flex-shrink: 0"
+      @select-ws="(ws) => selectedWs = ws"
+      @select-report="onReportSelect"
+      @hide="panelVisible = false"
+      @generate="openGenerate"
+    />
 
-        <!-- 工作区列表（未选中时显示） -->
-        <template v-if="!selectedWs">
-          <NList hoverable clickable :show-divider="false">
-            <NListItem
-              v-for="ws in workspaces" :key="ws.id"
-              style="border-radius: 8px; margin-bottom: 4px; cursor: pointer"
-              @click="selectWorkspace(ws)"
-            >
-              <div class="flex flex-col flex-1 min-w-0">
-                <span class="font-medium truncate">{{ ws.name }}</span>
-                <span class="text-xs text-gray-400">{{ ws.updated_at }}</span>
-              </div>
-            </NListItem>
-          </NList>
-          <div v-if="!workspaces.length" class="text-center text-gray-400 py-10">暂无工作区</div>
-        </template>
-
-        <!-- 报告列表（选中工作区后显示，带面包屑） -->
-        <template v-if="selectedWs">
-          <!-- 面包屑 -->
-          <div class="flex items-center gap-1 text-sm py-1">
-            <NButton size="tiny" quaternary @click="backToWorkspaces">
-              <TheIcon icon="material-symbols:folder" :size="16" class="mr-1" />工作区
-            </NButton>
-            <span class="text-gray-300">></span>
-            <span class="font-medium truncate flex-1 min-w-0">{{ selectedWs.name }}</span>
-          </div>
-          <NDivider />
-          <div class="text-sm font-medium text-gray-500 mb-1">报告 ({{ reports.length }})</div>
-          <NList hoverable clickable :show-divider="false">
-            <NListItem
-              v-for="r in reports" :key="r.id"
-              :class="{ 'bg-green-50 dark:bg-green-900': selectedReport?.id === r.id }"
-              style="border-radius: 8px; margin-bottom: 4px; cursor: pointer"
-              @click="selectReport(r)"
-            >
-              <div class="flex flex-col flex-1 min-w-0">
-                <span class="truncate">{{ r.name }}</span>
-                <span class="text-xs text-gray-400">{{ r.updated_at }}</span>
-              </div>
-            </NListItem>
-            <div v-if="!reports.length" class="text-xs text-gray-400 py-2 text-center">无</div>
-          </NList>
-        </template>
-      </NSpace>
-    </NLayoutSider>
-
-    <!-- 右侧 -->
-    <NLayoutContent content-style="padding: 0; display: flex; flex-direction: column; overflow: hidden">
+    <!-- 右侧内容 -->
+    <div
+      class="flex-1 min-w-0 overflow-hidden flex flex-col"
+      @click="onContentClick"
+    >
       <!-- 操作栏（固定顶部） -->
       <div
         v-if="selectedReport"
         class="flex items-center justify-between px-4 py-3 border-b"
         style="flex-shrink: 0"
       >
-        <h2 class="text-lg font-bold m-0">{{ selectedReport.name }}</h2>
+        <div class="flex items-center gap-2">
+          <NButton v-if="!panelVisible" size="tiny" quaternary @click.stop="panelVisible = true">
+            <TheIcon icon="material-symbols:menu" :size="18" />
+          </NButton>
+          <h2 class="text-lg font-bold m-0">{{ selectedReport.name }}</h2>
+        </div>
         <NSpace>
           <NSwitch v-model:value="viewMode" checked-value="edit" unchecked-value="preview">
             <template #checked>编辑</template>
@@ -606,30 +556,26 @@ onBeforeUnmount(() => destroyCodeMirror())
         </NSpace>
       </div>
 
-      <!-- 内容区（绝对定位 + CSS containment，隔离 CodeMirror） -->
+      <!-- 内容区 -->
       <div style="flex: 1; min-height: 0; position: relative; contain: layout style">
-        <!-- 空态 -->
         <div v-if="!selectedReport" class="flex items-center justify-center h-full text-gray-400 text-base">
           请选择左侧报告
         </div>
         <template v-else>
-          <!-- 编辑模式：CodeMirror 绝对定位填满 -->
           <div v-show="viewMode === 'edit'" ref="cmContainer" style="position: absolute; inset: 0"></div>
-          <!-- 预览模式：iframe 沙箱隔离，防止报告内 CSS 污染全局 -->
           <iframe
             v-show="viewMode !== 'edit'"
             ref="previewFrame"
             style="position: absolute; inset: 0; width: 100%; height: 100%; border: none"
-            :title="'views.statistic-center.title_cn_e450da0e'"
+            :title="'预览'"
           />
         </template>
-        <!-- Loading 覆盖层 -->
         <div v-if="loading" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.6); z-index: 10">
           <NSpin :show="true" />
         </div>
       </div>
-    </NLayoutContent>
-  </NLayout>
+    </div>
+  </div>
 
   <!-- 生成弹窗 -->
   <NModal v-model:show="showGenerateModal" :title="t('views.statistic-center.title_cn_ba5f594e')" preset="card" :style="bp.isSmaller('md') ? 'width: 92vw' : 'width: 680px'">

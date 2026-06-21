@@ -1,14 +1,11 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import i18n from '~/i18n'
-import { computed, onMounted, onBeforeUnmount, ref, nextTick, reactive } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, nextTick, reactive, watch } from 'vue'
 import { useBreakpoints } from '@vueuse/core'
 import {
   NButton,
   NInput,
-  NLayout,
-  NLayoutSider,
-  NLayoutContent,
   NList,
   NListItem,
   NModal,
@@ -30,14 +27,29 @@ defineOptions({ name: i18n.global.t('views.skill.title_cn_735ac607') })
 
 const message = useMessage()
 
-// 移动端适配：默认折叠左侧 Sider
+// 移动端适配：默认展开左侧面板，可手动折叠
 const bp = reactive(useBreakpoints({ sm: 666, md: 991 }))
-const isMobileCollapsed = computed(() => bp.isSmaller('sm') || bp.between('sm', 'md'))
+const isMobile = computed(() => bp.isSmaller('sm') || bp.between('sm', 'md'))
+const panelVisible = ref(true)
+// 窗口变小时自动折叠
+watch(isMobile, (val) => { if (val) panelVisible.value = false })
 
 // ---- 状态 ----
 const skills = ref([])
 const selectedSkill = ref(null)
 const loading = ref(false)
+const searchQuery = ref('')
+
+const filteredSkills = computed(() => {
+  if (!searchQuery.value) return skills.value
+  const q = searchQuery.value.toLowerCase()
+  return skills.value.filter((s) => s.title.toLowerCase().includes(q))
+})
+
+const accentColors = ['#6366f1', '#8b5cf6', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899']
+function cardAccent(idx) {
+  return accentColors[idx % accentColors.length]
+}
 
 // vditor 实例
 let vditorInstance = null
@@ -329,61 +341,89 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <NLayout has-sider style="height: calc(100vh - 120px)">
+  <div class="flex" style="height: calc(100vh - 120px)">
     <!-- 左侧菜单栏 -->
-    <NLayoutSider
-      bordered
-      width="280"
-      :collapsed-width="0"
-      :collapsed="isMobileCollapsed"
-      show-trigger="arrow-circle"
-      :native-scrollbar="false"
-      content-style="padding: 12px"
+    <div
+      v-show="panelVisible"
+      class="skill-panel"
+      style="width: 280px"
     >
-      <NSpace vertical>
-        <NButton
-          type="primary"
-          block
-          @click="openCreate"
-        >
-          <TheIcon icon="material-symbols:add" :size="18" class="mr-5" />新建技能
+      <!-- 移动端关闭按钮 -->
+      <div v-if="isMobile" class="flex justify-end mb-2">
+        <NButton size="tiny" quaternary @click="panelVisible = false">
+          <TheIcon icon="material-symbols:close" :size="18" />
         </NButton>
+      </div>
 
-        <NList
-          hoverable
-          clickable
-          :show-divider="false"
-        >
-          <NListItem
-            v-for="skill in skills"
-            :key="skill.id"
-            :class="{ 'bg-blue-50 dark:bg-blue-900': selectedSkill?.id === skill.id }"
-            style="border-radius: 8px; margin-bottom: 4px; cursor: pointer"
-            @click="selectSkill(skill)"
-          >
-            <div class="flex flex-col flex-1 min-w-0">
-              <span class="font-medium truncate">{{ skill.title }}</span>
-              <span class="text-gray-400">{{ skill.updated_at }}</span>
-            </div>
-          </NListItem>
-        </NList>
-
-        <div v-if="!skills.length && !loading" class="text-center text-gray-400 py-10">
-          暂无技能，请新建
+      <!-- 面板头部 -->
+      <div class="panel-header">
+        <div class="flex items-center justify-between mb-3">
+          <span class="panel-label">{{ $t('views.skill.title_cn_735ac607') }}</span>
+          <span class="panel-count">{{ skills.length }}</span>
         </div>
-      </NSpace>
-    </NLayoutSider>
+        <NInput
+          v-model:value="searchQuery"
+          :placeholder="$t('views.skill.placeholder_cn_d6b4ce19') || '搜索技能...'"
+          clearable
+          size="small"
+          class="search-input"
+        >
+          <template #prefix>
+            <TheIcon icon="material-symbols:search" :size="16" class="text-gray-400" />
+          </template>
+        </NInput>
+        <NButton type="primary" block @click="openCreate" class="create-btn" size="large">
+          <TheIcon icon="material-symbols:add" :size="20" class="mr-1" />新建技能
+        </NButton>
+      </div>
+
+      <!-- 卡片列表 -->
+      <div class="card-list">
+        <div
+          v-for="(skill, idx) in filteredSkills"
+          :key="skill.id"
+          class="menu-card"
+          :class="{ 'card-selected': selectedSkill?.id === skill.id }"
+          @click="selectSkill(skill)"
+        >
+          <div class="card-accent" :style="{ background: cardAccent(idx) }" />
+          <div class="card-avatar" :style="{ background: cardAccent(idx) }">
+            {{ skill.title.charAt(0) }}
+          </div>
+          <div class="card-body">
+            <div class="card-title">{{ skill.title }}</div>
+            <div class="card-meta">
+              <span class="card-date">{{ skill.updated_at?.slice(0, 10) }}</span>
+              <span v-if="skill.users?.length" class="card-stat">
+                <TheIcon icon="material-symbols:group" :size="14" class="mr-0.5" />{{ skill.users.length }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 空状态 -->
+        <div v-if="!filteredSkills.length && !loading" class="empty-state">
+          <TheIcon icon="material-symbols:inbox-outline" :size="40" class="text-gray-300 dark:text-gray-600 mb-3" />
+          <p class="text-sm text-gray-400">
+            {{ searchQuery ? '无匹配技能' : '暂无技能，请新建' }}
+          </p>
+        </div>
+      </div>
+    </div>
 
     <!-- 右侧内容栏 -->
-    <NLayoutContent content-style="padding: 0">
+    <div class="flex-1 min-w-0 overflow-auto flex flex-col">
       <div v-if="!selectedSkill" class="flex items-center justify-center h-full text-gray-400 text-base">
         请在左侧选择一个技能
       </div>
 
       <div v-else class="h-full flex flex-col">
-        <!-- 顶部操作栏 -->
+        <!-- 移动端展开按钮 + 顶部操作栏 -->
         <div class="flex items-center justify-between px-4 py-3 border-b">
           <div class="flex items-center gap-2">
+              <NButton v-if="isMobile" size="tiny" quaternary @click="panelVisible = true">
+              <TheIcon icon="material-symbols:menu" :size="18" />
+            </NButton>
             <h2 class="text-lg font-bold m-0">{{ selectedSkill.title }}</h2>
           </div>
           <NSpace>
@@ -410,8 +450,8 @@ onBeforeUnmount(() => {
         <!-- vditor 编辑区 -->
         <div ref="editorContainer" class="flex-1" style="min-height: 0" />
       </div>
-    </NLayoutContent>
-  </NLayout>
+    </div>
+  </div>
 
   <!-- 新建/编辑弹窗 -->
   <NModal
@@ -535,3 +575,166 @@ onBeforeUnmount(() => {
     </template>
   </NModal>
 </template>
+
+<style scoped>
+.skill-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-right: 1px solid var(--n-border-color, #e5e7eb);
+  background: var(--n-color, #fafbfc);
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--n-border-color, #f0f0f0);
+  flex-shrink: 0;
+}
+
+.panel-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+}
+
+.panel-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  background: #f3f4f6;
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+:root.dark .panel-count {
+  background: #374151;
+}
+
+.search-input {
+  margin-bottom: 12px;
+}
+
+.create-btn {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s;
+}
+.create-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+.card-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+}
+
+.menu-card {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.menu-card:hover {
+  background: #f3f4f6;
+  transform: translateX(2px);
+}
+:root.dark .menu-card:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.card-selected {
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff) !important;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.12);
+}
+:root.dark .card-selected {
+  background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)) !important;
+}
+
+.card-accent {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.card-selected .card-accent {
+  opacity: 1;
+}
+
+.card-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-right: 10px;
+  transition: transform 0.2s;
+}
+.card-selected .card-avatar {
+  transform: scale(1.08);
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+:root.dark .card-title {
+  color: #e5e7eb;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.card-date {
+  opacity: 0.8;
+}
+
+.card-stat {
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+</style>

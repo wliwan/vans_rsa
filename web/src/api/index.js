@@ -139,6 +139,16 @@ export default {
   aiAnalyzeDocuments: (data = {}) => request.post('/workspace/document/ai-analyze', data, { timeout: 0 }),
   getDocumentContent: (params = {}) => request.get('/workspace/document/get-content', { params }),
   updateDocumentContent: (data = {}) => request.post('/workspace/document/update-content', data),
+  batchExportDocuments: (data = {}) => request.post('/workspace/document/batch-export', data, { responseType: 'blob' }),
+  batchUploadDocuments: (workspace_id, files) => {
+    const formData = new FormData()
+    files.forEach((file) => formData.append('files', file))
+    return request.post(`/workspace/document/batch-upload?workspace_id=${workspace_id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
+    })
+  },
+  createDocumentFromText: (data = {}) => request.post('/workspace/document/create-text', data),
   // workspace sheets
   uploadSheet: (workspace_id, file) => {
     const formData = new FormData()
@@ -151,6 +161,17 @@ export default {
   getSheetList: (params = {}) => request.get('/workspace/sheet/list', { params }),
   deleteSheet: (params = {}) => request.delete('/workspace/sheet/delete', { params }),
   exportSheet: (params = {}) => request.get('/workspace/sheet/export', { params, responseType: 'blob' }),
+  batchDeleteSheets: (data = {}) => request.post('/workspace/sheet/batch-delete', data),
+  batchExportSheets: (data = {}) => request.post('/workspace/sheet/batch-export', data, { responseType: 'blob' }),
+  batchUploadSheets: (workspace_id, files) => {
+    const formData = new FormData()
+    files.forEach((file) => formData.append('files', file))
+    return request.post(`/workspace/sheet/batch-upload?workspace_id=${workspace_id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
+    })
+  },
+  csvImportSheet: (data = {}) => request.post('/workspace/sheet/csv-import', data),
   // reports
   getReportList: (params = {}) => request.get("/report/list", { params }),
   generateReport: (data = {}) => request.post("/report/generate", data, { timeout: 0 }),
@@ -164,12 +185,71 @@ export default {
   // workspace analysis
   analyzeSheet: (data = {}) => request.post('/workspace/analysis/analyze', data, { timeout: 0 }),
   correlateSheets: (data = {}) => request.post('/workspace/analysis/correlate', data, { timeout: 0 }),
+  correlateAnalyses: (data = {}) => request.post('/workspace/analysis/correlate-analysis', data, { timeout: 0 }),
   getAnalysisList: (params = {}) => request.get('/workspace/analysis/list', { params }),
   deleteAnalysis: (params = {}) => request.delete('/workspace/analysis/delete', { params }),
   batchDeleteAnalyses: (data = {}) => request.post('/workspace/analysis/batch-delete', data),
   clearAnalyses: (params = {}) => request.delete('/workspace/analysis/clear', { params }),
   batchExportAnalyses: (data = {}) => request.post('/workspace/analysis/batch-export', data, { responseType: 'blob' }),
   exportAnalysis: (params = {}) => request.get('/workspace/analysis/export', { params, responseType: 'blob' }),
+  // workspace database import
+  testMySQLConnection: (data = {}) => request.post('/workspace/database/mysql/test-connection', data, { timeout: 0 }),
+  importMySQLTables: (data = {}) => request.post('/workspace/database/mysql/import', data, { timeout: 0 }),
+  uploadSQLiteFile: (workspace_id, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post(`/workspace/database/sqlite/upload?workspace_id=${workspace_id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
+    })
+  },
+  importSQLiteTables: (data = {}) => request.post('/workspace/database/sqlite/import', data, { timeout: 0 }),
+  getPixelAccountsForImport: () => request.get('/workspace/database/pixel/accounts'),
+  getPixelTablesForImport: (params = {}) => request.get('/workspace/database/pixel/tables', { params }),
+  importPixelTable: (data = {}) => request.post('/workspace/database/pixel/import', data, { timeout: 0 }),
+  getRoadNetworkRegionsForImport: () => request.get('/workspace/database/road-network/regions'),
+  getRoadNetworkListForImport: (params = {}) => request.get('/workspace/database/road-network/list', { params }),
+  importRoadNetworkStats: (data = {}) => request.post('/workspace/database/road-network/import', data, { timeout: 0 }),
+  copyToWorkspace: (data = {}) => request.post('/workspace/copy-to-workspace', data, { timeout: 0 }),
+  // workspace static files
+  getStaticFileList: (params = {}) => request.get('/workspace/static-file/list', { params }),
+  uploadStaticFile: (workspace_id, source_type, name, description, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('name', name || '')
+    formData.append('description', description || '')
+    return request.post(`/workspace/static-file/upload?workspace_id=${workspace_id}&source_type=${source_type}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
+    })
+  },
+  batchUploadStaticFiles: (workspace_id, source_type, name_prefix, description, files) => {
+    const formData = new FormData()
+    files.forEach((file) => formData.append('files', file))
+    formData.append('name_prefix', name_prefix || '')
+    formData.append('description', description || '')
+    return request.post(`/workspace/static-file/batch-upload?workspace_id=${workspace_id}&source_type=${source_type}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
+    })
+  },
+  getStaticFileById: (params = {}) => request.get('/workspace/static-file/get', { params }),
+  updateStaticFile: (data = {}) => request.put('/workspace/static-file/update', data),
+  deleteStaticFile: (params = {}) => request.delete('/workspace/static-file/delete', { params }),
+  batchDeleteStaticFiles: (data = {}) => request.post('/workspace/static-file/batch-delete', data),
+  batchExportStaticFiles: (data = {}) => request.post('/workspace/static-file/batch-export', data, { responseType: 'blob' }),
+  copyStaticFileRecords: (data = {}) => request.post('/workspace/static-file/copy-records', data),
+  getStaticFileBaseUrl: () => request.get('/workspace/static-file/base-url'),
+  setStaticFileBaseUrl: (data = {}) => request.put('/workspace/static-file/base-url', data),
+  downloadStaticFile: (params = {}) => request.get('/workspace/static-file/download-file', { params, responseType: 'blob' }),
+  getStaticFileImages: (params = {}) => request.get('/workspace/static-file/images', { params }),
+  getStaticFileCVOperations: () => request.get('/workspace/static-file/cv-operations'),
+  cvProcessStaticFiles: (data = {}) => request.post('/workspace/static-file/cv-process', data, { timeout: 0 }),
+  aiProcessStaticFiles: (data = {}) => request.post('/workspace/static-file/ai-process', data, { timeout: 0 }),
+  ocrExtractStaticFiles: (data = {}) => request.post('/workspace/static-file/ocr', data, { timeout: 0 }),
+  importStaticFilesFromMaterial: (data = {}) => request.post('/workspace/static-file/import-from-material', data, { timeout: 0 }),
+  getStaticFileMaterialRegions: () => request.get('/workspace/static-file/material/regions'),
+  getStaticFileMaterialsByRegion: (params = {}) => request.get('/workspace/static-file/material/list-by-region', { params }),
   // vehicle
   getVehicleAccounts: () => request.get('/vehicle/accounts'),
   getVehicleCarTypes: (params = {}) => request.get('/vehicle/car-types', { params }),

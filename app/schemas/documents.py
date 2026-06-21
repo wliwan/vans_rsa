@@ -24,3 +24,7 @@ class DocumentCreateText(BaseModel):
 class DocumentUpdateContent(BaseModel):
     document_id: int = Field(..., description="文档ID")
     content: str = Field(..., description="文档内容(Markdown)")
+
+
+class DocumentBatchExport(BaseModel):
+    document_ids: List[int] = Field(..., description="要导出的文档ID列表")

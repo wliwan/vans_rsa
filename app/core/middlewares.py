@@ -119,7 +119,13 @@ class HttpAuditLogMiddleware(BaseHTTPMiddleware):
             try:
                 return json.loads(v)
             except (ValueError, TypeError):
-                pass
+                # 非 JSON 文本或二进制数据，返回占位符避免写入 JSONField 时报错
+                if isinstance(v, bytes):
+                    try:
+                        return v.decode("utf-8", errors="replace")[:512]
+                    except Exception:
+                        return "[binary data]"
+                return v[:1024] if isinstance(v, str) else v
         return v
 
     async def _async_iter(self, items: list[bytes]) -> AsyncGenerator[bytes, None]:

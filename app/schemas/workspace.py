@@ -50,6 +50,30 @@ class CopyToWorkspaceRequest(BaseModel):
     static_file_ids: Optional[List[int]] = Field(default_factory=list, description="要复制的静态文件ID")
 
 
+# ── 原始表格批量操作 Schema ──
+
+class BatchDeleteSheetsRequest(BaseModel):
+    sheet_ids: List[int] = Field(..., description="原始表格ID列表")
+
+
+class CSVImportRequest(BaseModel):
+    workspace_id: int = Field(..., description="工作区ID")
+    name: str = Field(..., description="表格名称", example="导入的CSV数据")
+    csv_text: str = Field(..., description="CSV文本内容")
+
+
+# ── 分析表格间关联分析 Schema ──
+
+class AnalysisCorrelationRequest(BaseModel):
+    workspace_id: int = Field(..., description="工作区ID")
+    analysis_a_id: int = Field(..., description="分析表格A ID")
+    analysis_b_id: int = Field(..., description="分析表格B ID")
+    ai_proxy_id: int = Field(..., description="AI代理ID")
+    skill_id: Optional[int] = Field(None, description="Skill ID（可选）")
+    prompt: Optional[str] = Field("", description="额外分析提示词")
+    name: str = Field(..., description="分析名称")
+
+
 # ── 数据库导入 Schema ──
 
 class MySQLConnectRequest(BaseModel):

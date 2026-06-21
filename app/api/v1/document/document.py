@@ -1,5 +1,7 @@
+import io
 import logging
 import os
+import zipfile
 from typing import List
 
 from fastapi import APIRouter, File, Query, UploadFile
@@ -7,8 +9,12 @@ from fastapi.responses import FileResponse
 from tortoise.expressions import Q
 
 from app.controllers.document import document_controller
+from app.controllers.workspace import workspace_controller
+from app.core.ctx import CTX_USER_ID
+from app.models.admin import Document
 from app.schemas.base import Fail, Success, SuccessExtra
-from app.schemas.documents import DocumentAIAnalyze, DocumentBatchDelete, DocumentCreateText, DocumentUpdateContent
+from app.schemas.documents import DocumentAIAnalyze, DocumentBatchDelete, DocumentBatchExport, DocumentCreateText, DocumentUpdateContent
+from app.utils.http_utils import make_download_response
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +97,31 @@ async def delete_document(
 async def batch_delete_documents(body: DocumentBatchDelete):
     await document_controller.batch_delete(body.document_ids)
     return Success(msg=f"已删除 {len(body.document_ids)} 个文档")
+
+
+@router.post("/batch-export", summary="批量导出文档")
+async def batch_export_documents(body: DocumentBatchExport):
+    user_id = CTX_USER_ID.get()
+    buf = io.BytesIO()
+    exported = 0
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for did in body.document_ids:
+            doc = await Document.filter(id=did).first()
+            if not doc:
+                continue
+            ws = await workspace_controller.check_permission(doc.workspace_id, user_id)
+            if not ws:
+                continue
+            if os.path.exists(doc.file_path):
+                zf.write(doc.file_path, doc.name)
+                exported += 1
+    if exported == 0:
+        return Fail(code=404, msg="没有可导出的文件")
+    buf.seek(0)
+    return make_download_response(
+        content=buf.getvalue(),
+        filename="文档批量导出.zip",
+        media_type="application/zip")
 
 
 @router.delete("/clear", summary="清空工作区文档")

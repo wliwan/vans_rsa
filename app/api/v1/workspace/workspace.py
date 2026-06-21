@@ -172,6 +172,68 @@ async def export_sheet(sheet_id: int = Query(..., description="表格ID")):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
+@router.post("/sheet/batch-delete", summary="批量删除原始表格")
+async def batch_delete_sheets(req: BatchDeleteSheetsRequest):
+    user_id = CTX_USER_ID.get()
+    deleted = 0
+    for sid in req.sheet_ids:
+        sheet = await OriginalSheet.get_or_none(id=sid)
+        if not sheet:
+            continue
+        ws = await workspace_controller.check_permission(sheet.workspace_id, user_id)
+        if not ws:
+            continue
+        if os.path.exists(sheet.file_path):
+            os.remove(sheet.file_path)
+        await sheet.delete()
+        deleted += 1
+    return Success(msg=f"已删除 {deleted} 个原始表格")
+
+
+@router.post("/sheet/batch-export", summary="批量导出原始表格")
+async def batch_export_sheets(req: BatchDeleteSheetsRequest):
+    user_id = CTX_USER_ID.get()
+    buf = io.BytesIO()
+    exported = 0
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for sid in req.sheet_ids:
+            sheet = await OriginalSheet.get_or_none(id=sid)
+            if not sheet:
+                continue
+            ws = await workspace_controller.check_permission(sheet.workspace_id, user_id)
+            if not ws:
+                continue
+            if os.path.exists(sheet.file_path):
+                safe_name = sheet.name.replace("/", "-").replace("\\", "-")
+                if not safe_name.endswith((".xlsx", ".xls", ".csv")):
+                    safe_name += ".xlsx"
+                zf.write(sheet.file_path, safe_name)
+                exported += 1
+    if exported == 0:
+        return Fail(code=404, msg="没有可导出的文件")
+    buf.seek(0)
+    return make_download_response(
+        content=buf.getvalue(),
+        filename="原始表格批量导出.zip",
+        media_type="application/zip")
+
+
+@router.post("/sheet/csv-import", summary="CSV文本导入为原始表格")
+async def csv_import_sheet(req: CSVImportRequest):
+    user_id = CTX_USER_ID.get()
+    ws = await workspace_controller.check_permission(req.workspace_id, user_id)
+    if not ws:
+        return Fail(code=403, msg="无权操作该工作区")
+    if not req.csv_text.strip():
+        return Fail(code=400, msg="CSV文本不能为空")
+    try:
+        sheet = await SheetService.import_csv(req.workspace_id, req.name, req.csv_text)
+        return Success(data=await sheet.to_dict(), msg="导入成功")
+    except Exception as e:
+        logger.exception("CSV导入失败")
+        return Fail(code=500, msg=f"导入失败: {str(e)}")
+
+
 # ==================== AI 分析 ====================
 
 @router.post("/analysis/analyze", summary="AI分析原始表格")
@@ -195,7 +257,7 @@ async def analyze_sheet(req: AnalysisRequest):
         return Fail(code=500, msg=f"分析失败: {str(e)}")
 
 
-@router.post("/analysis/correlate", summary="AI关联分析")
+@router.post("/analysis/correlate", summary="AI关联分析（原始表格间）")
 async def correlate_sheets(req: CorrelationRequest):
     user_id = CTX_USER_ID.get()
     ws = await workspace_controller.check_permission(req.workspace_id, user_id)
@@ -206,6 +268,28 @@ async def correlate_sheets(req: CorrelationRequest):
             workspace_id=req.workspace_id,
             sheet_a_id=req.sheet_a_id,
             sheet_b_id=req.sheet_b_id,
+            ai_proxy_id=req.ai_proxy_id,
+            name=req.name,
+            skill_id=req.skill_id,
+            extra_prompt=req.prompt or "",
+        )
+        return Success(data=[await a.to_dict() for a in analyses], msg=f"关联分析完成，生成{len(analyses)}个表格")
+    except Exception as e:
+        logger.exception("关联分析失败")
+        return Fail(code=500, msg=f"分析失败: {str(e)}")
+
+
+@router.post("/analysis/correlate-analysis", summary="AI关联分析（分析表格间）")
+async def correlate_analyses(req: AnalysisCorrelationRequest):
+    user_id = CTX_USER_ID.get()
+    ws = await workspace_controller.check_permission(req.workspace_id, user_id)
+    if not ws:
+        return Fail(code=403, msg="无权操作该工作区")
+    try:
+        analyses = await AIAnalysisService.correlate_analyses(
+            workspace_id=req.workspace_id,
+            analysis_a_id=req.analysis_a_id,
+            analysis_b_id=req.analysis_b_id,
             ai_proxy_id=req.ai_proxy_id,
             name=req.name,
             skill_id=req.skill_id,

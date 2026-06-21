@@ -162,6 +162,25 @@ class SheetService:
         return results
 
 
+    @staticmethod
+    async def import_csv(workspace_id: int, name: str, csv_text: str) -> "OriginalSheet":
+        """从 CSV 文本导入为原始表格"""
+        SheetService._ensure_dir()
+        safe_name = name if name.endswith(".csv") else f"{name}.csv"
+        filename = f"{uuid.uuid4().hex}.csv"
+        filepath = os.path.join(UPLOAD_DIR, filename)
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(csv_text)
+        file_size = os.path.getsize(filepath)
+        sheet = await OriginalSheet.create(
+            workspace_id=workspace_id,
+            name=safe_name,
+            file_path=filepath,
+            file_size=file_size,
+        )
+        return sheet
+
+
 class AIAnalysisService:
     """AI 数据分析服务：脚本生成 → 执行 → 结果解析"""
 
@@ -201,15 +220,133 @@ class AIAnalysisService:
     # ── Step 2: AI 脚本生成 ─────────────────────────────────────
 
     @classmethod
-    def _csv_parse_helper(cls) -> str:
-        """返回 CSV 解析提示（注入 system prompt）"""
+    def _pandas_pitfalls(cls) -> str:
+        """pandas 数据处理完整指南（从读取到输出，注入 system prompt）"""
         return """
-CSV 数据解析方法（pd, io 已预置，无需 import）：
+## 📊 pandas 数据处理完整指南
+
+所有需要的模块（pd, np, io, json, re）已预置，**禁止 import**。
+
+---
+
+### 1. 数据读取
+
 ```python
-# csv_text 是标准 CSV 格式文本，pd.read_csv 可直接解析
 df = pd.read_csv(io.StringIO(csv_text))
-# 所有列的类型由 pandas 自动推断，数值列已是 int/float
+# 立即检查数据概况，以选择后续处理策略：
+# df.dtypes      → 各列推断类型
+# df.head(3)     → 前几行数据样貌
+# df.isna().sum() → 每列缺失值数量
 ```
+
+**重要认知**：pandas 将含缺失值的整数列自动推断为 **float64**（因 NaN 是 IEEE 754 float 标准值）。
+若样本数据某列全为整数但 `dtypes` 显示为 float，说明该列存在缺失值。
+
+---
+
+### 2. 数据清洗：按场景选择策略
+
+#### 缺失值处理
+| 场景 | 策略 | 示例 |
+|------|------|------|
+| 该列参与求和/均值 | `fillna(0)` 或跳过（agg 默认 skipna=True） | `df['金额'].fillna(0)` |
+| 该列作为分组维度且需保留 | `fillna('未知')` | `df['分类'].fillna('未知')` |
+| 直接删除含缺失行 | `dropna(subset=[...])` | `df.dropna(subset=['关键列'])` |
+| 不处理，聚合时自动忽略 | 无需操作 | groupby/agg 默认 skipna=True |
+
+#### 类型转换安全法则
+- 目标为整数时，先处理 NaN：`df['col'].fillna(0).astype(int)` 或 `df['col'].astype('Int64')`
+- 目标为字符串时，先转字符串再 fillna：`df['col'].astype(str).replace('nan', '')`
+- 目标为 datetime 时：`pd.to_datetime(df['col'], errors='coerce')`
+
+**禁止**：对含 NaN 的 float64 列直接调用 `.astype(int)` 或 Python `int()`，会抛出 `cannot convert float NaN to integer`。
+
+---
+
+### 3. 数据分析模式
+
+#### 分组聚合（最常用）
+```python
+# ✅ 推荐：字典精确指定列与聚合函数，然后 reset_index 还原为普通列
+result = (
+    df.groupby('分组列')
+      .agg({'数值列1': 'sum', '数值列2': 'mean', '文本列': 'count'})
+      .reset_index()
+)
+# ❌ 避免：agg('sum') 不加区分地对所有列聚合（含非数值列会产出 NaN 列）
+```
+
+支持的聚合函数：`sum`, `mean`, `count`, `min`, `max`, `std`, `median`, `first`, `last`, `nunique`。
+
+#### 透视表
+```python
+# ✅ 用 pd.pivot_table（支持聚合）
+result = pd.pivot_table(df, values='c', index='a', columns='b', aggfunc='sum', fill_value=0)
+# ❌ 禁止 df.pivot()——不支持聚合，重复索引会报错
+```
+
+#### 排序
+```python
+df_sorted = df.sort_values('排序列', ascending=False)
+```
+
+#### 关联分析（两张表时）
+```python
+df_a = pd.read_csv(io.StringIO(csv_a))
+df_b = pd.read_csv(io.StringIO(csv_b))
+merged = pd.merge(df_a, df_b, on='共同列', how='inner')  # 或 left/right/outer
+```
+
+---
+
+### 4. 输出安全：JSON 序列化
+
+`to_dict('records')` 返回的 Python 对象可能包含 numpy 标量，必须转为 JSON 兼容类型。
+
+**推荐统一使用 `_safe_value()` 辅助函数**（定义一个即可）：
+
+```python
+import math
+
+def _safe_value(v):
+    \"\"\"将任意值转为 JSON 可序列化的 Python 原生类型\"\"\"
+    if v is None:
+        return None
+    if isinstance(v, (np.integer,)):
+        return int(v)
+    if isinstance(v, (np.floating,)):
+        if pd.isna(v):
+            return None       # NaN → JSON null
+        if v == int(v):
+            return int(v)     # 1.0 → 1（更干净）
+        return float(v)
+    if isinstance(v, (np.bool_,)):
+        return bool(v)
+    if isinstance(v, (np.datetime64,)):
+        return str(v)
+    if isinstance(v, float) and math.isnan(v):
+        return None
+    if isinstance(v, (np.ndarray,)):
+        return v.tolist()
+    return v
+
+# 用法：统一清洗每一行
+result = [
+    {k: _safe_value(v) for k, v in row.items()}
+    for row in df.to_dict('records')
+]
+```
+
+**返回值 dict 格式**：`{"分析维度名": list_of_dicts, ...}`，每个 list 中的 dict 即数据行。
+
+---
+
+### 5. 禁止使用的 API
+
+- `inplace=True` — pandas 2.0+ 已弃用
+- `df.append()` — pandas 2.0 已移除，用 `pd.concat([df1, df2])` 替代
+- `df.ix[]` — 已移除多年，用 `.loc[]` 或 `.iloc[]`
+- `pd.NaT` 直接比较 — 用 `pd.isna()` 判断
 """
 
     @classmethod
@@ -275,9 +412,9 @@ df = pd.read_csv(io.StringIO(csv_text))
             "你是 Python 数据分析脚本专家。"
             "根据提供的列信息和样本数据，生成可直接执行的 pandas 分析代码。\n"
         )
-        system_prompt += cls._csv_parse_helper()
         if skill_prompt:
             system_prompt += f"\n## 分析框架（Skill）\n{skill_prompt}"
+        system_prompt += cls._pandas_pitfalls()
 
         # ── 构建 user prompt：列信息 + 样本数据 JSON ──
         header_info = {
@@ -356,10 +493,12 @@ df = pd.read_csv(io.StringIO(csv_text))
             "__builtins__": {
                 "__import__": __import__,  # pandas/numpy C 扩展内部需要
                 "print": print, "len": len, "range": range, "enumerate": enumerate,
-                "zip": zip, "sorted": sorted, "list": list, "dict": dict, "set": set,
+                "zip": zip, "map": map, "filter": filter, "sorted": sorted,
+                "list": list, "dict": dict, "set": set, "tuple": tuple,
                 "int": int, "float": float, "str": str, "bool": bool, "type": type,
                 "isinstance": isinstance, "abs": abs, "round": round,
                 "min": min, "max": max, "sum": sum, "any": any, "all": all,
+                "next": next, "iter": iter, "reversed": reversed,
                 "Exception": Exception, "ValueError": ValueError,
                 "TypeError": TypeError, "KeyError": KeyError, "IndexError": IndexError,
             },
@@ -573,6 +712,103 @@ df = pd.read_csv(io.StringIO(csv_text))
                 source_type="correlation",
                 source_sheet_id=sheet_a_id,
                 related_sheet_id=sheet_b_id,
+                ai_proxy_id=ai_proxy_id,
+                skill_id=skill_id,
+                prompt=extra_prompt,
+            )
+            analyses.append(analysis)
+
+        return analyses
+
+
+    # ── 分析表格间关联分析 ─────────────────────────────────────
+
+    @classmethod
+    async def correlate_analyses(
+        cls,
+        workspace_id: int,
+        analysis_a_id: int,
+        analysis_b_id: int,
+        ai_proxy_id: int,
+        name: str,
+        skill_id: Optional[int] = None,
+        extra_prompt: str = "",
+    ) -> List[AnalysisSheet]:
+        """
+        分析表格之间的关联分析流程:
+        Step 1: 两份分析 Excel → 两份 CSV + 两份表头
+        Step 2: 合并后的表头 + 样本 → AI 生成关联分析脚本
+        Step 3: 两份 CSV → 脚本执行
+        Step 4: JSON → DataFrame
+        Step 5: DataFrame → 多个 Excel → DB 记录
+        """
+        from app.models.admin import AIProxy
+
+        analysis_a = await AnalysisSheet.get(id=analysis_a_id)
+        analysis_b = await AnalysisSheet.get(id=analysis_b_id)
+        ai_proxy = await AIProxy.get(id=ai_proxy_id)
+        skill_prompt = await cls._get_skill_prompt(skill_id)
+
+        # ── Step 1: 分别提取 ──
+        def _extract():
+            a = SheetService.extract_table_info(analysis_a.file_path)
+            b = SheetService.extract_table_info(analysis_b.file_path)
+            return a, b
+        info_a, info_b = await asyncio.to_thread(_extract)
+
+        # ── 合并表头信息（标注来源） ──
+        merged_columns = []
+        for c in info_a["columns"]:
+            merged_columns.append({**c, "source": "A"})
+        for c in info_b["columns"]:
+            merged_columns.append({**c, "source": "B"})
+
+        merged_sample = []
+        for row in info_a["sample_json"]:
+            merged_sample.append({f"A.{k}": v for k, v in row.items()})
+        for row in info_b["sample_json"]:
+            merged_sample.append({f"B.{k}": v for k, v in row.items()})
+
+        merged_info = {
+            "columns": merged_columns,
+            "sample_json": merged_sample,
+            "sample_csv": (
+                f"# ── 分析表格 A ──\n{info_a['sample_csv']}\n"
+                f"# ── 分析表格 B ──\n{info_b['sample_csv']}"
+            ),
+            "shape": [
+                info_a["shape"][0] + info_b["shape"][0],
+                max(info_a["shape"][1], info_b["shape"][1]),
+            ],
+        }
+
+        # ── Step 2: AI 生成关联分析脚本 ──
+        code = await cls._generate_script(
+            table_info=merged_info,
+            ai_proxy=ai_proxy,
+            skill_prompt=skill_prompt,
+            extra_prompt=extra_prompt,
+            is_correlation=True,
+        )
+
+        # ── Step 3 & 4: 执行脚本（传入两份 CSV） ──
+        csv_a, csv_b = info_a["csv_text"], info_b["csv_text"]
+        def _run():
+            return cls._execute_script(code, csv_a, csv_b)
+        sheet_dfs = await asyncio.to_thread(_run)
+
+        # ── Step 5: 保存 ──
+        files = SheetService.save_separate_results(name, sheet_dfs)
+        analyses = []
+        for fname, fpath, fsize in files:
+            analysis = await AnalysisSheet.create(
+                workspace_id=workspace_id,
+                name=fname,
+                file_path=fpath,
+                file_size=fsize,
+                source_type="correlation",
+                source_sheet_id=None,
+                related_sheet_id=None,
                 ai_proxy_id=ai_proxy_id,
                 skill_id=skill_id,
                 prompt=extra_prompt,

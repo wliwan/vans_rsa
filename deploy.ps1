@@ -175,8 +175,32 @@ switch ($true) {
     $Start    { Invoke-Start; break }
     $Upgrade  { Invoke-Upgrade; break }
     default   {
-        Invoke-Build -nocache:$NoCache
-        Invoke-Start
+        # ── 交互模式：询问部署类型 ──
+        Write-Host ""
+        Write-Host "Select deployment mode:" -ForegroundColor Yellow
+        Write-Host "  [1] First-time deployment (build + start)" -ForegroundColor White
+        Write-Host "  [2] Upgrade (stop old -> rebuild -> start)" -ForegroundColor White
+        Write-Host ""
+        $choice = Read-Host "Enter choice (1/2)"
+
+        if ($choice -eq "2") {
+            Write-Host ""
+            Write-Host "[UPGRADE] Stopping old service..." -ForegroundColor Yellow
+            docker compose down
+            Invoke-Build -nocache:$true
+        } else {
+            Invoke-Build -nocache:$false
+        }
+
+        # ── 构建完成后确认是否启动 ──
+        Write-Host ""
+        $startChoice = Read-Host "Build complete. Start the service? [Y/n]"
+        if ($startChoice -eq "" -or $startChoice -eq "y" -or $startChoice -eq "Y") {
+            Invoke-Start
+        } else {
+            Write-Host "Skipped. Run '.\deploy.ps1 -Start' to start later." -ForegroundColor Gray
+        }
+
         Write-Host "Tip: use .\deploy.ps1 -Logs to view live logs" -ForegroundColor Gray
     }
 }

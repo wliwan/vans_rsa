@@ -537,6 +537,49 @@ class StaticFileController(CRUDBase[StaticFile, StaticFileCreate, StaticFileUpda
             })
         return total, data
 
+    # ── 复制到工作区（仅创建记录，不拷贝文件）──
+    async def copy_records(
+        self, file_ids: List[int], target_workspace_id: int,
+    ) -> Tuple[List[dict], List[dict]]:
+        """创建指向同一物理文件的数据库记录，生成新的短链接令牌"""
+        results, errors = [], []
+        for fid in file_ids:
+            try:
+                src = await self.model.filter(id=fid).first()
+                if not src:
+                    errors.append({"file_id": fid, "error": "文件不存在"})
+                    continue
+                if not os.path.exists(src.file_path):
+                    errors.append({"file_id": fid, "error": "源文件已丢失"})
+                    continue
+
+                new_token = self._gen_short_token()
+                obj = await self.model.create(
+                    workspace_id=target_workspace_id,
+                    name=src.name,
+                    description=src.description,
+                    file_name=src.file_name,
+                    file_path=src.file_path,  # 指向同一文件
+                    file_size=src.file_size,
+                    source_type=src.source_type,
+                    is_image=src.is_image,
+                    width=src.width,
+                    height=src.height,
+                    color_mode=src.color_mode,
+                    bit_depth=src.bit_depth,
+                    dpi=src.dpi,
+                    format_type=src.format_type,
+                    exif_data=src.exif_data,
+                    source=f"{src.source}_copied",
+                    parent_file_id=src.parent_file_id,
+                    short_url_token=new_token,
+                )
+                results.append(self._to_output(obj))
+            except Exception as e:
+                logger.exception(f"复制静态文件记录 {fid} 失败")
+                errors.append({"file_id": fid, "error": str(e)})
+        return results, errors
+
     # ── 输出转换 ──
     def _to_output(self, obj: StaticFile) -> dict:
         return {
