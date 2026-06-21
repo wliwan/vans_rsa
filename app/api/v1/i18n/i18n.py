@@ -84,11 +84,22 @@ async def ai_generate_i18n(req: I18nAIGenerateRequest):
     "/scan-new-fields",
     summary="扫描前端代码中的硬编码中文字符串（Python 正则，不依赖 npm 包）",
 )
-async def scan_new_fields():
-    """扫描 web/src/ 下所有 .vue/.js/.ts/.jsx/.tsx 文件，提取未国际化的硬编码中文"""
+async def scan_new_fields(
+    skip_existing: bool = Query(False, description="是否跳过 cn.json 中已存在的值（默认 False=包含所有）"),
+):
+    """扫描 web/src/ 下所有 .vue/.js/.ts/.jsx/.tsx 文件，提取硬编码中文。
+
+    - skip_existing=False (默认): 返回所有条目，已在 cn.json 中的值标记 existing_key
+    - skip_existing=True: 只返回不在 cn.json 中的新字段（类型B）
+    """
     try:
-        result = await i18n_controller.scan_frontend()
-        return Success(data=result, msg=f"扫描完成，发现 {result['total']} 条待翻译字段")
+        result = await i18n_controller.scan_frontend(
+            skip_existing_values=skip_existing,
+        )
+        new_c = result.get("new_count", 0)
+        existing_c = result.get("existing_count", 0)
+        msg = f"扫描完成：新字段 {new_c} 条，已有翻译 {existing_c} 条"
+        return Success(data=result, msg=msg)
     except Exception as e:
         logger.exception("scan_new_fields 失败")
         return Fail(code=500, msg=f"扫描失败: {e}")

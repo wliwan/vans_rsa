@@ -640,23 +640,32 @@ class I18nController:
     # 在模板中预期已国际化的属性（title/placeholder/label/alt 除外——它们仍需要扫描）
     _SCAN_SKIP_ATTRS = frozenset({"class", "style", "id", "ref", "key", "name", "type", "href", "src"})
 
-    async def scan_frontend(self) -> Dict[str, Any]:
+    async def scan_frontend(
+        self, skip_existing_values: bool = False
+    ) -> Dict[str, Any]:
         """递归扫描 web/src/ 下所有前端文件，提取硬编码中文字符串。
 
         不依赖 @cybersailor/i18n-detect-vue（npm 包），使用 Python 正则扫描，
         覆盖率更高，始终可用。返回结构化列表供预览/批量处理。
 
+        Args:
+            skip_existing_values: True=跳过 cn.json 中已存在的值（类型B仅新字段）；
+                                  False=包含所有，已存在值标记 existing_key。
+
         返回格式：
         {
             "total": 123,
+            "new_count": 31,       // 不在 cn.json 中的新字段数
+            "existing_count": 15,  // 已在 cn.json 中的字段数（可替换引用）
             "items": [
                 {
                     "file": "web/src/views/xxx/index.vue",
                     "line": 42,
                     "text": "新建工作区",
-                    "context": "<NButton @click=\"handleAdd\">新建工作区</NButton>",
+                    "context": "...",
                     "prefix": "views.xxx.index",
-                    "source": "html-inline" | "html-attribute" | "js-string" | "template-interpolation",
+                    "source": "html-inline",
+                    "existing_key": null | "views.xxx.some_key",  // 已存在时非 null
                 },
                 ...
             ]
@@ -685,12 +694,14 @@ class I18nController:
 
         _walk(src_dir)
 
-        # 2. 加载 cn.json 已有值用于去重
+        # 2. 加载 cn.json 已有值用于去重 + 构建 value→key 映射
         cn_data = self._load_locale("cn")
         existing_texts: set = set()
-        for _k, v, _t in self._flatten(cn_data):
+        text_to_existing_keys: dict = {}  # value → [key1, key2, ...]
+        for k, v, _t in self._flatten(cn_data):
             if isinstance(v, str) and v.strip():
                 existing_texts.add(v.strip())
+                text_to_existing_keys.setdefault(v.strip(), []).append(k)
 
         # 3. 逐文件扫描
         all_items: list = []
@@ -712,18 +723,40 @@ class I18nController:
 
             file_has_script_setup = bool(re.search(r"<script\s+setup[^>]*>", raw))
 
+            # 跟踪 template/script 区域（用于设置正确的 source）
+            in_template = False
+            in_script = False
+
+            line_start_pos = 0  # 当前行在文件中的字符偏移
             for line_no_1, line in enumerate(lines, 1):
                 stripped = line.strip()
 
+                # 跟踪 template/script 区域
+                if is_vue:
+                    if '<template>' in stripped:
+                        in_template = True
+                        in_script = False
+                    elif '</template>' in stripped:
+                        in_template = False
+                    elif '<script' in stripped:
+                        in_script = True
+                        in_template = False
+                    elif '</script>' in stripped:
+                        in_script = False
+
                 # 跳过空行、纯注释
                 if not stripped:
+                    line_start_pos += len(line) + 1  # 也更新空行的偏移！
                     continue
                 if stripped.startswith("//") or stripped.startswith("<!--") or stripped.startswith("/*") or stripped.startswith("*"):
+                    line_start_pos += len(line) + 1
                     continue
                 # 跳过 import / export / console / defineOptions name
                 if re.match(r"^(import\s|export\s|console\.)", stripped):
+                    line_start_pos += len(line) + 1
                     continue
                 if "defineOptions" in stripped and re.search(r"name\s*:", stripped):
+                    line_start_pos += len(line) + 1
                     continue
 
                 # ── 模式 1: 单引号字符串（含中文） ──
@@ -739,8 +772,11 @@ class I18nController:
                         continue
                     if not _is_valid_scan_text(text):
                         continue
-                    self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix,
-                                         "js-string" if not is_vue else "html-inline")
+                    src = "js-string"
+                    if is_vue and in_template:
+                        src = "html-inline"
+                    self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, src,
+                                         start=line_start_pos + m.start(), end=line_start_pos + m.end())
 
                 # ── 模式 2: 双引号字符串（含中文） ──
                 for m in re.finditer(r'"([^"]*[\u4e00-\u9fff][^"]*)"', line):
@@ -758,10 +794,14 @@ class I18nController:
                         continue
                     if not _is_valid_scan_text(text):
                         continue
-                    source = "html-attribute" if re.search(r'\b(?:title|placeholder|label|alt|action|summary|description)\s*=\s*$', before) else "js-string"
-                    if not is_vue and source == "html-attribute":
+                    if is_vue and in_script:
                         source = "js-string"
-                    self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, source)
+                    else:
+                        source = "html-attribute" if re.search(r'\b(?:title|placeholder|label|alt|action|summary|description)\s*=\s*$', before) else "js-string"
+                        if not is_vue and source == "html-attribute":
+                            source = "js-string"
+                    self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, source,
+                                         start=line_start_pos + m.start(), end=line_start_pos + m.end())
 
                 # ── 模式 3: HTML 属性值（title/placeholder/label/alt/action/summary/description） ──
                 for m in re.finditer(r'\b(title|placeholder|label|alt|action|summary|description)="([^"]*[\u4e00-\u9fff][^"]*)"', line):
@@ -770,7 +810,8 @@ class I18nController:
                         continue
                     if not _is_valid_scan_text(text):
                         continue
-                    self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, "html-attribute")
+                    self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, "html-attribute",
+                                         start=line_start_pos + m.start(2), end=line_start_pos + m.end(2))
 
                 # ── 模式 4: 标签间文本（含中文，不含 {{ }} 插值） ──
                 for m in re.finditer(r'(?:>|/>)\s*([^<{]*[\u4e00-\u9fff][^<{]*?)<', line):
@@ -782,7 +823,8 @@ class I18nController:
                         continue
                     if not _is_valid_scan_text(text):
                         continue
-                    self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, "html-inline")
+                    self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, "html-inline",
+                                         start=line_start_pos + m.start(1), end=line_start_pos + m.end(1))
 
                 # ── 模式 5: Vue 模板插值 {{ ... }} ──
                 if is_vue:
@@ -795,7 +837,8 @@ class I18nController:
                             continue
                         if not _is_valid_scan_text(text):
                             continue
-                        self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, "template-interpolation")
+                        self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, "template-interpolation",
+                                             start=line_start_pos + m.start(1), end=line_start_pos + m.end(1))
 
                 # ── 模式 6: JSX / h() 中的中文文本节点 ──
                 if not is_vue or file_has_script_setup:
@@ -805,42 +848,72 @@ class I18nController:
                             continue
                         if not _is_valid_scan_text(text):
                             continue
-                        self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, "html-inline")
+                        self._add_scan_item(all_items, seen_in_file, rel, line_no_1, text, stripped, prefix, "html-inline",
+                                            start=line_start_pos + m.start(1), end=line_start_pos + m.end(1))
+
+                line_start_pos += len(line) + 1  # 更新行偏移（含换行符）—— 必须在 for line_no_1 循环体内
 
             # 每处理一个文件清理 seen 中的 file 专属去重（只在函数级别去重）
             # seen_in_file 已经是全局的 (file, text) 去重，保留
 
-        # 5. 按 cn.json 已有值去重
-        filtered = []
+        # 5. 按 cn.json 已有值处理
         for item in all_items:
-            if item["text"] in existing_texts:
-                continue
-            filtered.append(item)
+            text = item["text"].strip()
+            if text in text_to_existing_keys:
+                # 已存在：优先选同 prefix 的 key，否则取第一个
+                keys = text_to_existing_keys[text]
+                # 启发式匹配：选与当前 prefix 最接近的 key
+                best_key = keys[0]
+                for k in keys:
+                    if k.startswith(item["prefix"]):
+                        best_key = k
+                        break
+                item["existing_key"] = best_key
+
+        # 分类统计
+        new_items = [it for it in all_items if not it.get("existing_key")]
+        existing_items = [it for it in all_items if it.get("existing_key")]
 
         # 6. 按文件+行号排序
-        filtered.sort(key=lambda x: (x["file"], x["line"]))
+        if skip_existing_values:
+            items = new_items
+        else:
+            items = new_items + existing_items
+        items.sort(key=lambda x: (x["file"], x["line"]))
 
-        return {"total": len(filtered), "items": filtered}
+        return {
+            "total": len(items),
+            "new_count": len(new_items),
+            "existing_count": len(existing_items),
+            "items": items,
+        }
 
     @staticmethod
     def _add_scan_item(
         all_items: list, seen: set,
         rel: str, line_no: int, text: str,
         line_content: str, prefix: str, source: str,
-    ) -> None:
-        """添加一条扫描结果，自动去重"""
+        start: int | None = None,
+        end: int | None = None,
+    ) -> dict:
+        """添加一条扫描结果，自动去重。返回添加的条目（或 None 如果已跳过）。"""
         dedup_key = (rel, text.strip())
         if dedup_key in seen:
-            return
+            return None
         seen.add(dedup_key)
-        all_items.append({
+        item = {
             "file": rel,
             "line": line_no,
             "text": text.strip(),
             "context": line_content[:200],
             "prefix": prefix,
             "source": source,
-        })
+            "existing_key": None,
+            "start": start,
+            "end": end,
+        }
+        all_items.append(item)
+        return item
 
     # ─── AI 扫描添加 ────────────────────────────────────────────
 
@@ -879,102 +952,155 @@ class I18nController:
 
         safe_mode=True (默认): 只写 cn.json，不修改源 Vue 文件。编译通过后再手动或通过脚本回写。
         safe_mode=False: 同时回写源文件（将硬编码中文替换为 $t('key')）。
+
+        ai_proxy_name: 类型B（新字段）需要 AI 代理；纯类型A 时可为空字符串。
         """
         from app.controllers.ai_proxy import ai_proxy_controller
 
-        proxy = await ai_proxy_controller.get_by_name(ai_proxy_name)
-        if not proxy:
-            raise ValueError(f"AI 代理 '{ai_proxy_name}' 不存在")
-
-        # 1. 转换为内部格式，推导 prefix
+        # 1. 分离两类条目：有 existing_key 的（类型A）直接替换，无 key 的（类型B）走 AI
         cn_data = self._load_locale("cn")
         existing_keys = {k for k, _v, _t in self._flatten(cn_data)}
         existing_texts = {v for _k, v, _t in self._flatten(cn_data) if isinstance(v, str) and v.strip()}
 
-        processed = []
-        seen = set()
+        existing_replacements = []  # 类型A: (start, end, text, existing_key, source, file)
+        new_items = []              # 类型B: 需要 AI 生成 key
+        seen_new = set()
+
         for it in items:
             text = (it.get("text") or "").strip()
             file = it.get("file", "")
+            existing_key = it.get("existing_key")
+            start = it.get("start")
+            end = it.get("end")
+            source = it.get("source", "")
+
             if not text or len(text) < 1:
                 continue
-            # 去重：已存在于 cn.json 的值 或 同文件同文本已处理
+
+            # 类型A: 已有 key，直接加入替换列表
+            if existing_key:
+                dedup_key = (text, file, existing_key)
+                if dedup_key not in seen_new:
+                    seen_new.add(dedup_key)
+                    existing_replacements.append({
+                        "text": text, "existing_key": existing_key,
+                        "start": start, "end": end, "source": source, "file": file,
+                    })
+                continue
+
+            # 类型B: 需要 AI 生成 key
             if text in existing_texts:
                 continue
             dedup_key = (text, file)
-            if dedup_key in seen:
+            if dedup_key in seen_new:
                 continue
-            seen.add(dedup_key)
-            # 从文件路径推导 prefix
+            seen_new.add(dedup_key)
             parts = tuple(file.replace("\\", "/").split("/"))
             prefix = self._derive_prefix(parts)
-            processed.append({"text": text, "prefix": prefix, "file": file,
-                              "start": it.get("start"), "end": it.get("end"),
-                              "source": it.get("source", "")})
+            new_items.append({"text": text, "prefix": prefix, "file": file,
+                              "start": start, "end": end, "source": source})
 
-        if not processed:
-            return {"scanned_count": len(items), "added_count": 0, "skipped_count": len(items), "batch_count": 0, "failed_batches": None}
+        # 2. 类型A: 直接替换源文件（无需 AI，无需写 cn.json）
+        direct_replaced = 0
+        if existing_replacements and not safe_mode:
+            # 构建 text_to_key 映射用于 _replace_in_source_files
+            # _replace_in_source_files 按 processed 列表中的 start/end 替换
+            # 这里直接用 existing_key 作为 key
+            text_to_key = {}
+            processed_for_replace = []
+            for rp in existing_replacements:
+                text_to_key[rp["text"]] = rp["existing_key"]
+                processed_for_replace.append({
+                    "text": rp["text"],
+                    "start": rp["start"],
+                    "end": rp["end"],
+                    "source": rp["source"],
+                    "file": rp["file"],
+                })
+            if processed_for_replace:
+                direct_replaced = self._replace_in_source_files(
+                    processed_for_replace, text_to_key
+                )
+                logger.info(
+                    f"类型A 直接替换: {direct_replaced} 处，"
+                    f"涉及 {len(existing_replacements)} 个条目"
+                )
+        elif existing_replacements and safe_mode:
+            logger.info(
+                f"safe_mode: 跳过类型A 源文件替换，"
+                f"共 {len(existing_replacements)} 个条目已有 key"
+            )
 
-        # 2. 分片
-        batches = [processed[i:i + self._SCAN_BATCH_SIZE] for i in range(0, len(processed), self._SCAN_BATCH_SIZE)]
-        sys_prompt = self._build_scan_add_system_prompt()
-        sem = asyncio.Semaphore(self._SCAN_MAX_CONCURRENT)
-
-        async def _proc(idx: int, batch: list) -> Tuple[int, dict, str | None]:
-            async with sem:
-                inp = [{"text": it["text"], "prefix": it["prefix"], "file": it["file"]} for it in batch]
-                user = f"请为以下中文 UI 文本生成合适的 i18n key：\n{json.dumps(inp, ensure_ascii=False, indent=2)}"
-                try:
-                    r = await self._call_ai(proxy, sys_prompt, user)
-                    p = self._extract_json(r)
-                    return (idx, p if isinstance(p, dict) else {}, None if isinstance(p, dict) else f"批次 {idx} 非字典")
-                except Exception as e:
-                    logger.error(f"process_scan 批次 {idx} 失败: {e}")
-                    return (idx, {}, str(e))
-
-        results_list = await asyncio.gather(*[_proc(i, b) for i, b in enumerate(batches)])
-
-        # 3. 合并结果
-        new_entries = {}
-        failed = []
-        for idx, r, err in results_list:
-            if err:
-                failed.append({"batch": idx, "count": len(batches[idx]), "error": err})
-            else:
-                new_entries.update(r)
-
-        # 4. 追加到 cn.json（去重）
+        # 3. 类型B: 需要 AI 生成 key（只有存在类型B 时才获取 AI 代理）
         added = 0
         skipped = 0
-        for key, value in new_entries.items():
-            if not isinstance(value, str) or key in existing_keys:
-                skipped += 1
-                continue
-            await self._set_value_by_key(cn_data, key, value)
-            existing_keys.add(key)
-            added += 1
+        batch_count = 0
+        failed = None
+        ai_replaced = 0
 
-        self._save_locale("cn", cn_data)
+        if new_items:
+            proxy = await ai_proxy_controller.get_by_name(ai_proxy_name)
+            if not proxy:
+                raise ValueError(f"AI 代理 '{ai_proxy_name}' 不存在（类型B 新字段需要 AI 生成 key）")
+            import asyncio
+            # 异步并发控制：如果 proxy 为 None（类型A不需要），跳过 AI 调用
+            batches = [new_items[i:i + self._SCAN_BATCH_SIZE] for i in range(0, len(new_items), self._SCAN_BATCH_SIZE)]
+            batch_count = len(batches)
+            sys_prompt = self._build_scan_add_system_prompt()
+            sem = asyncio.Semaphore(self._SCAN_MAX_CONCURRENT)
 
-        # 5. 回写源文件：将硬编码中文替换为 $t('key')
-        replaced = 0
-        modified_files = []
-        if added > 0:
-            text_to_key = {v: k for k, v in new_entries.items() if isinstance(v, str)}
-            if safe_mode:
-                logger.info(f"safe_mode: 跳过源文件回写，已添加 {added} 条 key 到 cn.json")
-            else:
-                replaced = self._replace_in_source_files(processed, text_to_key)
+            async def _proc(idx: int, batch: list):
+                async with sem:
+                    inp = [{"text": it["text"], "prefix": it["prefix"], "file": it["file"]} for it in batch]
+                    user = f"请为以下中文 UI 文本生成合适的 i18n key：\n{json.dumps(inp, ensure_ascii=False, indent=2)}"
+                    try:
+                        r = await self._call_ai(proxy, sys_prompt, user)
+                        p = self._extract_json(r)
+                        return (idx, p if isinstance(p, dict) else {}, None if isinstance(p, dict) else f"批次 {idx} 非字典")
+                    except Exception as e:
+                        logger.error(f"process_scan 批次 {idx} 失败: {e}")
+                        return (idx, {}, str(e))
+
+            results_list = await asyncio.gather(*[_proc(i, b) for i, b in enumerate(batches)])
+
+            new_entries = {}
+            failed = []
+            for idx, r, err in results_list:
+                if err:
+                    failed.append({"batch": idx, "count": len(batches[idx]), "error": err})
+                else:
+                    new_entries.update(r)
+
+            # 4. 追加到 cn.json（去重）
+            for key, value in new_entries.items():
+                if not isinstance(value, str) or key in existing_keys:
+                    skipped += 1
+                    continue
+                await self._set_value_by_key(cn_data, key, value)
+                existing_keys.add(key)
+                added += 1
+
+            self._save_locale("cn", cn_data)
+
+            # 5. 类型B 回写源文件
+            if added > 0:
+                text_to_key = {v: k for k, v in new_entries.items() if isinstance(v, str)}
+                if safe_mode:
+                    logger.info(f"safe_mode: 跳过类型B源文件回写，已添加 {added} 条 key 到 cn.json")
+                else:
+                    ai_replaced = self._replace_in_source_files(new_items, text_to_key)
 
         return {
-            "scanned_count": len(processed),
+            "scanned_count": len(items),
             "added_count": added,
-            "replaced_count": replaced,
+            "replaced_count": direct_replaced + ai_replaced,
+            "direct_replaced_count": direct_replaced,      # 类型A 直接替换
+            "ai_replaced_count": ai_replaced,              # 类型B AI 替换
+            "existing_replacements_count": len(existing_replacements),  # 类型A 条目数
             "skipped_count": skipped,
-            "batch_count": len(batches),
+            "batch_count": batch_count,
             "failed_batches": failed if failed else None,
             "safe_mode": safe_mode,
-            "modified_files": modified_files,
         }
 
     # ─── Git 回退 & 编译验证 ───────────────────────────────────
@@ -1092,7 +1218,6 @@ class I18nController:
         - .js/.ts + 任意       → i18n.global.t('key')（需 import i18n）
         """
         project_root = _get_project_root()
-        web_src = project_root / "web"
 
         by_file: dict = {}
         for it in processed:
@@ -1109,7 +1234,7 @@ class I18nController:
         replaced = 0
         modified_files: set = set()
         for rel_path, replacements in by_file.items():
-            filepath = web_src / rel_path
+            filepath = project_root / rel_path  # rel 已是项目相对路径（如 web/src/...）
             if not filepath.exists():
                 continue
             content = filepath.read_text(encoding="utf-8")
@@ -1120,6 +1245,11 @@ class I18nController:
             for start, end, _txt, key, source in sorted(replacements, key=lambda x: -x[0]):
                 if is_vue and source == "html-inline":
                     repl = "{{ $t('%s') }}" % key
+                elif is_vue and source == "template-interpolation":
+                    repl = "$t('%s')" % key
+                elif is_vue and source == "html-attribute":
+                    # 属性值替换需要保留引号（已在 start/end 外），值替换为 t('key')
+                    repl = "t('%s')" % key
                 elif is_vue:
                     repl = "t('%s')" % key
                 elif has_t:

@@ -75,11 +75,17 @@ class ScanNewFieldItem(BaseModel):
         "unknown",
         description="检测来源: html-inline | html-attribute | js-string | template-interpolation",
     )
+    existing_key: Optional[str] = Field(
+        None,
+        description="如果该文本已在 cn.json 中存在（类型A），返回对应的 i18n key",
+    )
 
 
 class ScanNewFieldsResponse(BaseModel):
     """扫描新字段响应"""
     total: int = Field(..., description="待翻译字段总数")
+    new_count: int = Field(0, description="不在 cn.json 中的新字段数")
+    existing_count: int = Field(0, description="已在 cn.json 中的字段数（可直接替换引用）")
     items: List[ScanNewFieldItem] = Field(default_factory=list, description="字段详情列表")
 
 

@@ -290,7 +290,7 @@ export default {
   aiGenerateI18n: (data = {}) => request.post('/i18n/ai-generate', data, { timeout: 0 }),
 
   scanDetectI18n: () => fetch('/__i18n-scan').then(r => r.json()),  // 旧端点（依赖未安装的 npm 包，已废弃）
-  scanNewFieldsI18n: () => request.get('/i18n/scan-new-fields'),      // 新端点（Python 正则，始终可用）
+  scanNewFieldsI18n: (params = {}) => request.get('/i18n/scan-new-fields', { params }),
   processScanI18n: (data = {}) => request.post('/i18n/process-scan', data, { timeout: 0 }),
   verifyI18nBuild: () => request.post('/i18n/verify-build', {}, { timeout: 0 }),
   gitRestoreI18n: (data = {}) => request.post('/i18n/git-restore', data),
@@ -323,3 +323,4 @@ export default {
   createFilterTemplate: (data = {}) => request.post('/region/road-network/filter-templates/create', data),
   deleteFilterTemplate: (params = {}) => request.delete('/region/road-network/filter-templates/delete', { params }),
 }
+  // 标签

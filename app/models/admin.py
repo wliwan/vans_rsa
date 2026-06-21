@@ -368,3 +368,5 @@ class StaticFile(BaseModel, TimestampMixin):
 
     class Meta:
         table = "static_file"
+
+

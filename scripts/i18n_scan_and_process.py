@@ -46,11 +46,14 @@ async def scan_new_fields(controller) -> dict:
     total = result["total"]
     items = result["items"]
 
+    new_count = result.get("new_count", 0)
+    existing_count = result.get("existing_count", 0)
+
     if total == 0:
         print("✅ 未发现新字段（所有中文已国际化或已存在 cn.json 中）")
         return result
 
-    print(f"\n📊 发现 {total} 条待翻译字段:\n")
+    print(f"\n📊 发现 {total} 条待翻译字段（新字段 {new_count} 条，已有翻译 {existing_count} 条）:\n")
     # 按来源分组统计
     from collections import Counter
     by_source = Counter(it["source"] for it in items)
@@ -62,6 +65,16 @@ async def scan_new_fields(controller) -> dict:
     print("\n  按模块分布 (top 10):")
     for pf, cnt in by_prefix.most_common(10):
         print(f"    {pf:40s} {cnt} 条")
+
+    # 显示类型A（已有key，可直接替换）
+    if existing_count > 0:
+        existing_items = [it for it in items if it.get("existing_key")]
+        print(f"\n  类型A — 已有翻译 (可直接替换引用，无需 AI): {existing_count} 条")
+        for it in existing_items[:5]:
+            print(f"    [{it['source']:20s}] {it['file']}:{it['line']}  «{it['text'][:50]}»")
+            print(f"      → {it['existing_key']}")
+        if existing_count > 5:
+            print(f"    ... 还有 {existing_count - 5} 条")
 
     # 显示前 20 条
     print(f"\n  前 20 条:")

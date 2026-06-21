@@ -363,14 +363,22 @@ const scanAddScanning = ref(false)
 const scanAddProxyOptions = ref([])
 
 const hideMixedFields = ref(false)
+const scanAddSkipExisting = ref(false)  // 跳过 cn.json 中已存在的值
 const scanAddSafeMode = ref(true)  // 默认安全模式：只写 cn.json 不修改源文件
 
 const scanAddColumns = [
-  { title: '文件', key: 'file', width: 200, ellipsis: { tooltip: true } },
-  { title: '行号', key: 'line', width: 60, align: 'center' },
-  { title: '中文文本', key: 'text', width: 240, ellipsis: { tooltip: true } },
-  { title: '前缀', key: 'prefix', width: 140, ellipsis: { tooltip: true } },
-  { title: '检测来源', key: 'source', width: 100, align: 'center' },
+  { title: '文件', key: 'file', width: 180, ellipsis: { tooltip: true } },
+  { title: '行号', key: 'line', width: 55, align: 'center' },
+  { title: '中文文本', key: 'text', width: 200, ellipsis: { tooltip: true } },
+  { title: '前缀', key: 'prefix', width: 120, ellipsis: { tooltip: true } },
+  { title: '已有Key', key: 'existing_key', width: 160, ellipsis: { tooltip: true },
+    render(row) {
+      return row.existing_key
+        ? h('span', { style: 'color: #18a058; font-size: 12px' }, row.existing_key)
+        : h('span', { style: 'color: #999' }, '—')
+    },
+  },
+  { title: '来源', key: 'source', width: 90, align: 'center' },
 ]
 
 // 根据开关过滤显示结果
@@ -403,7 +411,7 @@ async function doScan() {
   scanAddScanning.value = true
   try {
     // 优先使用新的 Python 正则扫描端点（不依赖外部 npm 包）
-    const res = await api.scanNewFieldsI18n()
+    const res = await api.scanNewFieldsI18n({ skip_existing: scanAddSkipExisting.value })
     const data = res.data || res
     scanAddResults.value = data.items || []
     scanAddTotal.value = data.total || scanAddResults.value.length
@@ -421,9 +429,12 @@ async function doScan() {
   }
 }
 
+const scanAddHasTypeB = computed(() => scanAddResults.value.some(it => !it.existing_key))
+
 async function handleScanAdd() {
-  if (!scanAddProxyName.value) {
-    message.warning('请选择 AI 代理')
+  // 纯类型A（全部已有翻译）不需要 AI 代理
+  if (scanAddHasTypeB.value && !scanAddProxyName.value) {
+    message.warning('存在新字段（类型B），请选择 AI 代理')
     return
   }
   if (scanAddTotal.value === 0) {
@@ -432,15 +443,27 @@ async function handleScanAdd() {
   }
   scanAddLoading.value = true
   // 将前端扫描结果发送给后端做 AI 处理（保留 start/end 用于回写源文件）
-  const items = scanAddResults.value.map(it => ({ file: it.file, line: it.line, text: it.text, prefix: it.prefix, start: it.start, end: it.end, source: it.source }))
+  const items = scanAddResults.value.map(it => ({ file: it.file, line: it.line, text: it.text, prefix: it.prefix, existing_key: it.existing_key, start: it.start, end: it.end, source: it.source }))
   try {
-    const res = await api.processScanI18n({ ai_proxy_name: scanAddProxyName.value, items, safe_mode: scanAddSafeMode.value })
+    const proxyName = scanAddHasTypeB.value ? scanAddProxyName.value : ''
+    const res = await api.processScanI18n({ ai_proxy_name: proxyName, items, safe_mode: scanAddSafeMode.value })
     const d = (res && res.data) || {}
     const added = d.added_count || 0
     const scanned = d.scanned_count || 0
     const replaced = d.replaced_count || 0
-    let msg = `成功添加 ${added} 条`
-    if (replaced > 0) msg += `，已替换源文件 ${replaced} 处`
+    const directReplaced = d.direct_replaced_count || 0
+    const existingCount = d.existing_replacements_count || 0
+    let msg = ''
+    if (added > 0) msg += `成功添加 ${added} 条`
+    if (directReplaced > 0) {
+      if (msg) msg += '，'
+      msg += `类型A 直接替换 ${directReplaced} 处（${existingCount} 个已有翻译）`
+    }
+    if (replaced > 0 && directReplaced === 0) {
+      if (msg) msg += '，'
+      msg += `已替换源文件 ${replaced} 处`
+    }
+    if (!msg) msg = '没有条目需要处理'
     if (d.skipped_count > 0) msg += `，跳过 ${d.skipped_count} 条已有字段`
     message.success(msg)
     scanAddVisible.value = false
@@ -600,11 +623,21 @@ onMounted(() => {
     <NModal v-model:show="scanAddVisible" preset="card" title="扫描新字段并添加" style="width: 800px">
       <div style="margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between">
         <span v-if="scanAddScanning" style="color: #888">正在扫描前端代码...</span>
-        <span v-else style="color: #666">共发现 <b>{{ scanAddTotal }}</b> 条待翻译字段，显示 <b>{{ scanAddDisplayed.length }}</b> 条</span>
+        <span v-else style="color: #666">
+          共发现 <b>{{ scanAddTotal }}</b> 条
+          <template v-if="!scanAddSkipExisting && scanAddResults.some(it => it.existing_key)">
+            （<span style="color: #18a058">已有翻译 {{ scanAddResults.filter(it => it.existing_key).length }} 条</span>，
+            <span style="color: #2080f0">新字段 {{ scanAddResults.filter(it => !it.existing_key).length }} 条</span>）
+          </template>
+          ，显示 <b>{{ scanAddDisplayed.length }}</b> 条
+        </span>
         <NButton size="small" @click="doScan" :loading="scanAddScanning">重新扫描</NButton>
       </div>
       <div v-if="!scanAddScanning && scanAddTotal > 0" style="margin-bottom: 4px">
         <NCheckbox v-model:checked="hideMixedFields" size="small">隐藏已混用 i18n 的组合字段</NCheckbox>
+        <NCheckbox v-model:checked="scanAddSkipExisting" size="small" style="margin-left: 12px" @update:checked="doScan">
+          跳过已存在翻译的字段
+        </NCheckbox>
       </div>
       <NDataTable
         v-if="scanAddDisplayed.length > 0"
@@ -623,10 +656,15 @@ onMounted(() => {
         <NSelect
           v-model:value="scanAddProxyName"
           :options="scanAddProxyOptions"
-          placeholder="选择 AI 代理后批量生成 key"
+          :placeholder="scanAddHasTypeB ? '选择 AI 代理后批量生成 key' : '纯类型A，无需 AI 代理'"
+          :disabled="!scanAddHasTypeB"
+          clearable
           filterable
           style="flex: 1"
         />
+      </div>
+      <div v-if="!scanAddHasTypeB && scanAddTotal > 0" style="margin-top: 4px; font-size: 12px; color: #18a058">
+        💡 全部已有翻译，无需 AI 代理。未勾选「安全模式」时将直接替换源文件中的硬编码中文为 $t('key') 引用。
       </div>
       <div style="margin-top: 8px">
         <NCheckbox v-model:checked="scanAddSafeMode">
