@@ -537,7 +537,7 @@ onBeforeUnmount(() => destroyCodeMirror())
       <div
         v-if="!panelVisible"
         class="mobile-menu-btn"
-        @click="panelVisible = true"
+        @click.stop="panelVisible = true"
       >
         <TheIcon icon="material-symbols:menu" :size="26" />
       </div>

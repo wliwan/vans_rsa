@@ -365,7 +365,7 @@ async function doUpload() {
 
     const resp = await fetch(server + "/api/v1/deploy/update-frontend", {
       method: "POST",
-      headers: { "Authorization": "Bearer " + token },
+      headers: { "token": token },
       body: form,
     });
 

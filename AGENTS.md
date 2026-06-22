@@ -1120,3 +1120,53 @@ cd web && pnpm install && pnpm build
 ---
 
 *此文件由 `.codewhale/skills/develop_guide.md`（VansRSA 开发核心规则）、`.codewhale/skills/vfa-dev-guide/SKILL.md`（VFA 开发指导）、`.codewhale/skills/road-network-center/SKILL.md`（路网数据中心指导）整合而成。后续新增规范请更新此文件，并保持对其他 skill 文档的引用关系。*
+
+---
+
+## 前端热更新（部署到服务器）
+
+> 改完前端代码后，构建并热更新到远程服务器，无需重建 Docker 镜像。
+
+### 服务器信息
+
+| 项目 | 值 |
+|---|---|
+| 地址 | `http://192.168.0.153:1110` |
+| 用户 | `Vance` |
+| 密码 | `w570264649+` |
+| 上传接口 | `POST /api/v1/deploy/update-frontend` |
+| 鉴权方式 | `token` header（JWT） |
+
+### 一键热更新命令
+
+```bash
+# 进入项目目录，构建 + 打包 + 上传一条龙
+cd /home/vance/deepseek_tui/vue-fastapi-admin
+
+# 1. 构建前端
+cd web && pnpm install --silent && pnpm build && cd ..
+
+# 2. 打包 zip（跳过构建，用已有 dist/）
+bash package-frontend.sh --no-build -o hotfix.zip
+
+# 3. 登录获取 Token（必须加 --noproxy '*' 绕过本地代理）
+TOKEN=$(curl -s --noproxy '*' --connect-timeout 10 \
+  -X POST http://192.168.0.153:1110/api/v1/base/access_token \
+  -H "Content-Type: application/json" \
+  -d '{"username":"Vance","password":"w570264649+"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['access_token'])")
+
+# 4. 上传
+curl -s --noproxy '*' \
+  -X POST http://192.168.0.153:1110/api/v1/deploy/update-frontend \
+  -H "token: $TOKEN" \
+  -F "file=@dist_package/hotfix.zip"
+```
+
+### 注意事项
+
+- **必须 `--noproxy '*'`**：本地环境有 HTTP 代理（127.0.0.1:7890），连接内网服务器必须绕过
+- **Token 有效期较短**，若上传报 401 需重新获取
+- **header 用 `token`**（非 `Authorization: Bearer`），与后端 `AuthControl.is_authed` 对齐
+- 上传成功后 **Ctrl+F5** 强制刷新浏览器，Nginx 对 `index.html` 不设强缓存
+- `deploy-uploader.html` 也会随构建产物一起更新

@@ -924,6 +924,7 @@ const selectedStaticFile = ref(null)
 const staticFilesLoading = ref(false)
 const staticFileUploadRef = ref(null)
 const staticFileBaseUrl = ref('')
+const staticFileUploading = ref(false)
 
 let staticFileUploadTimer = null
 const staticFileUploadQueue = new Map()
@@ -1028,6 +1029,7 @@ async function handleStaticFileUpload({ file, fileList }) {
   for (const f of fileList) { if (f.status === 'pending' && f.file) staticFileUploadQueue.set(`${f.file.name}__${f.file.size}`, f.file) }
   if (!staticFileUploadQueue.size) return
   clearTimeout(staticFileUploadTimer)
+  staticFileUploading.value = true
   staticFileUploadTimer = setTimeout(async () => {
     if (staticFileUploadLock) return
     staticFileUploadLock = true
@@ -1039,6 +1041,7 @@ async function handleStaticFileUpload({ file, fileList }) {
       await loadStaticFiles()
     } catch (e) { message.error(e?.response?.data?.msg || t('views.statistic-center.message_cn_54e5de42')) }
     staticFileUploadLock = false
+    staticFileUploading.value = false
   }, 300)
 }
 
@@ -2035,10 +2038,19 @@ onBeforeUnmount(() => {
                 <div class="mb-4">
                   <NUpload ref="staticFileUploadRef" :show-file-list="false" :default-upload="false" accept="*" multiple @change="handleStaticFileUpload">
                     <NUploadDragger class="w-full" style="border-radius: 8px; --n-border-hover: 2px dashed #3b82f6">
-                      <div class="flex flex-col items-center py-4">
+                      <div v-if="!staticFileUploading" class="flex flex-col items-center py-4">
                         <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center mb-2"><TheIcon icon="material-symbols:upload" :size="28" class="text-blue-500" /></div>
                         <div class="text-sm font-semibold text-gray-700">上传文件到{{ staticFileSourceType === 'original' ? t('views.statistic-center.label_cn_d3182537') : t('views.statistic-center.label_cn_c57e8ae8') }}目录</div>
                         <div class="text-xs text-gray-400 mt-0.5">{{ t('views.statistic-center.label_cn_fef7540f') }}</div>
+                      </div>
+                      <div v-else class="flex flex-col items-center py-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center mb-2">
+                          <TheIcon icon="material-symbols:cloud-upload" :size="28" class="text-blue-500 animate-pulse" />
+                        </div>
+                        <div class="text-sm font-semibold text-blue-600 mb-2">正在上传...</div>
+                        <div class="w-36 h-1 bg-gray-200 rounded-full overflow-hidden">
+                          <div class="h-full bg-blue-500 rounded-full animate-pulse" style="width: 60%" />
+                        </div>
                       </div>
                     </NUploadDragger>
                   </NUpload>
@@ -2866,7 +2878,7 @@ onBeforeUnmount(() => {
 
 /* ── 侧边栏：移动端全屏浮层 ── */
 .mobile-overlay {
-  position: fixed !important;
+  position: absolute !important;
   top: 0;
   left: 0;
   right: 0;
