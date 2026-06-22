@@ -1061,7 +1061,7 @@
       "placeholder_cn_d37f5b56": "搜索报告...",
       "message_cn_a6a1c93e": "报告 ({count})",
       "label_cn_07c80637": "原始表格",
-      "label_cn_acc23771": "生成报告：${generateForm.value.name}",
+      "label_cn_acc23771": "生成报告：{generateForm_value_name}",
       "label_cn_affac2ba": "报告名称",
       "label_cn_d81bb206": "无",
       "label_cn_efa08a89": "分析表格",

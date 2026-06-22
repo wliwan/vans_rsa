@@ -1061,7 +1061,7 @@
       "placeholder_cn_d37f5b56": "Search reports...",
       "message_cn_a6a1c93e": "Reports ({count})",
       "label_cn_07c80637": "Original Sheets",
-      "label_cn_acc23771": "Generate Report: ${generateForm.value.name}",
+      "label_cn_acc23771": "Generate Report: {generateForm_value_name}",
       "label_cn_affac2ba": "Report Name",
       "label_cn_d81bb206": "None",
       "label_cn_efa08a89": "Analysis Sheets",

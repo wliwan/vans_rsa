@@ -1016,7 +1016,7 @@
       "placeholder_cn_d37f5b56": "Raporlarda ara...",
       "message_cn_a6a1c93e": "Raporlar ({count})",
       "label_cn_07c80637": "Orijinal Tablolar",
-      "label_cn_acc23771": "Rapor Oluştur: ${generateForm.value.name}",
+      "label_cn_acc23771": "Rapor Oluştur: {generateForm_value_name}",
       "label_cn_affac2ba": "Rapor Adı",
       "label_cn_d81bb206": "Yok",
       "label_cn_efa08a89": "Analiz Tabloları",
