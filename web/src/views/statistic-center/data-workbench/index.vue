@@ -110,6 +110,7 @@ const analyses = ref([])
 const selectedAnalysisIds = ref([])
 const selectedSheetIds = ref([])
 const uploading = ref(false)
+let uploadDebounceTimer = null
 
 // CSV 文本导入弹窗
 const showCsvImportModal = ref(false)
@@ -146,6 +147,7 @@ const documents = ref([])
 const analysisDocuments = ref([])
 const selectedDocIds = ref([])
 const uploadingDoc = ref(false)
+let docUploadDebounceTimer = null
 
 // 文档AI分析弹窗
 const showDocAnalyzeModal = ref(false)
@@ -153,6 +155,21 @@ const docAnalyzeForm = ref({
   workspace_id: 0, document_ids: [],
   ai_proxy_id: null, skill_id: null, prompt: '',
 })
+
+// 文档批量操作状态
+const selectedAnalysisDocIds = ref([])
+
+// 文档复制到弹窗
+const showDocCopyToModal = ref(false)
+const docCopyToWorkspaces = ref([])
+const docCopyToForm = ref({ target_workspace_id: null })
+const showAnalysisDocCopyToModal = ref(false)
+const analysisDocCopyToWorkspaces = ref([])
+const analysisDocCopyToForm = ref({ target_workspace_id: null })
+
+// 文档文本导入弹窗
+const showDocTextModal = ref(false)
+const docTextForm = ref({ name: '', content: '' })
 
 // ── 工作区 CRUD ──
 async function loadWorkspaces() {
@@ -555,20 +572,22 @@ async function handleCsvImportSubmit() {
 // ── 批量上传 ──
 async function handleBatchUpload({ file, fileList }) {
   if (!selectedWs.value) { message.warning('请先选择工作区'); return }
-  // 只取支持格式的文件
-  const validFiles = fileList.filter(f => {
-    const name = (f.file?.name || f.name || '').toLowerCase()
-    return name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.csv')
-  })
-  if (!validFiles.length) return
-  uploading.value = true
-  try {
-    const files = validFiles.map(f => f.file)
-    await api.batchUploadSheets(selectedWs.value.id, files)
-    message.success(`成功上传 ${validFiles.length} 个文件`)
-    await loadSheets()
-  } catch (e) { message.error(e?.response?.data?.msg || '批量上传失败') }
-  uploading.value = false
+  clearTimeout(uploadDebounceTimer)
+  uploadDebounceTimer = setTimeout(async () => {
+    const validFiles = fileList.filter(f => {
+      const name = (f.file?.name || f.name || '').toLowerCase()
+      return name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.csv')
+    })
+    if (!validFiles.length) return
+    uploading.value = true
+    try {
+      const files = validFiles.map(f => f.file)
+      await api.batchUploadSheets(selectedWs.value.id, files)
+      message.success(`成功上传 ${validFiles.length} 个文件`)
+      await loadSheets()
+    } catch (e) { message.error(e?.response?.data?.msg || '批量上传失败') }
+    uploading.value = false
+  }, 150)
 }
 
 // ── 文档 CRUD ──
@@ -597,6 +616,43 @@ async function handleDocUpload({ file }) {
     await loadOriginalDocuments()
   } catch (e) { message.error(t('views.statistic-center.message_cn_54e5de42')) }
   uploadingDoc.value = false
+}
+
+// 批量上传文档
+async function handleBatchDocUpload({ file, fileList }) {
+  if (!selectedWs.value) { message.warning(t('views.statistic-center.placeholder_cn_cb53b40f')); return }
+  clearTimeout(docUploadDebounceTimer)
+  docUploadDebounceTimer = setTimeout(async () => {
+    const validFiles = fileList.filter(f => f.file && f.status !== 'removed')
+    if (!validFiles.length) return
+    uploadingDoc.value = true
+    try {
+      const files = validFiles.map(f => f.file)
+      await api.batchUploadDocuments(selectedWs.value.id, files)
+      message.success(`成功上传 ${validFiles.length} 个文件`)
+      await loadOriginalDocuments()
+    } catch (e) { message.error('批量上传失败') }
+    uploadingDoc.value = false
+  }, 150)
+}
+
+// 文本导入文档
+function openDocTextModal() {
+  if (!selectedWs.value) { message.warning(t('views.statistic-center.placeholder_cn_cb53b40f')); return }
+  docTextForm.value = { name: '', content: '' }
+  showDocTextModal.value = true
+}
+
+async function handleDocTextSubmit() {
+  if (!docTextForm.value.name) { message.warning('请输入文档名称'); return }
+  if (!docTextForm.value.content) { message.warning('请输入文档内容'); return }
+  loading.value = true; showDocTextModal.value = false
+  try {
+    await api.createDocumentFromText({ workspace_id: selectedWs.value.id, name: docTextForm.value.name, content: docTextForm.value.content })
+    message.success('文本导入成功')
+    await loadOriginalDocuments()
+  } catch (e) { message.error(e?.response?.data?.msg || '导入失败') }
+  loading.value = false
 }
 
 async function downloadDocument(doc) {
@@ -632,6 +688,20 @@ function toggleAllDocs() {
   }
 }
 
+function toggleAnalysisDocSelect(id) {
+  const idx = selectedAnalysisDocIds.value.indexOf(id)
+  if (idx >= 0) selectedAnalysisDocIds.value.splice(idx, 1)
+  else selectedAnalysisDocIds.value.push(id)
+}
+
+function toggleAllAnalysisDocs() {
+  if (selectedAnalysisDocIds.value.length === analysisDocuments.value.length) {
+    selectedAnalysisDocIds.value = []
+  } else {
+    selectedAnalysisDocIds.value = analysisDocuments.value.map((d) => d.id)
+  }
+}
+
 async function batchDeleteDocs() {
   if (!selectedDocIds.value.length) { message.warning(t('views.statistic-center.placeholder_cn_f7870cc4')); return }
   try {
@@ -645,6 +715,48 @@ async function batchDeleteDocs() {
   loading.value = false
 }
 
+async function batchExportDocs() {
+  if (!selectedDocIds.value.length) { message.warning('请先选择要导出的文档'); return }
+  try {
+    loading.value = true
+    const res = await api.batchExportDocuments({ document_ids: [...selectedDocIds.value] })
+    const blob = new Blob([res.data], { type: 'application/zip' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = '原始文档批量导出.zip'; a.click()
+    URL.revokeObjectURL(url)
+    message.success(`已导出 ${selectedDocIds.value.length} 个文档`)
+  } catch (e) { message.error(e?.response?.data?.msg || '导出失败') }
+  loading.value = false
+}
+
+async function batchDeleteAnalysisDocs() {
+  if (!selectedAnalysisDocIds.value.length) { message.warning('请先选择要删除的分析文档'); return }
+  try {
+    loading.value = true
+    await api.batchDeleteDocuments({ document_ids: [...selectedAnalysisDocIds.value] })
+    selectedAnalysisDocIds.value = []
+    message.success('批量删除成功')
+    await loadAnalysisDocuments()
+  } catch (e) { message.error(e?.response?.data?.msg || '删除失败') }
+  loading.value = false
+}
+
+async function batchExportAnalysisDocs() {
+  if (!selectedAnalysisDocIds.value.length) { message.warning('请先选择要导出的分析文档'); return }
+  try {
+    loading.value = true
+    const res = await api.batchExportDocuments({ document_ids: [...selectedAnalysisDocIds.value] })
+    const blob = new Blob([res.data], { type: 'application/zip' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = '分析文档批量导出.zip'; a.click()
+    URL.revokeObjectURL(url)
+    message.success(`已导出 ${selectedAnalysisDocIds.value.length} 个分析文档`)
+  } catch (e) { message.error(e?.response?.data?.msg || '导出失败') }
+  loading.value = false
+}
+
 async function clearAllDocs() {
   if (!selectedWs.value) return
   try {
@@ -655,6 +767,24 @@ async function clearAllDocs() {
     await loadOriginalDocuments()
     await loadAnalysisDocuments()
   } catch (e) { message.error(t('views.network.region.messages.clearFail')) }
+  loading.value = false
+}
+
+// ── 文档复制到（原始文档） ──
+async function openDocCopyToModal() {
+  if (!selectedDocIds.value.length) { message.warning('请先选择要复制的文档'); return }
+  docCopyToForm.value = { target_workspace_id: null }; showDocCopyToModal.value = true
+  try { const res = await api.getWorkspaceList({ page: 1, page_size: 9999 }); docCopyToWorkspaces.value = (res.data || []).filter(w => w.id !== selectedWs.value.id).map(w => ({ label: w.name, value: w.id })) } catch (e) {}
+}
+
+async function handleDocCopyToWorkspace() {
+  if (!docCopyToForm.value.target_workspace_id) { message.warning('请选择目标工作区'); return }
+  loading.value = true; showDocCopyToModal.value = false
+  try {
+    const res = await api.copyToWorkspace({ target_workspace_id: docCopyToForm.value.target_workspace_id, document_ids: [...selectedDocIds.value] })
+    message.success(res.msg || `成功复制 ${res.data?.documents || 0} 个文档`)
+    selectedDocIds.value = []
+  } catch (e) { message.error(e?.response?.data?.msg || '复制失败') }
   loading.value = false
 }
 
@@ -691,6 +821,24 @@ async function handleDocAnalyzeSubmit() {
     message.success(t('views.statistic-center.message_cn_57c52570'))
     await loadAnalysisDocuments()
   } catch (e) { message.error(t('views.network.roadNetworkWorkbench.messages.analyzeFail')) }
+  loading.value = false
+}
+
+// ── 文档复制到（分析文档） ──
+async function openAnalysisDocCopyToModal() {
+  if (!selectedAnalysisDocIds.value.length) { message.warning('请先选择要复制的分析文档'); return }
+  analysisDocCopyToForm.value = { target_workspace_id: null }; showAnalysisDocCopyToModal.value = true
+  try { const res = await api.getWorkspaceList({ page: 1, page_size: 9999 }); analysisDocCopyToWorkspaces.value = (res.data || []).filter(w => w.id !== selectedWs.value.id).map(w => ({ label: w.name, value: w.id })) } catch (e) {}
+}
+
+async function handleAnalysisDocCopyToWorkspace() {
+  if (!analysisDocCopyToForm.value.target_workspace_id) { message.warning('请选择目标工作区'); return }
+  loading.value = true; showAnalysisDocCopyToModal.value = false
+  try {
+    const res = await api.copyToWorkspace({ target_workspace_id: analysisDocCopyToForm.value.target_workspace_id, document_ids: [...selectedAnalysisDocIds.value] })
+    message.success(res.msg || `成功复制 ${res.data?.documents || 0} 个分析文档`)
+    selectedAnalysisDocIds.value = []
+  } catch (e) { message.error(e?.response?.data?.msg || '复制失败') }
   loading.value = false
 }
 
@@ -1564,7 +1712,12 @@ onBeforeUnmount(() => {
               <div v-else-if="tab.name === 'documents'" class="flex-1 flex flex-col" style="min-height: 0">
                 <!-- 上传区 -->
                 <div class="mb-5">
-                  <NUpload :show-file-list="false" :default-upload="false" accept=".txt,.md,.pdf,.docx,.ppt,.pptx,.xlsx,.xls,.csv" @change="handleDocUpload">
+                  <div class="flex items-center gap-2 mb-2">
+                    <NButton size="small" @click="openDocTextModal">
+                      <TheIcon icon="material-symbols:edit-note" :size="16" class="mr-1" />文本导入
+                    </NButton>
+                  </div>
+                  <NUpload :show-file-list="false" :default-upload="false" accept=".txt,.md,.pdf,.docx,.ppt,.pptx,.xlsx,.xls,.csv" multiple @change="handleBatchDocUpload">
                     <NUploadDragger
                       class="w-full"
                       style="border-radius: 12px; --n-border-hover: 2px dashed #3b82f6"
@@ -1617,6 +1770,12 @@ onBeforeUnmount(() => {
                       <NSpace v-if="documents.length" size="small">
                         <NButton size="small" type="primary" :disabled="!selectedDocIds.length" @click="openDocAnalyze">
                           <TheIcon icon="material-symbols:psychology" :size="16" class="mr-1" />AI分析({{ selectedDocIds.length }})
+                        </NButton>
+                        <NButton size="small" :disabled="!selectedDocIds.length" @click="batchExportDocs">
+                          <TheIcon icon="material-symbols:download" :size="16" class="mr-1" />导出({{ selectedDocIds.length }})
+                        </NButton>
+                        <NButton size="small" :disabled="!selectedDocIds.length" @click="openDocCopyToModal">
+                          <TheIcon icon="material-symbols:content-copy" :size="16" class="mr-1" />复制到
                         </NButton>
                         <NPopconfirm @positive-click="batchDeleteDocs" :disabled="!selectedDocIds.length">
                           <template #trigger>
@@ -1689,10 +1848,32 @@ onBeforeUnmount(() => {
                   <div class="flex-1 flex flex-col" style="min-width: 0">
                     <div class="flex items-center justify-between mb-2 px-1">
                       <div class="flex items-center gap-2">
+                        <NCheckbox
+                          size="small"
+                          :checked="selectedAnalysisDocIds.length === analysisDocuments.length && analysisDocuments.length > 0"
+                          :indeterminate="selectedAnalysisDocIds.length > 0 && selectedAnalysisDocIds.length < analysisDocuments.length"
+                          @update:checked="toggleAllAnalysisDocs"
+                        />
                         <TheIcon icon="material-symbols:analytics" :size="20" class="text-green-500" />
                         <span class="font-semibold text-base">{{ t('views.statistic-center.label_cn_c57e8ae8') }}</span>
                         <NTag size="small" :bordered="false" type="success">{{ analysisDocuments.length }}</NTag>
                       </div>
+                      <NSpace v-if="analysisDocuments.length" size="small">
+                        <NButton size="small" :disabled="!selectedAnalysisDocIds.length" @click="batchExportAnalysisDocs">
+                          <TheIcon icon="material-symbols:download" :size="16" class="mr-1" />导出({{ selectedAnalysisDocIds.length }})
+                        </NButton>
+                        <NButton size="small" :disabled="!selectedAnalysisDocIds.length" @click="openAnalysisDocCopyToModal">
+                          <TheIcon icon="material-symbols:content-copy" :size="16" class="mr-1" />复制到
+                        </NButton>
+                        <NPopconfirm @positive-click="batchDeleteAnalysisDocs" :disabled="!selectedAnalysisDocIds.length">
+                          <template #trigger>
+                            <NButton size="small" type="warning" :disabled="!selectedAnalysisDocIds.length">
+                              <TheIcon icon="material-symbols:delete-outline" :size="16" />{{ t('views.statistic-center.label_cn_2f4aaddd') }}
+                            </NButton>
+                          </template>
+                          确认删除选中的 {{ selectedAnalysisDocIds.length }} 个分析文档？
+                        </NPopconfirm>
+                      </NSpace>
                     </div>
                     <div class="flex-1 overflow-auto rounded-lg border border-gray-100 bg-gray-50/50 dark:bg-gray-800/30" style="min-height: 0">
                       <div v-if="analysisDocuments.length" class="p-3 grid gap-3">
@@ -1702,6 +1883,12 @@ onBeforeUnmount(() => {
                         >
                           <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3 min-w-0 flex-1">
+                              <NCheckbox
+                                size="small"
+                                :checked="selectedAnalysisDocIds.includes(a.id)"
+                                @update:checked="() => toggleAnalysisDocSelect(a.id)"
+                                class="flex-shrink-0"
+                              />
                               <TheIcon icon="material-symbols:psychology" :size="22" class="text-green-500 flex-shrink-0" />
                               <div class="min-w-0">
                                 <div class="font-medium text-base truncate">{{ a.name }}</div>
@@ -2423,6 +2610,56 @@ onBeforeUnmount(() => {
       <NSpace justify="end">
         <NButton @click="handleDocEditCancel">{{ t('views.statistic-center.label_cn_625fb26b') }}</NButton>
         <NButton type="primary" :loading="docSaving" @click="handleDocSave">{{ t('views.statistic-center.label_cn_be5fbbe3') }}</NButton>
+      </NSpace>
+    </template>
+  </NModal>
+
+  <!-- ── 原始文档复制到弹窗 ── -->
+  <NModal v-model:show="showDocCopyToModal" title="复制文档到其他工作区" preset="card" style="width: 480px">
+    <div class="text-sm text-gray-500 mb-4">将复制 {{ selectedDocIds.length }} 个文档到目标工作区（仅创建记录，不拷贝文件）</div>
+    <NForm label-placement="top">
+      <NFormItem label="目标工作区" required>
+        <NSelect v-model:value="docCopyToForm.target_workspace_id" :options="docCopyToWorkspaces" placeholder="选择目标工作区" filterable />
+      </NFormItem>
+    </NForm>
+    <template #footer>
+      <NSpace justify="end">
+        <NButton @click="showDocCopyToModal = false">取消</NButton>
+        <NButton type="primary" :disabled="!docCopyToForm.target_workspace_id" :loading="loading" @click="handleDocCopyToWorkspace">确认复制</NButton>
+      </NSpace>
+    </template>
+  </NModal>
+
+  <!-- ── 分析文档复制到弹窗 ── -->
+  <NModal v-model:show="showAnalysisDocCopyToModal" title="复制分析文档到其他工作区" preset="card" style="width: 480px">
+    <div class="text-sm text-gray-500 mb-4">将复制 {{ selectedAnalysisDocIds.length }} 个分析文档到目标工作区（仅创建记录，不拷贝文件）</div>
+    <NForm label-placement="top">
+      <NFormItem label="目标工作区" required>
+        <NSelect v-model:value="analysisDocCopyToForm.target_workspace_id" :options="analysisDocCopyToWorkspaces" placeholder="选择目标工作区" filterable />
+      </NFormItem>
+    </NForm>
+    <template #footer>
+      <NSpace justify="end">
+        <NButton @click="showAnalysisDocCopyToModal = false">取消</NButton>
+        <NButton type="primary" :disabled="!analysisDocCopyToForm.target_workspace_id" :loading="loading" @click="handleAnalysisDocCopyToWorkspace">确认复制</NButton>
+      </NSpace>
+    </template>
+  </NModal>
+
+  <!-- ── 文档文本导入弹窗 ── -->
+  <NModal v-model:show="showDocTextModal" title="文本导入文档" preset="card" style="width: 640px">
+    <NForm :model="docTextForm" label-placement="top">
+      <NFormItem label="文档名称" required>
+        <NInput v-model:value="docTextForm.name" placeholder="例如：会议记录.md" />
+      </NFormItem>
+      <NFormItem label="文档内容（Markdown）" required>
+        <NInput v-model:value="docTextForm.content" type="textarea" :rows="12" placeholder="输入 Markdown 格式的文档内容" />
+      </NFormItem>
+    </NForm>
+    <template #footer>
+      <NSpace justify="end">
+        <NButton @click="showDocTextModal = false">取消</NButton>
+        <NButton type="primary" :loading="loading" @click="handleDocTextSubmit">导入</NButton>
       </NSpace>
     </template>
   </NModal>

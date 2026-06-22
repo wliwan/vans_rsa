@@ -40,7 +40,7 @@ firefox deploy/deploy-uploader.html
 重新构建过前端后，可通过 Nginx 访问：
 
 ```
-http://你的服务器IP/deploy-uploader.html
+http://192.169.0.153:1110/deploy-uploader.html
 ```
 
 ### 操作流程
@@ -73,19 +73,19 @@ http://你的服务器IP/deploy-uploader.html
 
 ```bash
 # 先获取 token
-TOKEN=$(curl -s -X POST http://你的服务器:9999/api/v1/base/access_token \
+TOKEN=$(curl -s -X POST http://http://192.169.0.153:1110/api/v1/base/access_token \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"123456"}' | jq -r '.data.access_token')
 
 # 上传 zip
-curl -X POST http://你的服务器:9999/api/v1/deploy/update-frontend \
+curl -X POST http://http://192.169.0.153:1110/api/v1/deploy/update-frontend \
   -H "Authorization: Bearer $TOKEN" \
   -F "file=@dist_package/frontend-update-20260622-143000.zip"
 ```
 
 #### 用 Swagger 文档
 
-打开 `http://你的服务器:9999/docs` → 找到 `POST /api/v1/deploy/update-frontend` → Try it out → 选择文件上传。
+打开 `http://http://192.169.0.153:1110/docs` → 找到 `POST /api/v1/deploy/update-frontend` → Try it out → 选择文件上传。
 
 #### 用 Python
 
@@ -93,13 +93,13 @@ curl -X POST http://你的服务器:9999/api/v1/deploy/update-frontend \
 import requests
 
 # 登录
-resp = requests.post("http://服务器:9999/api/v1/base/access_token",
+resp = requests.post("http://http://192.169.0.153:1110/api/v1/base/access_token",
     data={"username": "admin", "password": "123456"})
 token = resp.json()["data"]["access_token"]
 
 # 上传
 with open("dist_package/frontend-update-xxx.zip", "rb") as f:
-    resp = requests.post("http://服务器:9999/api/v1/deploy/update-frontend",
+    resp = requests.post("http://http://192.169.0.153:1110/api/v1/deploy/update-frontend",
         headers={"Authorization": f"Bearer {token}"},
         files={"file": f})
 print(resp.json())
