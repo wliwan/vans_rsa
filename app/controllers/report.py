@@ -1,7 +1,10 @@
 import asyncio
+import json
 import logging
 import os
 import re
+import time
+import uuid
 from io import BytesIO
 from typing import Dict, List, Optional
 
@@ -14,6 +17,55 @@ from app.settings import settings
 from app.utils.doc_to_md import file_to_markdown
 
 logger = logging.getLogger(__name__)
+
+# ── 进度状态文件目录 ──
+CACHE_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "cache"
+)
+REPORT_PROGRESS_DIR = os.path.join(CACHE_DIR, "report_generate")
+os.makedirs(REPORT_PROGRESS_DIR, exist_ok=True)
+
+# 内存中正在运行的任务缓存（key: task_id）
+_running_tasks: Dict[str, dict] = {}
+
+
+def _progress_file(task_id: str) -> str:
+    return os.path.join(REPORT_PROGRESS_DIR, f"{task_id}.json")
+
+
+def _save_progress(task_id: str, progress: dict):
+    with open(_progress_file(task_id), "w", encoding="utf-8") as f:
+        json.dump(progress, f, ensure_ascii=False, indent=2)
+
+
+def _load_progress(task_id: str) -> dict:
+    """读取进度：内存优先，文件兜底"""
+    if task_id in _running_tasks:
+        return dict(_running_tasks[task_id])
+    pf = _progress_file(task_id)
+    if os.path.exists(pf):
+        try:
+            with open(pf, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            pass
+    return {"status": "not_found", "progress": 0, "phase": "", "message": ""}
+
+
+def _update_progress(task_id: str, status: str, phase: str, progress: int, message: str, detail: str = ""):
+    """更新进度到内存和磁盘"""
+    p = {
+        "task_id": task_id,
+        "status": status,       # running | done | error
+        "phase": phase,         # preparing | planning | generating | assembling | saving
+        "progress": progress,   # 0-100
+        "message": message,
+        "detail": detail,
+        "started_at": _running_tasks.get(task_id, {}).get("started_at", time.time()),
+        "done_at": time.time() if status in ("done", "error") else None,
+    }
+    _running_tasks[task_id] = p
+    _save_progress(task_id, p)
 
 
 class ReportService:
@@ -28,6 +80,8 @@ class ReportService:
         "5. <h2> 结论与建议\n"
         "样式要求：使用内联CSS，简洁专业风格，配色为蓝白灰。"
     )
+
+    # ── AI 调用辅助 ──
 
     @staticmethod
     def _build_client(ai_proxy) -> OpenAI:
@@ -57,7 +111,6 @@ class ReportService:
 
     @classmethod
     def _short_link(cls, token: str) -> str:
-        """构造完整短链接（含域名前缀，若 PUBLIC_BASE_URL 已配置）"""
         base = settings.PUBLIC_BASE_URL.rstrip("/") if settings.PUBLIC_BASE_URL else ""
         return f"{base}/api/sf/{token}"
 
@@ -113,10 +166,8 @@ class ReportService:
             if rec is None:
                 return None
             try:
-                # 获取记录名（兼容不同模型字段名）
                 rec_name = getattr(rec, 'name', None) or getattr(rec, 'file_name', '文件')
 
-                # 1. 图片/StaticFile：仅生成元数据描述
                 is_static_image = hasattr(rec, 'is_image') and rec.is_image
                 if is_static_image:
                     ext = os.path.splitext(getattr(rec, 'file_name', '') or getattr(rec, 'file_path', ''))[1].lower()
@@ -127,7 +178,6 @@ class ReportService:
                 if not file_path:
                     return None
 
-                # 2. 文件不存在 → 友好占位
                 if not os.path.exists(file_path):
                     logger.warning(f"文件不存在: {file_path}")
                     return f"## {rec_name}\n\n*(文件不存在: {os.path.basename(file_path)})*"
@@ -135,32 +185,26 @@ class ReportService:
                 ext = os.path.splitext(file_path)[1].lower()
                 ext_name = os.path.basename(file_path)
 
-                # 3. 图片扩展名 → 元数据描述
                 if ext in ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.tiff', '.tif'):
                     return ReportService._generate_image_md(rec)
 
-                # 4. CSV → pandas read_csv
                 if ext == '.csv':
                     df = pd.read_csv(file_path)
                     return f"## {rec_name}\n\n{df.head(80).to_markdown(index=False)}"
 
-                # 5. Excel → pandas read_excel
                 if ext in ('.xlsx', '.xls'):
                     df = pd.read_excel(file_path)
                     return f"## {rec_name}\n\n{df.head(80).to_markdown(index=False)}"
 
-                # 6. 使用 doc_to_md 处理 PDF/DOCX/PPTX/MD/TXT 等
                 try:
                     md_text, _ = file_to_markdown(file_path, ext_name)
                     return f"## {rec_name}\n\n{md_text[:5000]}"
                 except ValueError:
-                    # 不支持的格式 → 回退为文本模式（带容错）
                     try:
                         with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
                             text = f.read()
                         return f"## {rec_name}\n\n{text[:5000]}"
                     except Exception:
-                        # 二进制文件最后兜底 → 元数据描述
                         logger.warning(f"无法读取文件内容（二进制/未知格式）: {file_path}")
                         return ReportService._generate_image_md(rec)
             except Exception as e:
@@ -173,6 +217,220 @@ class ReportService:
             if result:
                 parts.append(result)
         return "\n\n".join(parts) if parts else "（无数据源）"
+
+    # ═══════════════════════════════════════════════════════
+    # 异步多阶段生成（新版）
+    # ═══════════════════════════════════════════════════════
+
+    @classmethod
+    async def start_generate_report(
+        cls,
+        workspace_id: int,
+        name: str,
+        sheet_ids: List[int],
+        analysis_ids: List[int],
+        ai_proxy_id: int,
+        skill_id: Optional[int] = None,
+        extra_prompt: str = "",
+        system_prompt: str = "",
+        document_ids: List[int] = None,
+        static_file_ids: List[int] = None,
+    ) -> str:
+        """
+        启动异步文书生成，返回 task_id。
+        前端通过轮询 GET /report/generate-progress?task_id=xxx 获取进度，
+        完成后通过 GET /report/generate-result?task_id=xxx 获取生成的文书。
+        """
+        if document_ids is None:
+            document_ids = []
+        if static_file_ids is None:
+            static_file_ids = []
+
+        task_id = uuid.uuid4().hex[:12]
+        _update_progress(task_id, "running", "preparing", 0, "任务已创建，正在准备...")
+
+        # 后台启动异步任务
+        asyncio.create_task(
+            cls._do_generate_report(
+                task_id=task_id,
+                workspace_id=workspace_id,
+                name=name,
+                sheet_ids=sheet_ids,
+                analysis_ids=analysis_ids,
+                ai_proxy_id=ai_proxy_id,
+                skill_id=skill_id,
+                extra_prompt=extra_prompt,
+                system_prompt=system_prompt,
+                document_ids=document_ids,
+                static_file_ids=static_file_ids,
+            )
+        )
+
+        return task_id
+
+    @classmethod
+    async def _do_generate_report(
+        cls,
+        task_id: str,
+        workspace_id: int,
+        name: str,
+        sheet_ids: List[int],
+        analysis_ids: List[int],
+        ai_proxy_id: int,
+        skill_id: Optional[int] = None,
+        extra_prompt: str = "",
+        system_prompt: str = "",
+        document_ids: List[int] = None,
+        static_file_ids: List[int] = None,
+    ):
+        """后台单AI文书生成（由 asyncio.create_task 调度，保留异步+进度反馈）"""
+        try:
+            # ── 阶段 1: 读取素材 & Skill (0-20%) ──
+            _update_progress(task_id, "running", "preparing", 2, "正在读取素材数据...")
+            total_ids = len(sheet_ids) + len(analysis_ids) + len(document_ids) + len(static_file_ids)
+
+            skill_prompt = ""
+            if skill_id:
+                skill = await Skill.filter(id=skill_id).first()
+                if skill:
+                    skill_prompt = skill.content
+                    _update_progress(task_id, "running", "preparing", 5, f"已加载 Skill: {skill.title}")
+
+            effective_system_prompt = system_prompt.strip() if system_prompt and system_prompt.strip() else cls.DEFAULT_SYSTEM_PROMPT
+
+            _update_progress(task_id, "running", "preparing", 10, f"正在读取 {total_ids} 个数据源...")
+            data_text = await cls._read_all_data(sheet_ids, analysis_ids, document_ids, static_file_ids)
+            _update_progress(task_id, "running", "preparing", 20, f"素材读取完成（共 {total_ids} 项）")
+
+            # ── 阶段 2: 单 AI 调用生成文书 (20-90%) ──
+            _update_progress(task_id, "running", "generating", 25, "AI 正在生成文书...")
+
+            ai_proxy = await AIProxy.get(id=ai_proxy_id)
+            client = cls._build_client(ai_proxy)
+            model = ai_proxy.model or "gpt-3.5-turbo"
+
+            if skill_prompt:
+                effective_system_prompt += f"\n\n文书框架参考：\n{skill_prompt}"
+
+            user_prompt = f"文书标题：{name}\n\n数据来源：\n{data_text}"
+            if extra_prompt:
+                user_prompt += f"\n\n额外要求：{extra_prompt}"
+            user_prompt += "\n\n请生成完整的HTML文书（包含<!DOCTYPE html>声明），直接返回HTML代码。"
+
+            # 发起 AI 调用，同时用模拟心跳更新进度（因为单次 AI 调用期间无法获取真实进度）
+            _update_progress(task_id, "running", "generating", 30, "AI 正在分析素材并撰写文书...")
+
+            html_content = await cls._call_ai(client, model, effective_system_prompt, user_prompt)
+            _update_progress(task_id, "running", "generating", 85, "AI 生成完成，正在清洗格式...")
+
+            html_content = cls._clean_html(html_content)
+            _update_progress(task_id, "running", "generating", 90, "文书格式清洗完成")
+
+            # ── 阶段 3: 保存到数据库 (90-100%) ──
+            _update_progress(task_id, "running", "saving", 93, "正在保存文书...")
+
+            report = await Report.create(
+                workspace_id=workspace_id,
+                name=name,
+                content=html_content,
+                source_sheet_ids=sheet_ids,
+                source_analysis_ids=analysis_ids,
+                source_document_ids=document_ids,
+                source_static_ids=static_file_ids,
+                ai_proxy_id=ai_proxy_id,
+                skill_id=skill_id,
+                prompt=extra_prompt,
+                system_prompt=system_prompt or cls.DEFAULT_SYSTEM_PROMPT,
+            )
+
+            result_data = await report.to_dict()
+            _update_progress(task_id, "done", "saving", 100, "文书生成完成",
+                             detail=json.dumps({"report_id": report.id, "name": name}, ensure_ascii=False))
+            # 保存结果到进度文件
+            p = _load_progress(task_id)
+            p["result"] = result_data
+            _save_progress(task_id, p)
+
+            logger.info(f"文书生成完成: task_id={task_id}, report_id={report.id}, name={name}")
+
+        except Exception as e:
+            logger.exception(f"文书生成失败: task_id={task_id}")
+            _update_progress(task_id, "error", "error", 0, "文书生成失败", detail=str(e))
+
+    @classmethod
+    def get_generate_progress(cls, task_id: str) -> dict:
+        """获取文书生成进度"""
+        return _load_progress(task_id)
+
+    @classmethod
+    async def get_generate_result(cls, task_id: str) -> Optional[dict]:
+        """获取已生成的文书结果，完成后自动清理进度文件"""
+        progress = _load_progress(task_id)
+        if progress.get("status") != "done":
+            return None
+        result = progress.get("result")
+        if not result:
+            # 尝试从数据库读取
+            detail_str = progress.get("detail", "")
+            try:
+                detail = json.loads(detail_str) if detail_str else {}
+                report_id = detail.get("report_id")
+                if report_id:
+                    report = await Report.get_or_none(id=report_id)
+                    if report:
+                        result = await report.to_dict()
+            except (json.JSONDecodeError, Exception):
+                pass
+
+        # 清理进度文件
+        try:
+            pf = _progress_file(task_id)
+            if os.path.exists(pf):
+                os.remove(pf)
+        except Exception:
+            pass
+        _running_tasks.pop(task_id, None)
+
+        return result
+
+    @staticmethod
+    def _clean_html(text: str) -> str:
+        """从 AI 返回内容中提取纯 HTML 文档，丢弃所有非 HTML 的说明文本。"""
+        text = text.strip()
+        if text.startswith("```html"):
+            text = text[7:]
+        elif text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
+
+        html_start = -1
+        html_end = -1
+
+        doctype_idx = text.lower().find("<!doctype")
+        html_tag_idx = text.lower().find("<html")
+        if doctype_idx != -1:
+            html_start = doctype_idx
+        elif html_tag_idx != -1:
+            html_start = html_tag_idx
+
+        if html_start != -1:
+            end_idx = text.lower().rfind("</html>")
+            if end_idx != -1:
+                html_end = end_idx + len("</html>")
+
+        if html_start != -1 and html_end != -1:
+            text = text[html_start:html_end]
+
+        if text.strip().lower().startswith("<html"):
+            text = "<!DOCTYPE html>\n" + text
+
+        return text.strip()
+
+    # ═══════════════════════════════════════════════════════
+    # 以下为旧版同步生成方法（保留兼容）
+    # ═══════════════════════════════════════════════════════
 
     @classmethod
     async def generate_report(
@@ -188,6 +446,7 @@ class ReportService:
         document_ids: List[int] = None,
         static_file_ids: List[int] = None,
     ) -> Report:
+        """旧版同步生成方法（保留向后兼容）"""
         if document_ids is None:
             document_ids = []
         if static_file_ids is None:
@@ -201,7 +460,6 @@ class ReportService:
 
         data_text = await cls._read_all_data(sheet_ids, analysis_ids, document_ids, static_file_ids)
 
-        # 使用前端传入的系统提示词，未传则用默认值兜底
         effective_system_prompt = system_prompt.strip() if system_prompt and system_prompt.strip() else cls.DEFAULT_SYSTEM_PROMPT
 
         if skill_prompt:
@@ -231,43 +489,9 @@ class ReportService:
         )
         return report
 
-    @staticmethod
-    def _clean_html(text: str) -> str:
-        """从 AI 返回内容中提取纯 HTML 文档，丢弃所有非 HTML 的说明文本。"""
-        text = text.strip()
-        # 去除 markdown 代码块标记
-        if text.startswith("```html"):
-            text = text[7:]
-        elif text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-        text = text.strip()
-
-        # 提取 HTML 文档边界：从 <!DOCTYPE 或 <html 到 </html>
-        html_start = -1
-        html_end = -1
-
-        doctype_idx = text.lower().find("<!doctype")
-        html_tag_idx = text.lower().find("<html")
-        if doctype_idx != -1:
-            html_start = doctype_idx
-        elif html_tag_idx != -1:
-            html_start = html_tag_idx
-
-        if html_start != -1:
-            end_idx = text.lower().rfind("</html>")
-            if end_idx != -1:
-                html_end = end_idx + len("</html>")
-
-        if html_start != -1 and html_end != -1:
-            text = text[html_start:html_end]
-
-        # 如果没有 <!DOCTYPE 但有 <html，补充 DOCTYPE 声明
-        if text.strip().lower().startswith("<html"):
-            text = "<!DOCTYPE html>\n" + text
-
-        return text.strip()
+    # ═══════════════════════════════════════════════════════
+    # 导出方法
+    # ═══════════════════════════════════════════════════════
 
     @classmethod
     async def export_html(cls, report_id: int) -> str:
@@ -319,11 +543,12 @@ class ReportService:
         except ImportError:
             raise RuntimeError("python-docx 未安装")
 
-    # ── 数据源预览 ──
+    # ═══════════════════════════════════════════════════════
+    # 数据源预览
+    # ═══════════════════════════════════════════════════════
 
     @staticmethod
     def _estimate_tokens(text: str) -> int:
-        """粗略估算 token 数：中文每字 ~1.5 token，英文每词 ~1.3 token"""
         chinese_chars = len(re.findall(r'[\u4e00-\u9fff]', text))
         english_words = len(re.findall(r'[a-zA-Z]+', text))
         other = max(0, len(text) - chinese_chars - sum(len(w) for w in re.findall(r'[a-zA-Z]+', text)))
@@ -415,10 +640,8 @@ class ReportService:
                         df = pd.read_excel(doc.file_path) if ext != '.csv' else pd.read_csv(doc.file_path)
                         text = df.head(50).to_markdown(index=False)
                     elif ext in ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.tiff', '.tif'):
-                        # 图片文件 → 简短元数据描述
                         text = f"*（图片文件: {ext_name}）*"
                     else:
-                        # 使用 doc_to_md 处理 PDF/DOCX/PPTX/MD/TXT 等
                         try:
                             text, _ = file_to_markdown(doc.file_path, ext_name)
                             text = text[:5000]
@@ -493,7 +716,6 @@ class ReportService:
             except Exception as e:
                 logger.warning(f"预览静态文件失败 {sf.file_path}: {e}")
 
-        # 构建完整的 MD 预览
         md_full = "\n\n---\n\n".join(md_parts) if md_parts else "（无数据源）"
         total_chars = sum(it["char_count"] for it in items)
         estimated_tokens = cls._estimate_tokens(md_full)

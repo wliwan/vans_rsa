@@ -175,6 +175,8 @@ export default {
   // reports
   getReportList: (params = {}) => request.get("/report/list", { params }),
   generateReport: (data = {}) => request.post("/report/generate", data, { timeout: 0 }),
+  getReportGenerateProgress: (params = {}) => request.get("/report/generate-progress", { params }),
+  getReportGenerateResult: (params = {}) => request.get("/report/generate-result", { params }),
   getReportById: (params = {}) => request.get("/report/get", { params }),
   updateReport: (data = {}) => request.post("/report/update", data),
   cloneReport: (data = {}) => request.post("/report/clone", data),

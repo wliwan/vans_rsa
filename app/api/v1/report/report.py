@@ -43,14 +43,17 @@ async def list_reports(
     return Success(data=data)
 
 
-@router.post("/generate", summary="生成文书")
+@router.post("/generate", summary="生成文书（异步多阶段）")
 async def generate_report(req: ReportCreate):
+    """启动异步多阶段文书生成，立即返回 task_id。
+    前端通过 GET /report/generate-progress?task_id=xxx 轮询进度，
+    完成后通过 GET /report/generate-result?task_id=xxx 获取结果。"""
     user_id = CTX_USER_ID.get()
     ws = await workspace_controller.check_permission(req.workspace_id, user_id)
     if not ws:
         return Fail(code=403, msg="无权操作该工作区")
     try:
-        report = await report_service.generate_report(
+        task_id = await report_service.start_generate_report(
             workspace_id=req.workspace_id,
             name=req.name,
             sheet_ids=req.source_sheet_ids,
@@ -62,10 +65,34 @@ async def generate_report(req: ReportCreate):
             document_ids=req.source_document_ids,
             static_file_ids=req.source_static_ids,
         )
-        return Success(data=await report.to_dict(), msg="文书生成成功")
+        return Success(data={"task_id": task_id}, msg="文书生成任务已启动")
     except Exception as e:
-        logger.exception("文书生成失败")
-        return Fail(code=500, msg=f"生成失败: {str(e)}")
+        logger.exception("文书生成启动失败")
+        return Fail(code=500, msg=f"启动失败: {str(e)}")
+
+
+@router.get("/generate-progress", summary="查询文书生成进度")
+async def get_generate_progress(task_id: str = Query(..., description="任务ID")):
+    """轮询文书生成进度，返回 status/phase/progress/message/detail"""
+    try:
+        progress = report_service.get_generate_progress(task_id)
+        return Success(data=progress)
+    except Exception as e:
+        logger.exception("查询文书生成进度失败")
+        return Fail(code=500, msg=f"查询进度失败: {str(e)}")
+
+
+@router.get("/generate-result", summary="获取已生成的文书结果")
+async def get_generate_result(task_id: str = Query(..., description="任务ID")):
+    """获取生成完成的文书数据。仅在 status=done 时返回结果。"""
+    try:
+        result = await report_service.get_generate_result(task_id)
+        if result is None:
+            return Fail(code=404, msg="文书尚未完成或不存在")
+        return Success(data=result, msg="文书生成完成")
+    except Exception as e:
+        logger.exception("获取文书结果失败")
+        return Fail(code=500, msg=f"获取结果失败: {str(e)}")
 
 
 @router.post("/update", summary="更新文书")

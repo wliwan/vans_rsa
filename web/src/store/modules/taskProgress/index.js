@@ -21,7 +21,8 @@ export const useTaskProgressStore = defineStore('taskProgress', {
   actions: {
     upsertTask({ id, title, status, progress, message, phase, detail = '', removable = true, retryHandler = null }) {
       const idx = this.tasks.findIndex(t => t.id === id)
-      const task = { id, title, status, progress: progress ?? 0, message: message ?? '', phase: phase ?? '', detail, removable, retryHandler }
+      const mergedRetryHandler = retryHandler !== null ? retryHandler : (idx >= 0 ? this.tasks[idx].retryHandler : null)
+      const task = { id, title, status, progress: progress ?? 0, message: message ?? '', phase: phase ?? '', detail, removable, retryHandler: mergedRetryHandler }
       if (idx >= 0) {
         this.tasks[idx] = { ...this.tasks[idx], ...task }
       } else {

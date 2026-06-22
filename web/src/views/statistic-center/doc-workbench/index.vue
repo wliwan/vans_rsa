@@ -370,26 +370,22 @@ async function handleGenerate() {
 // 抽取为独立函数，供重试回调使用
 function doGenerateTask() {
   const taskStore = useTaskProgressStore()
-  const taskId = taskStore.startTask(t('views.statistic-center.label_cn_acc23771', { generateForm_value_name: generateForm.value.name }), () => {
-    doGenerateTask()
-  })
+  const reportName = generateForm.value.name
 
-  // 模拟进度（后端同步返回，无法获取真实百分比）
-  let simProgress = 10
-  const simTimer = setInterval(() => {
-    if (simProgress < 85) {
-      simProgress += 5
-      taskStore.updateProgress(taskId, { progress: simProgress, message: t('views.statistic-center.label_ai_cn_7a58217b') })
-    }
-  }, 1000)
+  // 启动全局任务进度弹窗，标题直接显示文书名称
+  const taskId = taskStore.startTask(
+    `${t('views.statistic-center.label_cn_acc23771', { generateForm_value_name: reportName })}`,
+    () => { doGenerateTask() }
+  )
 
   const sourceSheetIds = [...checkedSheetIds.value, ...checkedAnalysisIds.value]
   const sourceDocIds = [...checkedDocumentIds.value, ...checkedDatabaseDocIds.value]
   const sourceStaticIds = [...checkedStaticFileIds.value]
 
+  // 1. 发起异步生成请求 → 获取 task_id
   api.generateReport({
     workspace_id: generateForm.value.workspace_id,
-    name: generateForm.value.name,
+    name: reportName,
     source_sheet_ids: sourceSheetIds,
     source_analysis_ids: [],
     source_document_ids: sourceDocIds,
@@ -398,17 +394,105 @@ function doGenerateTask() {
     skill_id: generateForm.value.skill_id,
     system_prompt: generateForm.value.system_prompt,
     prompt: generateForm.value.prompt,
-  }).then(() => {
-    clearInterval(simTimer)
-    taskStore.finishTask(taskId, t('views.statistic-center.label_cn_844785de'))
-    message.success(t('views.statistic-center.message_cn_23799178'))
-    loadReports()
+  }).then(async (res) => {
+    const backendTaskId = res?.data?.task_id
+    if (!backendTaskId) {
+      taskStore.failTask(taskId, { message: t('views.statistic-center.label_cn_53515592'), detail: '未获取到任务ID' })
+      message.error(t('views.statistic-center.label_cn_53515592'))
+      return
+    }
+
+    // 2. 轮询后端进度
+    const pollInterval = 1500
+    const maxPolls = 600 // 最多 15 分钟
+    let pollCount = 0
+
+    const poll = async () => {
+      pollCount++
+      try {
+        const progressRes = await api.getReportGenerateProgress({ task_id: backendTaskId })
+        const progress = progressRes?.data || {}
+
+        if (progress.status === 'error') {
+          taskStore.failTask(taskId, {
+            message: t('views.statistic-center.label_cn_53515592'),
+            detail: progress.detail || progress.message || t('views.network.roadNetworkWorkbench.messages.unknownError'),
+          })
+          message.error(t('views.statistic-center.label_cn_53515592'))
+          return
+        }
+
+        if (progress.status === 'done') {
+          // 3. 生成完成 → 获取结果
+          taskStore.updateProgress(taskId, { progress: 95, message: progress.message || '文书生成完成，正在获取结果...' })
+          try {
+            const resultRes = await api.getReportGenerateResult({ task_id: backendTaskId })
+            taskStore.finishTask(taskId, t('views.statistic-center.label_cn_844785de'))
+            message.success(t('views.statistic-center.message_cn_23799178'))
+            loadReports()
+          } catch (resultErr) {
+            const errMsg = resultErr?.response?.data?.msg || resultErr?.message || t('views.network.roadNetworkWorkbench.messages.unknownError')
+            taskStore.failTask(taskId, { message: t('views.statistic-center.label_cn_53515592'), detail: errMsg })
+            message.error(t('views.statistic-center.label_cn_53515592'))
+          }
+          return
+        }
+
+        // 4. 更新进度（来自后端的真实进度 + 阶段描述）
+        const progressPct = progress.progress ?? 0
+        const phaseLabel = getPhaseLabel(progress.phase)
+        const displayMessage = phaseLabel
+          ? `${phaseLabel}: ${progress.message || ''}`
+          : (progress.message || t('views.statistic-center.label_ai_cn_7a58217b'))
+
+        taskStore.updateProgress(taskId, {
+          progress: progressPct,
+          message: displayMessage,
+          phase: progress.phase || '',
+        })
+
+        // 5. 继续轮询
+        if (pollCount < maxPolls) {
+          setTimeout(poll, pollInterval)
+        } else {
+          taskStore.failTask(taskId, {
+            message: t('views.statistic-center.label_cn_53515592'),
+            detail: '生成超时（超过 15 分钟）',
+          })
+          message.error(t('views.statistic-center.label_cn_53515592'))
+        }
+      } catch (pollErr) {
+        // 轮询请求失败（网络波动等），继续重试
+        if (pollCount < maxPolls) {
+          setTimeout(poll, pollInterval * 2)
+        } else {
+          taskStore.failTask(taskId, {
+            message: t('views.statistic-center.label_cn_53515592'),
+            detail: pollErr?.response?.data?.msg || pollErr?.message || '轮询失败',
+          })
+        }
+      }
+    }
+
+    // 启动第一次轮询
+    poll()
   }).catch((e) => {
-    clearInterval(simTimer)
     const errMsg = e?.response?.data?.msg || e?.message || t('views.network.roadNetworkWorkbench.messages.unknownError')
     taskStore.failTask(taskId, { message: t('views.statistic-center.label_cn_53515592'), detail: errMsg })
     message.error(t('views.statistic-center.label_cn_53515592'))
   })
+}
+
+// 阶段中文标签映射
+function getPhaseLabel(phase) {
+  const map = {
+    preparing: '准备素材',
+    planning: '规划大纲',
+    generating: '生成章节',
+    assembling: '组装文书',
+    saving: '保存文书',
+  }
+  return map[phase] || ''
 }
 
 // 保存编辑
