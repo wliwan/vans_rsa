@@ -23,8 +23,8 @@ defineOptions({ name: i18n.global.t('views.statistic-center.title_cn_c56cb26a') 
 const message = useMessage()
 
 // 移动端适配
-const bp = reactive(useBreakpoints({ sm: 666, md: 991 }))
-const isMobile = computed(() => bp.isSmaller('sm') || bp.between('sm', 'md'))
+const bp = reactive(useBreakpoints({ sm: 640, md: 991 }))
+const isMobile = computed(() => bp.isSmaller('sm'))
 const panelVisible = ref(true)
 watch(isMobile, (val) => { if (val) panelVisible.value = false })
 
@@ -523,14 +523,23 @@ onBeforeUnmount(() => destroyCodeMirror())
       class="flex-1 min-w-0 overflow-hidden flex flex-col"
       @click="onContentClick"
     >
-      <!-- 侧边栏收起时的边栏拉手 -->
+      <!-- 桌面端：侧边栏收起时的边栏拉手 -->
       <div
-        v-if="!panelVisible"
+        v-if="!panelVisible && !isMobile"
         class="sidebar-pull-handle"
         @click.stop="panelVisible = true"
         :title="$t('views.statistic-center.title_cn_c56cb26a')"
       >
         <TheIcon icon="material-symbols:chevron-right" :size="18" />
+      </div>
+
+      <!-- 侧边栏收起时浮动展开按钮（右下角） -->
+      <div
+        v-if="!panelVisible"
+        class="mobile-menu-btn"
+        @click="panelVisible = true"
+      >
+        <TheIcon icon="material-symbols:menu" :size="26" />
       </div>
 
       <!-- 操作栏（固定顶部） -->
@@ -1026,6 +1035,29 @@ onBeforeUnmount(() => destroyCodeMirror())
 .sidebar-pull-handle:hover {
   width: 28px;
   color: var(--primary-color);
+}
+
+/* ── 移动端汉堡菜单浮动按钮 ── */
+.mobile-menu-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  z-index: 100;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.mobile-menu-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
 </style>
 
