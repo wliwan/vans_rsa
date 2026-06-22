@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     CORS_ALLOW_METHODS: typing.List = ["*"]
     CORS_ALLOW_HEADERS: typing.List = ["*"]
 
-    PUBLIC_BASE_URL: str = "http://rsatest.vanstk.com"  # 公网访问地址，如 http://example.com:9999；用于文书生成等场景构造完整短链接
+    PUBLIC_BASE_URL: str = "https://rsa.vanstk.com"  # 公网访问地址，如 http://example.com:9999；用于文书生成等场景构造完整短链接
 
     DEBUG: bool = True
 

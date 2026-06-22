@@ -14,6 +14,7 @@ from PIL import Image as PILImage
 
 from app.models.admin import AIProxy, AnalysisSheet, Document, OriginalSheet, Report, Skill, StaticFile, Workspace
 from app.settings import settings
+from app.core.ctx import CTX_BASE_URL
 from app.utils.doc_to_md import file_to_markdown
 
 logger = logging.getLogger(__name__)
@@ -111,7 +112,8 @@ class ReportService:
 
     @classmethod
     def _short_link(cls, token: str) -> str:
-        base = settings.PUBLIC_BASE_URL.rstrip("/") if settings.PUBLIC_BASE_URL else ""
+        base = CTX_BASE_URL.get() or settings.PUBLIC_BASE_URL
+        base = base.rstrip("/") if base else ""
         return f"{base}/api/sf/{token}"
 
     @classmethod

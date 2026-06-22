@@ -587,6 +587,8 @@ async function handleBatchUpload({ file, fileList }) {
       await loadSheets()
     } catch (e) { message.error(e?.response?.data?.msg || '批量上传失败') }
     uploading.value = false
+    // 清空 NUpload 内部文件列表，避免下次上传时重复上传旧文件
+    batchSheetUploadRef.value?.clear()
   }, 150)
 }
 
@@ -633,6 +635,8 @@ async function handleBatchDocUpload({ file, fileList }) {
       await loadOriginalDocuments()
     } catch (e) { message.error('批量上传失败') }
     uploadingDoc.value = false
+    // 清空 NUpload 内部文件列表，避免下次上传时重复上传旧文件
+    batchDocUploadRef.value?.clear()
   }, 150)
 }
 
@@ -923,6 +927,8 @@ const selectedStaticFileIds = ref([])
 const selectedStaticFile = ref(null)
 const staticFilesLoading = ref(false)
 const staticFileUploadRef = ref(null)
+const batchSheetUploadRef = ref(null)
+const batchDocUploadRef = ref(null)
 const staticFileBaseUrl = ref('')
 const staticFileUploading = ref(false)
 
@@ -1042,6 +1048,8 @@ async function handleStaticFileUpload({ file, fileList }) {
     } catch (e) { message.error(e?.response?.data?.msg || t('views.statistic-center.message_cn_54e5de42')) }
     staticFileUploadLock = false
     staticFileUploading.value = false
+    // 清空 NUpload 内部文件列表，避免下次上传时重复上传旧文件
+    staticFileUploadRef.value?.clear()
   }, 300)
 }
 
@@ -1201,6 +1209,7 @@ const sqliteFilePath = ref('')
 const sqliteFileName = ref('')
 const sqliteTables = ref([])
 const sqliteUploading = ref(false)
+const sqliteUploadRef = ref(null)
 const sqliteSelectedTables = ref([])
 
 const showPixelModal = ref(false)
@@ -1287,6 +1296,8 @@ async function handleSQLiteUpload({ file }) {
   try { const res = await api.uploadSQLiteFile(selectedWs.value.id, file.file); sqliteFilePath.value = res.data.file_path; sqliteFileName.value = res.data.file_name; sqliteTables.value = (res.data.tables || []).map(t => ({ ...t, selected: false })); message.success(res.msg || `解析成功，共 ${sqliteTables.value.length} 个表`) }
   catch (e) { message.error(e?.response?.data?.msg || e?.message || t('views.statistic-center.message_cn_5348dcac')) }
   sqliteUploading.value = false
+  // 清空 NUpload 内部文件列表，避免下次上传时重复上传旧文件
+  sqliteUploadRef.value?.clear()
 }
 
 async function importSQLite() {
@@ -1494,7 +1505,7 @@ onBeforeUnmount(() => {
                       <TheIcon icon="material-symbols:edit-note" :size="16" class="mr-1" />CSV文本导入
                     </NButton>
                   </div>
-                  <NUpload :show-file-list="false" :default-upload="false" accept=".xlsx,.xls,.csv" multiple @change="handleBatchUpload">
+                  <NUpload ref="batchSheetUploadRef" :show-file-list="false" :default-upload="false" accept=".xlsx,.xls,.csv" multiple @change="handleBatchUpload">
                     <NUploadDragger
                       class="w-full"
                       style="border-radius: 12px; --n-border-hover: 2px dashed #3b82f6"
@@ -1720,7 +1731,7 @@ onBeforeUnmount(() => {
                       <TheIcon icon="material-symbols:edit-note" :size="16" class="mr-1" />文本导入
                     </NButton>
                   </div>
-                  <NUpload :show-file-list="false" :default-upload="false" accept=".txt,.md,.pdf,.docx,.ppt,.pptx,.xlsx,.xls,.csv" multiple @change="handleBatchDocUpload">
+                  <NUpload ref="batchDocUploadRef" :show-file-list="false" :default-upload="false" accept=".txt,.md,.pdf,.docx,.ppt,.pptx,.xlsx,.xls,.csv" multiple @change="handleBatchDocUpload">
                     <NUploadDragger
                       class="w-full"
                       style="border-radius: 12px; --n-border-hover: 2px dashed #3b82f6"
@@ -2298,7 +2309,7 @@ onBeforeUnmount(() => {
   <!-- ── SQLite 弹窗 ── -->
   <NModal v-model:show="showSQLiteModal" :title="t('views.statistic-center.label_cn_e2846471')" preset="card" style="width: 600px">
     <div class="mb-4">
-      <NUpload :show-file-list="false" :default-upload="false" accept=".sqlite,.db,.sqlite3" @change="handleSQLiteUpload">
+      <NUpload ref="sqliteUploadRef" :show-file-list="false" :default-upload="false" accept=".sqlite,.db,.sqlite3" @change="handleSQLiteUpload">
         <NButton :loading="sqliteUploading"><TheIcon icon="material-symbols:upload" :size="18" class="mr-1" />{{ sqliteFileName ? `已上传: ${sqliteFileName}` : t('views.statistic-center.label_cn_d895f612') }}</NButton>
       </NUpload>
     </div>

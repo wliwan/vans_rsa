@@ -1,10 +1,10 @@
 import logging
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 
 from app.controllers.report import report_service
 from app.utils.http_utils import make_download_response
-from app.core.ctx import CTX_USER_ID
+from app.core.ctx import CTX_USER_ID, CTX_BASE_URL
 from app.controllers.workspace import workspace_controller
 from app.models.admin import Report
 from app.schemas.base import Fail, Success, SuccessExtra
@@ -16,7 +16,9 @@ router = APIRouter()
 
 
 @router.post("/preview-sources", summary="预览数据源（MD转换 + 统计）")
-async def preview_sources(req: ReportPreviewSources):
+async def preview_sources(req: ReportPreviewSources, request: Request):
+    # 取当前请求的 base URL 作为短链接基础地址
+    CTX_BASE_URL.set(str(request.base_url).rstrip("/"))
     try:
         result = await report_service.preview_sources(
             sheet_ids=req.sheet_ids,
@@ -44,11 +46,13 @@ async def list_reports(
 
 
 @router.post("/generate", summary="生成文书（异步多阶段）")
-async def generate_report(req: ReportCreate):
+async def generate_report(req: ReportCreate, request: Request):
     """启动异步多阶段文书生成，立即返回 task_id。
     前端通过 GET /report/generate-progress?task_id=xxx 轮询进度，
     完成后通过 GET /report/generate-result?task_id=xxx 获取结果。"""
     user_id = CTX_USER_ID.get()
+    # 取当前请求的 base URL 作为短链接基础地址（通过 contextvar 传递到后台任务）
+    CTX_BASE_URL.set(str(request.base_url).rstrip("/"))
     ws = await workspace_controller.check_permission(req.workspace_id, user_id)
     if not ws:
         return Fail(code=403, msg="无权操作该工作区")
