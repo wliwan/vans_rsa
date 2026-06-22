@@ -27,6 +27,13 @@ class ReportClone(BaseModel):
     name: str = Field(..., description="新报告名称")
 
 
+class ReportCloneTranslate(BaseModel):
+    id: int = Field(..., description="源报告ID")
+    name: str = Field(..., description="新报告名称")
+    target_language: str = Field(..., description="目标语言，如 English、日本語、한국어、Français、Deutsch 等")
+    ai_proxy_id: int = Field(..., description="AI代理ID")
+
+
 class ReportPreviewSources(BaseModel):
     sheet_ids: List[int] = Field(default_factory=list, description="表格ID列表")
     analysis_ids: List[int] = Field(default_factory=list, description="分析表格ID列表")

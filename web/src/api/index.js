@@ -180,6 +180,7 @@ export default {
   getReportById: (params = {}) => request.get("/report/get", { params }),
   updateReport: (data = {}) => request.post("/report/update", data),
   cloneReport: (data = {}) => request.post("/report/clone", data),
+  cloneReportTranslate: (data = {}) => request.post("/report/clone-translate", data, { timeout: 0 }),
   deleteReport: (params = {}) => request.delete("/report/delete", { params }),
   exportReportHtml: (params = {}) => request.get("/report/export/html", { params, responseType: "blob" }),
   exportReportPdf: (params = {}) => request.get("/report/export/pdf", { params, responseType: "blob" }),

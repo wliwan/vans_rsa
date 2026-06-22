@@ -393,6 +393,80 @@ class ReportService:
 
         return result
 
+    # ═══════════════════════════════════════════════════════
+    # AI 语言克隆
+    # ═══════════════════════════════════════════════════════
+
+    @classmethod
+    async def clone_translate(
+        cls,
+        source_report_id: int,
+        new_name: str,
+        target_language: str,
+        ai_proxy_id: int,
+    ) -> dict:
+        """使用 AI 将文书 HTML 内容翻译为目标语言，保留排版和布局。"""
+        # 1. 获取源文书
+        source = await Report.get_or_none(id=source_report_id)
+        if not source:
+            raise ValueError("源文书不存在")
+        if not source.content:
+            raise ValueError("源文书内容为空")
+
+        # 2. 获取 AI 代理
+        ai_proxy = await AIProxy.get_or_none(id=ai_proxy_id)
+        if not ai_proxy:
+            raise ValueError("AI代理不存在")
+
+        # 3. 构建翻译 prompt
+        system_prompt = (
+            "你是一个专业的HTML文档翻译专家。你的任务是将HTML文书精确翻译为目标语言。\n\n"
+            "翻译规则：\n"
+            "1. **严格保留HTML标签和结构**：所有标签、属性、class名、id名必须原样保留，不得修改。\n"
+            "2. **保留内联CSS样式**：所有style属性值必须原样保留。\n"
+            "3. **仅翻译文本内容**：只翻译标签之间的可见文本，不翻译HTML标签、属性名、属性值。\n"
+            "4. **保留数字和格式**：日期、数字、百分比等保持原格式。\n"
+            "5. **适当调整布局**：不同语言文字长度不同（如英文比中文长，日文比中文短），"
+            "你可以微调CSS中的width、padding、font-size等数值来适应目标语言的长度，"
+            "但保持整体设计风格不变。调整幅度控制在±30%以内。\n"
+            "6. **保持语义准确**：专业术语翻译准确，保持文书的正式专业风格。\n"
+            "7. **直接返回完整HTML**：只返回HTML代码，不要添加任何解释说明。\n"
+            "8. **保留 <!DOCTYPE html> 声明**。"
+        )
+
+        user_prompt = (
+            f"请将以下HTML文书翻译为{target_language}：\n\n"
+            f"{source.content}"
+        )
+
+        # 4. 调用 AI
+        client = cls._build_client(ai_proxy)
+        model = ai_proxy.model or "gpt-3.5-turbo"
+
+        translated_html = await cls._call_ai(client, model, system_prompt, user_prompt)
+
+        # 5. 清洗格式
+        translated_html = cls._clean_html(translated_html)
+
+        # 6. 保存新文书
+        new_report = await Report.create(
+            workspace_id=source.workspace_id,
+            name=new_name,
+            content=translated_html,
+            source_sheet_ids=source.source_sheet_ids,
+            source_analysis_ids=source.source_analysis_ids,
+            source_document_ids=source.source_document_ids,
+            source_static_ids=source.source_static_ids,
+            ai_proxy_id=ai_proxy_id,
+            skill_id=source.skill_id,
+            prompt=source.prompt,
+            system_prompt=source.system_prompt,
+        )
+
+        result = await new_report.to_dict()
+        logger.info(f"AI语言克隆完成: report_id={new_report.id}, language={target_language}")
+        return result
+
     @staticmethod
     def _clean_html(text: str) -> str:
         """从 AI 返回内容中提取纯 HTML 文档，丢弃所有非 HTML 的说明文本。"""

@@ -134,6 +134,30 @@ async def clone_report(req: ReportClone):
     return Success(data=await new_report.to_dict(), msg="克隆成功")
 
 
+@router.post("/clone-translate", summary="AI语言克隆文书（翻译为其他语言）")
+async def clone_translate_report(req: ReportCloneTranslate):
+    user_id = CTX_USER_ID.get()
+    source = await Report.get_or_none(id=req.id)
+    if not source:
+        return Fail(code=404, msg="源文书不存在")
+    ws = await workspace_controller.check_permission(source.workspace_id, user_id)
+    if not ws:
+        return Fail(code=403, msg="无权操作")
+    try:
+        result = await report_service.clone_translate(
+            source_report_id=req.id,
+            new_name=req.name,
+            target_language=req.target_language,
+            ai_proxy_id=req.ai_proxy_id,
+        )
+        return Success(data=result, msg="AI语言克隆成功")
+    except ValueError as e:
+        return Fail(code=400, msg=str(e))
+    except Exception as e:
+        logger.exception("AI语言克隆失败")
+        return Fail(code=500, msg=f"AI语言克隆失败: {str(e)}")
+
+
 @router.delete("/delete", summary="删除文书")
 async def delete_report(report_id: int = Query(..., description="文书ID")):
     user_id = CTX_USER_ID.get()

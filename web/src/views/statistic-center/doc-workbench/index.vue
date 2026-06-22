@@ -6,7 +6,7 @@ import { useBreakpoints } from '@vueuse/core'
 import {
 
 
-  NButton, NInput,
+  NButton, NButtonGroup, NInput,
   NModal, NSpace, NSelect, NPopconfirm,
   NForm, NFormItem, NTag, NDivider, NSpin, NSwitch, useMessage,
 } from 'naive-ui'
@@ -129,7 +129,92 @@ const previewLoading = ref(false)
 
 // 克隆弹窗
 const showCloneModal = ref(false)
-const cloneForm = ref({ id: 0, name: '' })
+const cloneMode = ref('normal') // 'normal' | 'ai'
+const cloneForm = ref({ id: 0, name: '', target_language: '', ai_proxy_id: null })
+const cloneTranslateLoading = ref(false)
+const cloneProxyOptions = ref([])
+const languageOptions = [
+  // 东亚
+  { label: '中文 (Chinese)', value: 'Chinese' },
+  { label: '日语 (Japanese)', value: 'Japanese' },
+  { label: '韩语 (Korean)', value: 'Korean' },
+  { label: '蒙古语 (Mongolian)', value: 'Mongolian' },
+  // 东南亚
+  { label: '越南语 (Vietnamese)', value: 'Vietnamese' },
+  { label: '泰语 (Thai)', value: 'Thai' },
+  { label: '印尼语 (Indonesian)', value: 'Indonesian' },
+  { label: '马来语 (Malay)', value: 'Malay' },
+  { label: '菲律宾语 (Filipino)', value: 'Filipino' },
+  { label: '缅甸语 (Burmese)', value: 'Burmese' },
+  { label: '高棉语 (Khmer)', value: 'Khmer' },
+  { label: '老挝语 (Lao)', value: 'Lao' },
+  // 南亚
+  { label: '印地语 (Hindi)', value: 'Hindi' },
+  { label: '孟加拉语 (Bengali)', value: 'Bengali' },
+  { label: '乌尔都语 (Urdu)', value: 'Urdu' },
+  { label: '泰米尔语 (Tamil)', value: 'Tamil' },
+  { label: '泰卢固语 (Telugu)', value: 'Telugu' },
+  { label: '马拉地语 (Marathi)', value: 'Marathi' },
+  { label: '古吉拉特语 (Gujarati)', value: 'Gujarati' },
+  { label: '旁遮普语 (Punjabi)', value: 'Punjabi' },
+  { label: '僧伽罗语 (Sinhala)', value: 'Sinhala' },
+  { label: '尼泊尔语 (Nepali)', value: 'Nepali' },
+  // 中东 / 中亚
+  { label: '阿拉伯语 (Arabic)', value: 'Arabic' },
+  { label: '波斯语 (Persian)', value: 'Persian' },
+  { label: '希伯来语 (Hebrew)', value: 'Hebrew' },
+  { label: '土耳其语 (Turkish)', value: 'Turkish' },
+  { label: '哈萨克语 (Kazakh)', value: 'Kazakh' },
+  { label: '乌兹别克语 (Uzbek)', value: 'Uzbek' },
+  // 欧洲 — 日耳曼
+  { label: '英语 (English)', value: 'English' },
+  { label: '德语 (German)', value: 'German' },
+  { label: '荷兰语 (Dutch)', value: 'Dutch' },
+  { label: '瑞典语 (Swedish)', value: 'Swedish' },
+  { label: '丹麦语 (Danish)', value: 'Danish' },
+  { label: '挪威语 (Norwegian)', value: 'Norwegian' },
+  { label: '冰岛语 (Icelandic)', value: 'Icelandic' },
+  { label: '南非荷兰语 (Afrikaans)', value: 'Afrikaans' },
+  // 欧洲 — 罗曼
+  { label: '法语 (French)', value: 'French' },
+  { label: '西班牙语 (Spanish)', value: 'Spanish' },
+  { label: '葡萄牙语 (Portuguese)', value: 'Portuguese' },
+  { label: '意大利语 (Italian)', value: 'Italian' },
+  { label: '罗马尼亚语 (Romanian)', value: 'Romanian' },
+  { label: '加泰罗尼亚语 (Catalan)', value: 'Catalan' },
+  { label: '加利西亚语 (Galician)', value: 'Galician' },
+  // 欧洲 — 斯拉夫
+  { label: '俄语 (Russian)', value: 'Russian' },
+  { label: '波兰语 (Polish)', value: 'Polish' },
+  { label: '捷克语 (Czech)', value: 'Czech' },
+  { label: '乌克兰语 (Ukrainian)', value: 'Ukrainian' },
+  { label: '保加利亚语 (Bulgarian)', value: 'Bulgarian' },
+  { label: '克罗地亚语 (Croatian)', value: 'Croatian' },
+  { label: '塞尔维亚语 (Serbian)', value: 'Serbian' },
+  { label: '斯洛伐克语 (Slovak)', value: 'Slovak' },
+  { label: '斯洛文尼亚语 (Slovenian)', value: 'Slovenian' },
+  // 欧洲 — 其他
+  { label: '希腊语 (Greek)', value: 'Greek' },
+  { label: '匈牙利语 (Hungarian)', value: 'Hungarian' },
+  { label: '芬兰语 (Finnish)', value: 'Finnish' },
+  { label: '立陶宛语 (Lithuanian)', value: 'Lithuanian' },
+  { label: '拉脱维亚语 (Latvian)', value: 'Latvian' },
+  { label: '爱沙尼亚语 (Estonian)', value: 'Estonian' },
+  { label: '巴斯克语 (Basque)', value: 'Basque' },
+  // 非洲
+  { label: '斯瓦希里语 (Swahili)', value: 'Swahili' },
+  { label: '阿姆哈拉语 (Amharic)', value: 'Amharic' },
+  { label: '豪萨语 (Hausa)', value: 'Hausa' },
+  { label: '约鲁巴语 (Yoruba)', value: 'Yoruba' },
+  { label: '祖鲁语 (Zulu)', value: 'Zulu' },
+  // 美洲 / 大洋洲
+  { label: '海地克里奥尔语 (Haitian Creole)', value: 'Haitian Creole' },
+  { label: '毛利语 (Maori)', value: 'Maori' },
+  { label: '夏威夷语 (Hawaiian)', value: 'Hawaiian' },
+  // 其他
+  { label: '世界语 (Esperanto)', value: 'Esperanto' },
+  { label: '拉丁语 (Latin)', value: 'Latin' },
+]
 
 // 工作区列表
 async function loadWorkspaces() {
@@ -544,17 +629,39 @@ async function saveEdit() {
 // 克隆
 function openClone() {
   if (!selectedReport.value) { message.warning(t('views.statistic-center.placeholder_cn_0feed934')); return }
-  cloneForm.value = { id: selectedReport.value.id, name: selectedReport.value.name + t('views.statistic-center.label_cn_a3033ebf') }
+  cloneMode.value = 'normal'
+  cloneForm.value = { id: selectedReport.value.id, name: selectedReport.value.name + t('views.statistic-center.label_cn_a3033ebf'), target_language: 'English', ai_proxy_id: null }
+  // 预加载 AI 代理列表
+  api.getAIProxyList({ page: 1, page_size: 9999 }).then((res) => {
+    cloneProxyOptions.value = (res.data || []).map((p) => ({ label: p.name, value: p.id }))
+  })
   showCloneModal.value = true
 }
 
 async function handleClone() {
+  if (cloneMode.value === 'ai') {
+    await handleCloneTranslate()
+    return
+  }
   try {
     await api.cloneReport(cloneForm.value)
     message.success(t('views.statistic-center.message_cn_473604c8'))
     showCloneModal.value = false
     await loadReports()
   } catch (e) { message.error(t('views.statistic-center.message_cn_6dc5b375')) }
+}
+
+async function handleCloneTranslate() {
+  if (!cloneForm.value.target_language) { message.warning('请选择目标语言'); return }
+  if (!cloneForm.value.ai_proxy_id) { message.warning('请选择AI代理'); return }
+  cloneTranslateLoading.value = true
+  try {
+    const res = await api.cloneReportTranslate(cloneForm.value)
+    message.success(res.msg || '翻译克隆成功')
+    showCloneModal.value = false
+    await loadReports()
+  } catch (e) { message.error(e.message || '翻译克隆失败') }
+  cloneTranslateLoading.value = false
 }
 
 // 删除
@@ -901,19 +1008,56 @@ onBeforeUnmount(() => destroyCodeMirror())
   </NModal>
 
   <!-- 克隆弹窗 -->
-  <NModal v-model:show="showCloneModal" :title="t('views.statistic-center.title_cn_a3ce620d')" preset="card" style="width: 400px">
+  <NModal v-model:show="showCloneModal" :title="t('views.statistic-center.title_cn_a3ce620d')" preset="card" style="width: 480px">
     <NForm :model="cloneForm" label-placement="top">
+      <!-- 克隆模式选择 -->
+      <NFormItem label="克隆模式">
+        <NButtonGroup>
+          <NButton :type="cloneMode === 'normal' ? 'primary' : 'default'" @click="cloneMode = 'normal'" size="small">普通克隆</NButton>
+          <NButton :type="cloneMode === 'ai' ? 'primary' : 'default'" @click="cloneMode = 'ai'" size="small">
+            <TheIcon icon="material-symbols:smart-toy" :size="14" class="mr-1" />AI 语言克隆
+          </NButton>
+        </NButtonGroup>
+      </NFormItem>
+
+      <!-- 文书名称 -->
       <NFormItem :label="t('views.statistic-center.label_cn_e4decf94')" required>
         <NInput v-model:value="cloneForm.name" :placeholder="t('views.statistic-center.placeholder_cn_dace5c08')" />
       </NFormItem>
+
+      <!-- AI 语言克隆选项 -->
+      <template v-if="cloneMode === 'ai'">
+        <NFormItem label="目标语言" required>
+          <NSelect
+            v-model:value="cloneForm.target_language"
+            :options="languageOptions"
+            placeholder="选择目标语言"
+            filterable
+          />
+        </NFormItem>
+        <NFormItem label="AI 代理" required>
+          <NSelect
+            v-model:value="cloneForm.ai_proxy_id"
+            :options="cloneProxyOptions"
+            placeholder="选择AI代理"
+          />
+        </NFormItem>
+      </template>
     </NForm>
     <template #footer>
       <NSpace justify="end">
         <NButton @click="showCloneModal = false">{{ t('views.statistic-center.label_cn_625fb26b') }}</NButton>
-        <NButton type="primary" @click="handleClone">{{ t('views.statistic-center.message_cn_82f85866') }}</NButton>
+        <NButton type="primary" @click="handleClone" :loading="cloneTranslateLoading">
+          <template v-if="cloneMode === 'ai'">
+            <TheIcon icon="material-symbols:translate" :size="16" class="mr-1" />
+            {{ cloneTranslateLoading ? '翻译克隆中...' : '开始翻译克隆' }}
+          </template>
+          <template v-else>
+            {{ t('views.statistic-center.message_cn_82f85866') }}
+          </template>
+        </NButton>
       </NSpace>
-    
-</template>
+    </template>
   </NModal>
 
 </template>
