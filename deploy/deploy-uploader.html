@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VansRSA 前端热更新</title>
+<style>
+  :root {
+    --bg: #f5f6fa;
+    --card: #fff;
+    --text: #2c3e50;
+    --muted: #7f8c8d;
+    --border: #e0e0e0;
+    --primary: #2080f0;
+    --primary-hover: #1060c0;
+    --success: #18a058;
+    --error: #d03050;
+    --warn: #f0a020;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    padding: 36px 32px 28px;
+    width: 100%;
+    max-width: 460px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 28px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  input[type="text"],
+  input[type="password"],
+  input[type="url"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--primary); }
+  .row { margin-bottom: 16px; }
+  .row-tight { margin-bottom: 10px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 11px 0;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+  .btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-outline:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+  .file-area {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 28px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .file-area:hover, .file-area.dragover {
+    border-color: var(--primary);
+    background: rgba(32,128,240,0.04);
+  }
+  .file-area .icon { font-size: 36px; margin-bottom: 6px; }
+  .file-area .text { font-size: 14px; color: var(--muted); }
+  .file-area .name { font-size: 14px; font-weight: 600; color: var(--primary); margin-top: 4px; }
+
+  .msg {
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+    line-height: 1.5;
+  }
+  .msg.show { display: block; }
+  .msg-success { background: rgba(24,160,88,0.1); color: var(--success); border: 1px solid rgba(24,160,88,0.2); }
+  .msg-error   { background: rgba(208,48,80,0.1); color: var(--error); border: 1px solid rgba(208,48,80,0.2); }
+  .msg-info    { background: rgba(32,128,240,0.08); color: var(--primary); border: 1px solid rgba(32,128,240,0.15); }
+
+  .steps {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .step {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    position: relative;
+    padding-top: 22px;
+  }
+  .step::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+  .step.active { color: var(--primary); font-weight: 600; }
+  .step.active::before { background: var(--primary); }
+  .step.done { color: var(--success); }
+  .step.done::before { background: var(--success); }
+
+  .hidden { display: none !important; }
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>VansRSA 前端热更新</h1>
+  <p class="subtitle">构建产物 zip 上传，即时替换容器内前端文件</p>
+
+  <!-- 步骤条 -->
+  <div class="steps">
+    <div class="step active" id="step-login">① 登录</div>
+    <div class="step" id="step-upload">② 上传</div>
+    <div class="step" id="step-done">③ 完成</div>
+  </div>
+
+  <!-- 消息 -->
+  <div class="msg" id="msg"></div>
+
+  <!-- ============ 阶段 1：登录 ============ -->
+  <div id="phase-login">
+    <div class="row">
+      <label>服务器地址</label>
+      <input type="text" id="server" placeholder="http://192.168.1.100:9999" value="">
+    </div>
+    <div class="row">
+      <label>用户名</label>
+      <input type="text" id="username" placeholder="admin" value="admin">
+    </div>
+    <div class="row">
+      <label>密码</label>
+      <input type="password" id="password" placeholder="密码" value="">
+    </div>
+    <button class="btn btn-primary" id="btn-login" onclick="doLogin()">登录</button>
+  </div>
+
+  <!-- ============ 阶段 2：上传 ============ -->
+  <div id="phase-upload" class="hidden">
+    <div class="row-tight" style="color:var(--muted);font-size:13px;">
+      已登录 <strong id="login-user"></strong>
+      <a href="#" onclick="doLogout()" style="color:var(--primary);margin-left:8px;">退出</a>
+    </div>
+    <hr class="divider">
+
+    <div class="file-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div class="icon">📦</div>
+      <div class="text">点击选择 zip 文件，或拖拽到此处</div>
+      <div class="name" id="file-name" style="display:none;"></div>
+    </div>
+    <input type="file" id="file-input" accept=".zip" class="hidden" onchange="onFileSelect(this.files)">
+
+    <div class="row" style="margin-top:16px;">
+      <button class="btn btn-primary" id="btn-upload" disabled onclick="doUpload()">
+        <span>上传并更新</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ 阶段 3：完成 ============ -->
+  <div id="phase-done" class="hidden" style="text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">✅</div>
+    <p style="font-size:16px;font-weight:600;margin-bottom:4px;">更新完成</p>
+    <p style="color:var(--muted);font-size:13px;" id="done-detail"></p>
+    <hr class="divider">
+    <button class="btn btn-outline" onclick="resetToUpload()">上传另一个</button>
+  </div>
+</div>
+
+<script>
+// ── 状态 ──
+let token = "";
+let selectedFile = null;
+
+// ── 工具函数 ──
+const $ = (id) => document.getElementById(id);
+
+function showMsg(type, text) {
+  const el = $("msg");
+  el.className = "msg show msg-" + type;
+  el.textContent = text;
+}
+function hideMsg() { $("msg").className = "msg"; }
+
+function setStep(n) {
+  ["step-login","step-upload","step-done"].forEach((id,i) => {
+    const el = $(id);
+    el.className = "step";
+    if (i+1 < n) el.classList.add("done");
+    if (i+1 === n) el.classList.add("active");
+  });
+}
+
+// ── 登录 ──
+async function doLogin() {
+  hideMsg();
+  const server = $("server").value.trim().replace(/\/+$/, "");
+  const username = $("username").value.trim();
+  const password = $("password").value.trim();
+
+  if (!server)   { showMsg("error", "请输入服务器地址"); return; }
+  if (!username) { showMsg("error", "请输入用户名"); return; }
+  if (!password) { showMsg("error", "请输入密码"); return; }
+
+  const btn = $("btn-login");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 登录中...';
+  showMsg("info", "正在登录...");
+
+  try {
+    const resp = await fetch(server + "/api/v1/base/access_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+
+    const data = await resp.json();
+    if (data.code !== 200) throw new Error(data.msg || "登录失败");
+
+    token = data.data.access_token;
+    $("login-user").textContent = username;
+    $("phase-login").classList.add("hidden");
+    $("phase-upload").classList.remove("hidden");
+    setStep(2);
+    hideMsg();
+  } catch (e) {
+    showMsg("error", "登录失败: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "登录";
+  }
+}
+
+function doLogout() {
+  token = "";
+  selectedFile = null;
+  $("file-name").style.display = "none";
+  $("file-input").value = "";
+  $("btn-upload").disabled = true;
+  $("btn-upload").innerHTML = "<span>上传并更新</span>";
+  $("phase-upload").classList.add("hidden");
+  $("phase-done").classList.add("hidden");
+  $("phase-login").classList.remove("hidden");
+  setStep(1);
+  hideMsg();
+}
+
+// ── 文件选择 ──
+function onFileSelect(files) {
+  if (!files || files.length === 0) return;
+  selectedFile = files[0];
+  if (!selectedFile.name.toLowerCase().endsWith(".zip")) {
+    showMsg("error", "仅支持 .zip 文件");
+    selectedFile = null;
+    $("btn-upload").disabled = true;
+    return;
+  }
+  hideMsg();
+  $("file-name").textContent = "📎 " + selectedFile.name + " (" + formatSize(selectedFile.size) + ")";
+  $("file-name").style.display = "block";
+  $("btn-upload").disabled = false;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / 1048576).toFixed(1) + " MB";
+}
+
+// ── 拖拽 ──
+const dropZone = $("drop-zone");
+dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+dropZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dropZone.classList.remove("dragover");
+  onFileSelect(e.dataTransfer.files);
+});
+
+// ── 上传 ──
+async function doUpload() {
+  if (!selectedFile) return;
+  hideMsg();
+
+  const btn = $("btn-upload");
+  btn.disabled = true;
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> 上传中...';
+
+  setStep(2);
+  showMsg("info", "正在上传并替换前端文件...");
+
+  const server = $("server").value.trim().replace(/\/+$/, "");
+
+  try {
+    const form = new FormData();
+    form.append("file", selectedFile);
+
+    const resp = await fetch(server + "/api/v1/deploy/update-frontend", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + token },
+      body: form,
+    });
+
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+
+    if (data.code !== 200) throw new Error(data.msg || "上传失败");
+
+    // 成功 → 阶段 3
+    $("done-detail").textContent =
+      data.msg + " | " + data.data.file_count + " 个文件 | " + data.data.size_mb + " MB";
+    $("phase-upload").classList.add("hidden");
+    $("phase-done").classList.remove("hidden");
+    setStep(3);
+    hideMsg();
+  } catch (e) {
+    showMsg("error", "上传失败: " + e.message);
+    btn.disabled = false;
+    btn.innerHTML = origText;
+  }
+}
+
+function resetToUpload() {
+  selectedFile = null;
+  $("file-name").style.display = "none";
+  $("file-input").value = "";
+  $("btn-upload").disabled = true;
+  $("btn-upload").innerHTML = "<span>上传并更新</span>";
+  $("phase-done").classList.add("hidden");
+  $("phase-upload").classList.remove("hidden");
+  setStep(2);
+  hideMsg();
+}
+
+// ── 初始化 ──
+function init() {
+  // 自动填入当前页面同源地址（如果从服务器打开）
+  const currentServer = location.protocol + "//" + location.host;
+  $("server").value = currentServer !== "file://" ? currentServer : "";
+  // 回车登录
+  $("password").addEventListener("keydown", (e) => { if (e.key === "Enter") doLogin(); });
+}
+init();
+</script>
+</body>
+</html>

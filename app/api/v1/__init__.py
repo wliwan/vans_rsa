@@ -23,6 +23,7 @@ from .vehicle import vehicle_router
 from .report import report_router
 from .workspace import workspace_router
 from .database import router as database_router
+from .deploy import deploy_router
 
 v1_router = APIRouter()
 
@@ -49,6 +50,7 @@ v1_router.include_router(vehicle_router, prefix="/vehicle", dependencies=[Depend
 v1_router.include_router(report_router, prefix="/report", dependencies=[DependPermission])
 v1_router.include_router(system_config_router, prefix="/system-config", dependencies=[DependPermission])
 v1_router.include_router(i18n_router, prefix="/i18n", dependencies=[DependPermission])
+v1_router.include_router(deploy_router, prefix="/deploy", dependencies=[DependPermission])
 # v1_router.include_router(announcement_router, prefix="/announcement", dependencies=[DependPermission])
 # v1_router.include_router(article_router, prefix="//content/article", dependencies=[DependPermission])
 # v1_router.include_router(article_router, prefix="/content/article", dependencies=[DependPermission])

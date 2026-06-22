@@ -68,6 +68,7 @@ def make_middlewares():
                 "/api/v1/workspace/sheet/batch-upload",
                 "/api/v1/workspace/document/batch-upload",
                 "/api/v1/i18n/export",
+                "/api/v1/deploy/update-frontend",
                 "/api/s/",
                 "/api/sf/",
                 "/docs",
