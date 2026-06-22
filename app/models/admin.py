@@ -300,6 +300,7 @@ class Report(BaseModel, TimestampMixin):
     ai_proxy_id = fields.IntField(null=True, description="使用的AI代理ID")
     skill_id = fields.IntField(null=True, description="使用的Skill ID")
     prompt = fields.TextField(null=True, description="生成提示词")
+    system_prompt = fields.TextField(null=True, description="系统提示词")
 
     class Meta:
         table = "report"

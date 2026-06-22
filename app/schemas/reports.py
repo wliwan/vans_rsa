@@ -12,7 +12,8 @@ class ReportCreate(BaseModel):
     source_static_ids: List[int] = Field(default_factory=list, description="静态文件ID列表")
     ai_proxy_id: int = Field(..., description="AI代理ID")
     skill_id: Optional[int] = Field(None, description="Skill ID")
-    prompt: str = Field("", description="生成提示词")
+    prompt: str = Field("", description="额外生成提示词")
+    system_prompt: str = Field("", description="系统提示词（默认值预填到前端，用户可修改）")
 
 
 class ReportUpdate(BaseModel):

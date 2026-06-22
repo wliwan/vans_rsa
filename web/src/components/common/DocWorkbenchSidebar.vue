@@ -62,7 +62,7 @@ function selectWorkspace(ws) {
 
 function selectReport(r) {
   emit('select-report', r)
-  // 选中报告后自动隐藏侧边栏
+  // 选中文书后自动隐藏侧边栏
   emit('update:visible', false)
   emit('hide')
 }
@@ -150,7 +150,7 @@ defineExpose({ loadReports })
       </div>
     </div>
 
-    <!-- 报告列表（选中工作区后，带面包屑） -->
+    <!-- 文书列表（选中工作区后，带面包屑） -->
     <div v-else class="card-list">
       <!-- 面包屑 -->
       <div class="breadcrumb-row">

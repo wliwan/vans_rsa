@@ -17,6 +17,18 @@ logger = logging.getLogger(__name__)
 
 
 class ReportService:
+    # 默认系统提示词（前端弹窗预填，后端作为兜底）
+    DEFAULT_SYSTEM_PROMPT = (
+        "你是一个专业的数据分析文书生成专家。请根据提供的数据生成一份完整的HTML格式分析文书。\n"
+        "文书需包含以下部分（使用HTML标签）：\n"
+        "1. <h1> 文书标题\n"
+        "2. <h2> 数据概览 — 数据来源、数据量等\n"
+        "3. <h2> 核心发现 — 3-5个关键洞察\n"
+        "4. <h2> 详细分析 — 多维度数据解读，包含 <table> 表格\n"
+        "5. <h2> 结论与建议\n"
+        "样式要求：使用内联CSS，简洁专业风格，配色为蓝白灰。"
+    )
+
     @staticmethod
     def _build_client(ai_proxy) -> OpenAI:
         return OpenAI(base_url=ai_proxy.url, api_key=ai_proxy.token)
@@ -172,6 +184,7 @@ class ReportService:
         ai_proxy_id: int,
         skill_id: Optional[int] = None,
         extra_prompt: str = "",
+        system_prompt: str = "",
         document_ids: List[int] = None,
         static_file_ids: List[int] = None,
     ) -> Report:
@@ -188,25 +201,19 @@ class ReportService:
 
         data_text = await cls._read_all_data(sheet_ids, analysis_ids, document_ids, static_file_ids)
 
-        system_prompt = """你是一个专业的数据分析报告生成专家。请根据提供的数据生成一份完整的HTML格式分析报告。
-报告需包含以下部分（使用HTML标签）：
-1. <h1> 报告标题
-2. <h2> 数据概览 — 数据来源、数据量等
-3. <h2> 核心发现 — 3-5个关键洞察
-4. <h2> 详细分析 — 多维度数据解读，包含 <table> 表格
-5. <h2> 结论与建议
-样式要求：使用内联CSS，简洁专业风格，配色为蓝白灰。"""
+        # 使用前端传入的系统提示词，未传则用默认值兜底
+        effective_system_prompt = system_prompt.strip() if system_prompt and system_prompt.strip() else cls.DEFAULT_SYSTEM_PROMPT
 
         if skill_prompt:
-            system_prompt += f"\n\n报告框架参考：\n{skill_prompt}"
+            effective_system_prompt += f"\n\n文书框架参考：\n{skill_prompt}"
 
-        user_prompt = f"报告标题：{name}\n\n数据来源：\n{data_text}"
+        user_prompt = f"文书标题：{name}\n\n数据来源：\n{data_text}"
         if extra_prompt:
             user_prompt += f"\n\n额外要求：{extra_prompt}"
-        user_prompt += "\n\n请生成完整的HTML报告（包含<!DOCTYPE html>声明），直接返回HTML代码。"
+        user_prompt += "\n\n请生成完整的HTML文书（包含<!DOCTYPE html>声明），直接返回HTML代码。"
 
         client = cls._build_client(ai_proxy)
-        html_content = await cls._call_ai(client, ai_proxy.model or "gpt-3.5-turbo", system_prompt, user_prompt)
+        html_content = await cls._call_ai(client, ai_proxy.model or "gpt-3.5-turbo", effective_system_prompt, user_prompt)
         html_content = cls._clean_html(html_content)
 
         report = await Report.create(
@@ -220,6 +227,7 @@ class ReportService:
             ai_proxy_id=ai_proxy_id,
             skill_id=skill_id,
             prompt=extra_prompt,
+            system_prompt=system_prompt or cls.DEFAULT_SYSTEM_PROMPT,
         )
         return report
 

@@ -22,6 +22,18 @@ defineOptions({ name: i18n.global.t('views.statistic-center.title_cn_c56cb26a') 
 
 const message = useMessage()
 
+// 默认系统提示词（与后端 ReportService.DEFAULT_SYSTEM_PROMPT 保持一致）
+const DEFAULT_SYSTEM_PROMPT = [
+  '你是一个专业的数据分析文书生成专家。请根据提供的数据生成一份完整的HTML格式分析文书。',
+  '文书需包含以下部分（使用HTML标签）：',
+  '1. <h1> 文书标题',
+  '2. <h2> 数据概览 — 数据来源、数据量等',
+  '3. <h2> 核心发现 — 3-5个关键洞察',
+  '4. <h2> 详细分析 — 多维度数据解读，包含 <table> 表格',
+  '5. <h2> 结论与建议',
+  '样式要求：使用内联CSS，简洁专业风格，配色为蓝白灰。',
+].join('\n')
+
 // 移动端适配
 const bp = reactive(useBreakpoints({ sm: 640, md: 991 }))
 const isMobile = computed(() => bp.isSmaller('sm'))
@@ -75,7 +87,7 @@ const previewFrame = ref(null)
 const showGenerateModal = ref(false)
 const generateForm = ref({
   workspace_id: 0, name: '',
-  ai_proxy_id: null, skill_id: null, prompt: '',
+  ai_proxy_id: null, skill_id: null, system_prompt: DEFAULT_SYSTEM_PROMPT, prompt: '',
 })
 const proxyOptions = ref([])
 const skillOptions = ref([])
@@ -181,10 +193,32 @@ function destroyCodeMirror() {
 
 // ── 生成弹窗逻辑 ──
 
+// 从 localStorage 读取用户自定义的系统提示词，没有则用默认值
+function loadSystemPrompt() {
+  try {
+    const saved = localStorage.getItem('vfa_doc_system_prompt')
+    if (saved && saved.trim()) return saved
+  } catch (e) { /* ignore */ }
+  return DEFAULT_SYSTEM_PROMPT
+}
+
+function resetSystemPrompt() {
+  generateForm.value.system_prompt = DEFAULT_SYSTEM_PROMPT
+  try { localStorage.removeItem('vfa_doc_system_prompt') } catch (e) { /* ignore */ }
+  message.success('已恢复默认系统提示词')
+}
+
+function saveSystemPrompt() {
+  const val = generateForm.value.system_prompt?.trim()
+  if (!val) { message.warning('系统提示词不能为空'); return }
+  try { localStorage.setItem('vfa_doc_system_prompt', val) } catch (e) { /* ignore */ }
+  message.success('系统提示词已保存，下次打开弹窗将自动使用')
+}
+
 function openGenerate() {
   generateForm.value = {
     workspace_id: selectedWs.value?.id || null, name: t('views.statistic-center.label_cn_ad2f550c'),
-    ai_proxy_id: null, skill_id: null, prompt: '',
+    ai_proxy_id: null, skill_id: null, system_prompt: loadSystemPrompt(), prompt: '',
   }
   workspaceOptions.value = workspaces.value.map((w) => ({ label: w.name, value: w.id }))
   resetAllSources()
@@ -362,6 +396,7 @@ function doGenerateTask() {
     source_static_ids: sourceStaticIds,
     ai_proxy_id: generateForm.value.ai_proxy_id,
     skill_id: generateForm.value.skill_id,
+    system_prompt: generateForm.value.system_prompt,
     prompt: generateForm.value.prompt,
   }).then(() => {
     clearInterval(simTimer)
@@ -404,7 +439,7 @@ function injectViewportMeta(html) {
   return html
 }
 
-// 预览 iframe 内容同步（沙箱隔离，防止报告 CSS 污染全局）
+// 预览 iframe 内容同步（沙箱隔离，防止文书 CSS 污染全局）
 watch(editContent, (html) => {
   nextTick(() => {
     if (previewFrame.value) {
@@ -729,6 +764,24 @@ onBeforeUnmount(() => destroyCodeMirror())
           clearable
           size="large"
         />
+      </NFormItem>
+
+      <!-- 系统提示词 -->
+      <NFormItem label="系统提示词">
+        <NInput
+          v-model:value="generateForm.system_prompt"
+          type="textarea"
+          :rows="8"
+          placeholder="系统提示词，用于设定AI角色和行为规范"
+        />
+        <div class="flex justify-end gap-2 mt-2">
+          <NButton size="tiny" quaternary @click="resetSystemPrompt">
+            <TheIcon icon="material-symbols:restart-alt" :size="14" class="mr-1" />恢复默认
+          </NButton>
+          <NButton size="tiny" quaternary type="primary" @click="saveSystemPrompt">
+            <TheIcon icon="material-symbols:save" :size="14" class="mr-1" />保存为默认
+          </NButton>
+        </div>
       </NFormItem>
 
       <!-- 提示词 -->

@@ -30,7 +30,7 @@ async def preview_sources(req: ReportPreviewSources):
         return Fail(code=500, msg=f"预览失败: {str(e)}")
 
 
-@router.get("/list", summary="报告列表")
+@router.get("/list", summary="文书列表")
 async def list_reports(
     workspace_id: int = Query(..., description="工作区ID"),
 ):
@@ -43,7 +43,7 @@ async def list_reports(
     return Success(data=data)
 
 
-@router.post("/generate", summary="生成报告")
+@router.post("/generate", summary="生成文书")
 async def generate_report(req: ReportCreate):
     user_id = CTX_USER_ID.get()
     ws = await workspace_controller.check_permission(req.workspace_id, user_id)
@@ -58,21 +58,22 @@ async def generate_report(req: ReportCreate):
             ai_proxy_id=req.ai_proxy_id,
             skill_id=req.skill_id,
             extra_prompt=req.prompt,
+            system_prompt=req.system_prompt,
             document_ids=req.source_document_ids,
             static_file_ids=req.source_static_ids,
         )
-        return Success(data=await report.to_dict(), msg="报告生成成功")
+        return Success(data=await report.to_dict(), msg="文书生成成功")
     except Exception as e:
-        logger.exception("报告生成失败")
+        logger.exception("文书生成失败")
         return Fail(code=500, msg=f"生成失败: {str(e)}")
 
 
-@router.post("/update", summary="更新报告")
+@router.post("/update", summary="更新文书")
 async def update_report(req: ReportUpdate):
     user_id = CTX_USER_ID.get()
     report = await Report.get_or_none(id=req.id)
     if not report:
-        return Fail(code=404, msg="报告不存在")
+        return Fail(code=404, msg="文书不存在")
     ws = await workspace_controller.check_permission(report.workspace_id, user_id)
     if not ws:
         return Fail(code=403, msg="无权操作")
@@ -82,12 +83,12 @@ async def update_report(req: ReportUpdate):
     return Success(data=await report.to_dict(), msg="更新成功")
 
 
-@router.post("/clone", summary="克隆报告")
+@router.post("/clone", summary="克隆文书")
 async def clone_report(req: ReportClone):
     user_id = CTX_USER_ID.get()
     source = await Report.get_or_none(id=req.id)
     if not source:
-        return Fail(code=404, msg="源报告不存在")
+        return Fail(code=404, msg="源文书不存在")
     ws = await workspace_controller.check_permission(source.workspace_id, user_id)
     if not ws:
         return Fail(code=403, msg="无权操作")
@@ -106,12 +107,12 @@ async def clone_report(req: ReportClone):
     return Success(data=await new_report.to_dict(), msg="克隆成功")
 
 
-@router.delete("/delete", summary="删除报告")
-async def delete_report(report_id: int = Query(..., description="报告ID")):
+@router.delete("/delete", summary="删除文书")
+async def delete_report(report_id: int = Query(..., description="文书ID")):
     user_id = CTX_USER_ID.get()
     report = await Report.get_or_none(id=report_id)
     if not report:
-        return Fail(code=404, msg="报告不存在")
+        return Fail(code=404, msg="文书不存在")
     ws = await workspace_controller.check_permission(report.workspace_id, user_id)
     if not ws:
         return Fail(code=403, msg="无权操作")
@@ -119,12 +120,12 @@ async def delete_report(report_id: int = Query(..., description="报告ID")):
     return Success(msg="删除成功")
 
 
-@router.get("/get", summary="获取报告内容")
-async def get_report(report_id: int = Query(..., description="报告ID")):
+@router.get("/get", summary="获取文书内容")
+async def get_report(report_id: int = Query(..., description="文书ID")):
     user_id = CTX_USER_ID.get()
     report = await Report.get_or_none(id=report_id)
     if not report:
-        return Fail(code=404, msg="报告不存在")
+        return Fail(code=404, msg="文书不存在")
     ws = await workspace_controller.check_permission(report.workspace_id, user_id)
     if not ws:
         return Fail(code=403, msg="无权访问")
@@ -144,7 +145,7 @@ async def export_html(report_id: int = Query(...)):
     user_id = CTX_USER_ID.get()
     report = await Report.get_or_none(id=report_id)
     if not report:
-        return Fail(code=404, msg="报告不存在")
+        return Fail(code=404, msg="文书不存在")
     ws = await workspace_controller.check_permission(report.workspace_id, user_id)
     if not ws:
         return Fail(code=403, msg="无权导出")
@@ -160,7 +161,7 @@ async def export_pdf(report_id: int = Query(...)):
     user_id = CTX_USER_ID.get()
     report = await Report.get_or_none(id=report_id)
     if not report:
-        return Fail(code=404, msg="报告不存在")
+        return Fail(code=404, msg="文书不存在")
     ws = await workspace_controller.check_permission(report.workspace_id, user_id)
     if not ws:
         return Fail(code=403, msg="无权导出")
@@ -178,7 +179,7 @@ async def export_docx(report_id: int = Query(...)):
     user_id = CTX_USER_ID.get()
     report = await Report.get_or_none(id=report_id)
     if not report:
-        return Fail(code=404, msg="报告不存在")
+        return Fail(code=404, msg="文书不存在")
     ws = await workspace_controller.check_permission(report.workspace_id, user_id)
     if not ws:
         return Fail(code=403, msg="无权导出")
