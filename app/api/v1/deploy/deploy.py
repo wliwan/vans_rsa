@@ -1,11 +1,14 @@
 """
-前端热更新 — 上传 zip 直接替换容器内编译产物。
+热更新 — 上传 zip 直接替换容器内前端 / 后端代码。
 
-适用场景：后端未变，只改了前端代码，不想重建整个 Docker 镜像。
+适用场景：不想重建整个 Docker 镜像，快速迭代。
 """
 
+import asyncio
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import zipfile
 
@@ -15,6 +18,9 @@ from app.schemas.base import Success, Fail
 
 # 容器内前端 dist 根目录（由 Dockerfile COPY 而来，与 Nginx root 一致）
 DIST_ROOT = "/opt/VansRSA/web/dist"
+# 容器内后端代码根目录
+BACKEND_ROOT = "/opt/VansRSA/app"
+BACKEND_BACKUP = "/opt/VansRSA/app_backup"
 
 router = APIRouter()
 
@@ -124,10 +130,8 @@ def _walk_files(root: str):
 
 def _replace_dir(src: str, dst: str):
     """用 src 内容替换 dst 目录。先清空 dst，再复制 src 下所有内容到 dst。"""
-    # 确保目标目录存在
     os.makedirs(dst, exist_ok=True)
 
-    # 清空目标目录
     for name in os.listdir(dst):
         path = os.path.join(dst, name)
         if os.path.isdir(path) and not os.path.islink(path):
@@ -135,7 +139,6 @@ def _replace_dir(src: str, dst: str):
         else:
             os.unlink(path)
 
-    # 复制 src 内容到 dst
     for name in os.listdir(src):
         s = os.path.join(src, name)
         d = os.path.join(dst, name)
@@ -143,3 +146,137 @@ def _replace_dir(src: str, dst: str):
             shutil.copytree(s, d, symlinks=True)
         else:
             shutil.copy2(s, d)
+
+
+# ═══════════════════════════════════════════════════════
+# 后端热更新
+# ═══════════════════════════════════════════════════════
+
+@router.post("/update-backend", summary="上传后端 zip 更新包，覆盖代码并重启服务")
+async def update_backend(
+    file: UploadFile = File(..., description="后端代码 zip 包（含 app/ 目录）")
+):
+    """接收后端 zip，语法验证 → 备份旧代码 → 覆盖 → 容器自动重启。
+
+    安全措施：
+      - 解压后编译检查关键 Python 文件，防止语法错误导致启动失败
+      - 旧代码备份到 /opt/VansRSA/app_backup/（仅保留最近一次）
+      - 响应返回后才触发退出，确保客户端收到确认
+    """
+    if not file.filename or not file.filename.lower().endswith(".zip"):
+        return Fail(code=400, msg="仅支持 .zip 格式")
+
+    zip_bytes = await file.read()
+    if len(zip_bytes) == 0:
+        return Fail(code=400, msg="上传文件为空")
+
+    tmp_dir = tempfile.mkdtemp(prefix="backend-update-")
+    zip_path = os.path.join(tmp_dir, "backend.zip")
+    extract_dir = os.path.join(tmp_dir, "extracted")
+
+    try:
+        # 1. 写入并解压
+        with open(zip_path, "wb") as f:
+            f.write(zip_bytes)
+
+        if not zipfile.is_zipfile(zip_path):
+            return Fail(code=400, msg="文件不是有效的 zip 包")
+
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            zf.extractall(extract_dir)
+
+        # 2. 查找 app/ 目录
+        app_src = _find_app_dir(extract_dir)
+        if app_src is None:
+            return Fail(code=400, msg="zip 包中未找到 app/ 目录（需包含 __init__.py 等文件）")
+
+        # 3. Python 语法检查
+        syntax_errors = _check_python_syntax(app_src)
+        if syntax_errors:
+            return Fail(code=400, msg=f"代码语法错误，拒绝更新:\n{chr(10).join(syntax_errors[:10])}")
+
+        # 4. 备份旧代码
+        if os.path.exists(BACKEND_ROOT):
+            if os.path.exists(BACKEND_BACKUP):
+                shutil.rmtree(BACKEND_BACKUP, ignore_errors=True)
+            shutil.copytree(BACKEND_ROOT, BACKEND_BACKUP, symlinks=True)
+
+        # 5. 覆盖代码
+        _replace_dir(app_src, BACKEND_ROOT)
+
+        file_count = sum(1 for _ in _walk_files(app_src))
+        size_mb = len(zip_bytes) / (1024 * 1024)
+
+        # 6. 延迟退出（给客户端响应时间）
+        async def _delayed_restart():
+            await asyncio.sleep(2)
+            sys.exit(0)
+
+        asyncio.create_task(_delayed_restart())
+
+        return Success(
+            data={
+                "file_count": file_count,
+                "size_mb": round(size_mb, 2),
+                "backup": BACKEND_BACKUP,
+            },
+            msg=f"后端已更新（{file_count} 个文件），服务将在 2 秒后重启（容器自动拉起）",
+        )
+
+    except Exception as e:
+        return Fail(code=500, msg=f"更新失败: {str(e)}")
+
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def _find_app_dir(base: str) -> str | None:
+    """在解压目录中查找 app/ 目录。支持：
+      - 直接有 app/
+      - 外层目录/app/
+      - 直接是代码文件（无 app 目录，如 run.py + controllers/）
+    """
+    # 直接有 app/
+    direct = os.path.join(base, "app")
+    if os.path.isdir(direct) and os.path.isfile(os.path.join(direct, "__init__.py")):
+        return direct
+
+    # 直接就是代码（有 run.py 或 controllers/ 等）
+    if os.path.isfile(os.path.join(base, "run.py")) or os.path.isdir(os.path.join(base, "controllers")):
+        return base
+
+    # 遍历一层子目录
+    for name in os.listdir(base):
+        sub = os.path.join(base, name)
+        if not os.path.isdir(sub):
+            continue
+        # 子目录下 app/
+        app_path = os.path.join(sub, "app")
+        if os.path.isdir(app_path) and os.path.isfile(os.path.join(app_path, "__init__.py")):
+            return app_path
+        # 子目录就是代码根
+        if os.path.isfile(os.path.join(sub, "run.py")) or os.path.isdir(os.path.join(sub, "controllers")):
+            return sub
+
+    return None
+
+
+def _check_python_syntax(app_dir: str) -> list[str]:
+    """编译检查 app/ 下所有 .py 文件语法，返回错误列表。"""
+    errors = []
+    for dirpath, _, filenames in os.walk(app_dir):
+        for fn in filenames:
+            if not fn.endswith(".py"):
+                continue
+            filepath = os.path.join(dirpath, fn)
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    source = f.read()
+                compile(source, filepath, "exec")
+            except SyntaxError as e:
+                rel = os.path.relpath(filepath, app_dir)
+                errors.append(f"{rel}:{e.lineno}: {e.msg}")
+            except Exception as e:
+                rel = os.path.relpath(filepath, app_dir)
+                errors.append(f"{rel}: {e}")
+    return errors
