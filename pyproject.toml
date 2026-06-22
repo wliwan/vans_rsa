@@ -1,6 +1,6 @@
 [project]
 name = "vue-fastapi-admin"
-version = "1.2.5"
+version = "1.2.6"
 description = "Vue Fastapi admin"
 authors = [
     {name = "mizhexiaoxiao", email = "mizhexiaoxiao@gmail.com"},
