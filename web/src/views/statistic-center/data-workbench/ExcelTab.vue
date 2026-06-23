@@ -419,7 +419,7 @@ defineExpose({ loadSheets, loadAnalyses })
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col" style="min-height: 0">
+  <div class="flex-1 flex flex-col" style="min-height: 0; overflow: hidden">
     <!-- 上传区 -->
     <div class="mb-5" :class="{ 'upload-dragger-mobile': isMobileCollapsed }">
       <div class="flex items-center gap-2 mb-2">
@@ -459,9 +459,9 @@ defineExpose({ loadSheets, loadAnalyses })
     </div>
 
     <!-- 左右双栏布局（移动端堆叠） -->
-    <div class="flex gap-3 flex-1" :class="{ 'mobile-stack': isMobileCollapsed }" style="min-height: 0">
+    <div class="flex gap-3 flex-1" :class="{ 'mobile-stack': isMobileCollapsed }" style="min-height: 0; overflow: hidden">
       <!-- ── 左栏：原始表格 ── -->
-      <div class="flex-1 flex flex-col" style="min-width: 0">
+      <div class="flex-1 flex flex-col" style="min-width: 0; min-height: 0; overflow: hidden">
         <div class="flex items-center justify-between mb-2 px-1">
           <div class="flex items-center gap-2">
             <NCheckbox
@@ -543,7 +543,7 @@ defineExpose({ loadSheets, loadAnalyses })
       </div>
 
       <!-- ── 右栏：拆解分析表格 ── -->
-      <div class="flex-1 flex flex-col" style="min-width: 0">
+      <div class="flex-1 flex flex-col" style="min-width: 0; min-height: 0; overflow: hidden">
         <div class="flex items-center justify-between mb-2 px-1">
           <div class="flex items-center gap-2">
             <NCheckbox

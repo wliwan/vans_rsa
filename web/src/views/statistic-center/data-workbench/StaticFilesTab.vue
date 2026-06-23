@@ -385,7 +385,7 @@ defineExpose({ loadStaticFiles })
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col" style="min-height: 0">
+  <div class="flex-1 flex flex-col" style="min-height: 0; overflow: hidden">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
       <div class="flex items-center gap-2">
         <TheIcon icon="material-symbols:folder" :size="20" class="text-blue-500" />
@@ -430,8 +430,8 @@ defineExpose({ loadStaticFiles })
       <NButton size="small" :disabled="!selectedStaticFileIds.length" @click="openStaticFileCopyToModal"><TheIcon icon="material-symbols:content-copy" :size="16" class="mr-1" />{{ t('views.statistic-center.label_cn_a9ac3f71') }}</NButton>
       <NButton size="small" @click="openBaseUrlModal"><TheIcon icon="material-symbols:link" :size="16" class="mr-1" />BaseUrl</NButton>
     </div>
-    <div class="flex-1 flex gap-3" :class="{ 'mobile-stack': isMobileCollapsed }" style="min-height: 0">
-      <div class="flex flex-col" :style="isMobileCollapsed ? 'width: 100%, minWidth: 0' : { width: selectedStaticFile ? '55%' : '100%', minWidth: 0, transition: 'width 0.2s' }" style="min-height: 0">
+    <div class="flex-1 flex gap-3" :class="{ 'mobile-stack': isMobileCollapsed }" style="min-height: 0; overflow: hidden">
+      <div class="flex flex-col" :style="isMobileCollapsed ? 'width: 100%, minWidth: 0' : { width: selectedStaticFile ? '55%' : '100%', minWidth: 0, transition: 'width 0.2s' }" style="min-height: 0; overflow: hidden">
         <div class="flex items-center gap-2 mb-2 px-1">
           <NCheckbox size="small" :checked="selectedStaticFileIds.length === staticFiles.length && staticFiles.length > 0" :indeterminate="selectedStaticFileIds.length > 0 && selectedStaticFileIds.length < staticFiles.length" @update:checked="toggleAllStaticFiles" />
           <span class="text-xs text-gray-400">已选 {{ selectedStaticFileIds.length }} / {{ staticFiles.length }}</span>

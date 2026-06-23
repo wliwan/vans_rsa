@@ -153,7 +153,7 @@ onMounted(() => loadWorkspaces())
           {{ t('views.statistic-center.label_cn_aba2706f') }}
         </div>
 
-        <div v-else class="h-full flex flex-col">
+        <div v-else class="h-full flex flex-col" style="min-height: 0">
           <!-- 工作区标题栏 -->
           <div class="flex items-center justify-between mb-4" :class="{ 'mobile-ws-header': isMobileCollapsed }">
             <div class="flex items-center gap-3">
@@ -477,6 +477,9 @@ onMounted(() => loadWorkspaces())
 :deep(.n-spin-container) {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 :deep(.n-spin-content) {
   display: flex;
@@ -499,6 +502,8 @@ onMounted(() => loadWorkspaces())
   overflow: hidden;
 }
 :deep(.n-tab-pane) {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: hidden;

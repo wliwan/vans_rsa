@@ -199,7 +199,7 @@ defineExpose({ loadDatabaseDocs })
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col" style="min-height: 0">
+  <div class="flex-1 flex flex-col" style="min-height: 0; overflow: hidden">
     <!-- 工具栏 -->
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
       <div class="flex items-center gap-2">
