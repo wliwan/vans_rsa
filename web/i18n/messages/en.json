@@ -481,6 +481,18 @@
             "lengthLabel": "Segment Length (m):",
             "segmentAndSave": "Segment & Save"
           },
+          "style": {
+            "label": "Rendering Config",
+            "description": "Adjust road color and line width. Click 'Save' to apply changes to tile rendering.",
+            "weight": "Width",
+            "color": "Color",
+            "save": "Save Config",
+            "reset": "Reset to Default",
+            "saved": "Rendering config saved. New tiles will take effect immediately.",
+            "saveFail": "Save failed",
+            "resetDone": "Default rendering config restored",
+            "resetFail": "Reset failed"
+          },
           "stats": {
             "label": "Stats Details"
           }

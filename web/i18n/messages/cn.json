@@ -481,6 +481,18 @@
             "lengthLabel": "分段长度(米):",
             "segmentAndSave": "分段并保存"
           },
+          "style": {
+            "label": "渲染配置",
+            "description": "调整道路颜色与线宽，修改后点击「保存」立即生效到瓦片渲染。",
+            "weight": "线宽",
+            "color": "颜色",
+            "save": "保存配置",
+            "reset": "恢复默认",
+            "saved": "渲染配置已保存，新瓦片将立即生效",
+            "saveFail": "保存失败",
+            "resetDone": "已恢复默认渲染配置",
+            "resetFail": "重置失败"
+          },
           "stats": {
             "label": "统计详情"
           }

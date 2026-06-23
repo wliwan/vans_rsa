@@ -24,42 +24,53 @@ defineOptions({ name: i18n.global.t('views.network.title_cn_3cbec9cc') })
 const message = useMessage()
 
 // ── 三级下拉选择器 ──
-const treeData = ref([])
+const countryList = ref([])
+const regionList = ref([])
+const regionLoading = ref(false)
 const selectedCountry = ref(null)
 const selectedRegion = ref(null)
 
-function flattenTree(nodes, level = 0) {
-  const result = []
-  for (const n of nodes) {
-    result.push({ ...n, _level: level })
-    if (n.children) result.push(...flattenTree(n.children, level + 1))
-  }
-  return result
-}
-const allRegions = computed(() => flattenTree(treeData.value))
-
 function displayLabel(node) {
-  return node.local_name ? `${node.label}（${node.local_name}）` : node.label
+  const name = node.label || node.name
+  return node.local_name ? `${name}（${node.local_name}）` : name
 }
 
 const countryOptions = computed(() =>
-  allRegions.value.filter(r => r.region_type === 'COUNTRY').map(r => ({ label: displayLabel(r), value: r.id }))
+  countryList.value.map(r => ({ label: displayLabel(r), value: r.id }))
 )
 const regionOptions = computed(() =>
-  allRegions.value
-    .filter(r => r.parent_id === selectedCountry.value || (selectedCountry.value && r._level > 0))
-    .map(r => ({ label: '　'.repeat(r._level) + displayLabel(r), value: r.id }))
+  regionList.value.map(r => ({ label: '　'.repeat(r._level || 0) + displayLabel(r), value: r.id }))
 )
 
 // 当前选中的区域ID（优先 region，回退 country）
 const activeRegionId = computed(() => selectedRegion.value || selectedCountry.value)
 
-function onCountryChange(id) {
+async function fetchDescendants(parentId, level = 0) {
+  const res = await api.getRegionChildren(parentId)
+  const children = (res.data || []).map(c => ({ ...c, _level: level }))
+  const result = [...children]
+  for (const child of children) {
+    if (child.has_children) {
+      const grandchildren = await fetchDescendants(child.id, level + 1)
+      result.push(...grandchildren)
+    }
+  }
+  return result
+}
+
+async function onCountryChange(id) {
   selectedCountry.value = id
   selectedRegion.value = null
+  regionList.value = []
   previewMaterial.value = null
   selectedMaterialIds.value = []
   materialList.value = []
+  if (!id) return
+  regionLoading.value = true
+  try {
+    regionList.value = await fetchDescendants(id)
+  } catch (_) { regionList.value = [] }
+  finally { regionLoading.value = false }
 }
 
 async function onRegionChange(id) {
@@ -115,9 +126,9 @@ async function copyShortUrl(row) {
 // ── 初始化 ──
 onMounted(async () => {
   try {
-    const res = await api.getRegionTree()
-    treeData.value = res.data || []
-  } catch (_) { treeData.value = [] }
+    const res = await api.getRegionList({ region_type: 'COUNTRY', page_size: 500, is_active: true })
+    countryList.value = res.data || []
+  } catch (_) { countryList.value = [] }
 })
 
 // ── 加载素材 ──
@@ -674,6 +685,7 @@ onMounted(() => {
         style="width: 240px"
         @update:value="onRegionChange"
         :disabled="!selectedCountry"
+        :loading="regionLoading"
         clearable filterable
       />
       <NButton v-if="activeRegionId" size="small" @click="loadMaterials(activeRegionId)">
@@ -688,7 +700,7 @@ onMounted(() => {
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <span style="font-weight: 600">素材列表</span>
             <span v-if="activeRegionId" style="font-size: 12px; color: #999;">
-              {{ regionOptions.find(r => r.value === activeRegionId)?.label || allRegions.find(r => r.id === activeRegionId)?.label || '' }}
+              {{ regionOptions.find(r => r.value === activeRegionId)?.label || countryOptions.find(r => r.value === activeRegionId)?.label || '' }}
             </span>
           </div>
         </template>

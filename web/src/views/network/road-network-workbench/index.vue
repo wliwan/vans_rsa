@@ -96,7 +96,9 @@ function createBaseTileLayer(layer) {
 }
 
 // ── 三级选择器 ──
-const treeData = ref([])
+const countryList = ref([])
+const regionList = ref([])
+const regionLoading = ref(false)
 const selectedCountry = ref(null)
 const selectedRegion = ref(null)
 const selectedNetwork = ref(null)
@@ -447,6 +449,8 @@ async function doExportLayers() {
 
     hideUIControls()
     if (hasCrossOrigin) applyControlVisibility()
+    // 按勾选显示/隐藏图层（底图、路网）
+    applyExportPreview()
 
     let blob
     if (hasCrossOrigin) {
@@ -462,6 +466,7 @@ async function doExportLayers() {
     }
 
     restoreAllExportVisibility()
+    restoreAllLayers()
 
     if (!blob) {
       showExportModal.value = false
@@ -496,6 +501,7 @@ async function doExportLayers() {
     showExportModal.value = false
   } catch (e) {
     restoreAllExportVisibility()
+    restoreAllLayers()
     message.error(t('views.network.message_cn_2e0d8c60') + (e?.message || e))
   } finally {
     exportLoading.value = false
@@ -660,8 +666,10 @@ const legendTypes = computed(() =>
 
 // ── 数据加载 ──
 onMounted(async () => {
-  const res = await api.getRegionTree()
-  treeData.value = res.data || []
+  try {
+    const res = await api.getRegionList({ region_type: 'COUNTRY', page_size: 500, is_active: true })
+    countryList.value = res.data || []
+  } catch (_) { countryList.value = [] }
   loadTemplates()
 
   // 修正 Leaflet 默认图标路径（本地库）
@@ -688,32 +696,41 @@ onUnmounted(() => {
   if (mapInstance) { mapInstance.remove(); mapInstance = null }
 })
 
-function flattenTree(nodes, level = 0) {
-  const result = []
-  for (const n of nodes) {
-    result.push({ ...n, _level: level })
-    if (n.children) result.push(...flattenTree(n.children, level + 1))
-  }
-  return result
-}
-const allRegions = computed(() => flattenTree(treeData.value))
-
 function displayLabel(node) {
-  return node.local_name ? `${node.label}（${node.local_name}）` : node.label
+  const name = node.label || node.name
+  return node.local_name ? `${name}（${node.local_name}）` : name
 }
 const countryOptions = computed(() =>
-  allRegions.value.filter(r => r.region_type === 'COUNTRY').map(r => ({ label: displayLabel(r), value: r.id }))
+  countryList.value.map(r => ({ label: displayLabel(r), value: r.id }))
 )
 const regionOptions = computed(() =>
-  allRegions.value.filter(r => r.parent_id === selectedCountry.value || (selectedCountry.value && r._level > 0))
-    .map(r => ({ label: '　'.repeat(r._level) + displayLabel(r), value: r.id }))
+  regionList.value.map(r => ({ label: '　'.repeat(r._level || 0) + displayLabel(r), value: r.id }))
 )
 const networkOptions = computed(() =>
   networkList.value.map(n => ({ label: `${n.file_name} (${n.node_count}${t('views.network.roadNetworkWorkbench.stats.nodesShort')})`, value: n.id }))
 )
 
+async function fetchDescendants(parentId, level = 0) {
+  const res = await api.getRegionChildren(parentId)
+  const children = (res.data || []).map(c => ({ ...c, _level: level }))
+  const result = [...children]
+  for (const child of children) {
+    if (child.has_children) {
+      const grandchildren = await fetchDescendants(child.id, level + 1)
+      result.push(...grandchildren)
+    }
+  }
+  return result
+}
+
 async function onCountryChange(id) {
-  selectedCountry.value = id; selectedRegion.value = null; selectedNetwork.value = null; networkList.value = []; clearData()
+  selectedCountry.value = id; selectedRegion.value = null; selectedNetwork.value = null; networkList.value = []; regionList.value = []; clearData()
+  if (!id) return
+  regionLoading.value = true
+  try {
+    regionList.value = await fetchDescendants(id)
+  } catch (_) { regionList.value = [] }
+  finally { regionLoading.value = false }
 }
 async function onRegionChange(id) {
   selectedRegion.value = id; selectedNetwork.value = null; networkList.value = []; clearData()
@@ -874,8 +891,8 @@ async function saveHighwayStyle() {
   styleLoading.value = true
   try {
     await api.updateRoadHighwayStyle({ colors: styleColors.value, weights: styleWeights.value })
-    message.success('渲染配置已保存，新瓦片将立即生效')
-  } catch (_) { message.error('保存失败') }
+    message.success(t('views.network.roadNetworkWorkbench.tabs.style.saved'))
+  } catch (_) { message.error(t('views.network.roadNetworkWorkbench.tabs.style.saveFail')) }
   styleLoading.value = false
 }
 
@@ -884,8 +901,8 @@ async function resetHighwayStyle() {
   try {
     await api.resetRoadHighwayStyle()
     await loadHighwayStyle()
-    message.success('已恢复默认渲染配置')
-  } catch (_) { message.error('重置失败') }
+    message.success(t('views.network.roadNetworkWorkbench.tabs.style.resetDone'))
+  } catch (_) { message.error(t('views.network.roadNetworkWorkbench.tabs.style.resetFail')) }
   styleLoading.value = false
 }
 
@@ -1202,7 +1219,7 @@ async function runAIProcess() {
       <NSelect v-model:value="selectedCountry" :options="countryOptions" :placeholder="t('views.network.roadNetworkWorkbench.selectors.country')" style="width:200px"
         @update:value="onCountryChange" clearable filterable />
       <NSelect v-model:value="selectedRegion" :options="regionOptions" :placeholder="t('views.network.roadNetworkWorkbench.selectors.region')" style="width:220px"
-        @update:value="onRegionChange" clearable :disabled="!selectedCountry" filterable />
+        @update:value="onRegionChange" clearable :disabled="!selectedCountry" :loading="regionLoading" filterable />
       <NSelect v-model:value="selectedNetwork" :options="networkOptions" :placeholder="t('views.network.roadNetworkWorkbench.selectors.network')" style="width:280px"
         @update:value="onNetworkChange" clearable :disabled="!selectedRegion" filterable />
       <NButton size="small" :disabled="!selectedNetwork" @click="onClearCache" secondary>🗑 {{ t('views.network.roadNetworkWorkbench.clearCache') }}</NButton>
@@ -1323,31 +1340,36 @@ async function runAIProcess() {
                 <NButton type="primary" :loading="filterLoading" @click="onFilter" style="width:120px">{{ t('views.network.roadNetworkWorkbench.tabs.filter.saveAndFilter') }}</NButton>
               </NSpace>
             </NTabPane>
-            <NTabPane name="style" tab="路网渲染配置">
-              <NSpace vertical>
-                <div style="font-size:13px;color:#666;margin-bottom:6px">调整道路颜色的线宽。修改后点击「保存」立即生效到瓦片渲染。</div>
-                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; max-height: 320px; overflow-y: auto">
+            <NTabPane name="style" :tab="t('views.network.roadNetworkWorkbench.tabs.style.label')">
+              <div class="style-config">
+                <div class="style-desc">{{ t('views.network.roadNetworkWorkbench.tabs.style.description') }}</div>
+                <div class="style-grid">
                   <div v-for="hw in highwayTypes" :key="typeof hw === 'string' ? hw : hw.type"
-                    style="display:flex; align-items:center; gap: 8px; padding: 4px 8px; border-radius: 6px; border: 1px solid #e5e7eb; font-size:13px">
-                    <span style="min-width:80px;text-align:right;color:#555">{{ typeof hw === 'string' ? hw : (hw.name_zh || hw.type) }}</span>
-                    <input type="color"
-                      :value="getHighwayColor(typeof hw === 'string' ? hw : hw.type)"
-                      @input="e => setHighwayColor(typeof hw === 'string' ? hw : hw.type, e.target.value)"
-                      style="width:28px;height:22px;border:none;cursor:pointer;padding:0" />
-                    <NInputNumber
-                      :value="styleWeights[typeof hw === 'string' ? hw : hw.type]"
-                      :min="0.1" :max="5" :step="0.05"
-                      size="tiny" style="width:60px"
-                      placeholder="粗细"
-                      @update:value="v => styleWeights = { ...styleWeights, [(typeof hw === 'string' ? hw : hw.type)]: v }"
-                    />
+                    class="style-item">
+                    <span class="style-label">{{ typeof hw === 'string' ? hw : (hw.name_zh || hw.type) }}</span>
+                    <span class="style-preview" :style="{ backgroundColor: getHighwayColor(typeof hw === 'string' ? hw : hw.type), borderBottomWidth: Math.min(6, (styleWeights[typeof hw === 'string' ? hw : hw.type] || 1.5) * 2) + 'px' }"></span>
+                    <div class="style-controls">
+                      <div class="style-color-pick">
+                        <input type="color"
+                          :value="getHighwayColor(typeof hw === 'string' ? hw : hw.type)"
+                          @input="e => setHighwayColor(typeof hw === 'string' ? hw : hw.type, e.target.value)"
+                          class="color-input" />
+                      </div>
+                      <NInputNumber
+                        :value="styleWeights[typeof hw === 'string' ? hw : hw.type]"
+                        :min="0.1" :max="5" :step="0.05"
+                        size="tiny" class="style-weight-input"
+                        :placeholder="t('views.network.roadNetworkWorkbench.tabs.style.weight')"
+                        @update:value="v => styleWeights = { ...styleWeights, [(typeof hw === 'string' ? hw : hw.type)]: v }"
+                      />
+                    </div>
                   </div>
                 </div>
-                <NSpace style="margin-top:8px">
-                  <NButton type="primary" :loading="styleLoading" @click="saveHighwayStyle" size="small">保存配置</NButton>
-                  <NButton size="small" @click="resetHighwayStyle" :loading="styleLoading">恢复默认</NButton>
-                </NSpace>
-              </NSpace>
+                <div class="style-actions">
+                  <NButton type="primary" :loading="styleLoading" @click="saveHighwayStyle" size="small">{{ t('views.network.roadNetworkWorkbench.tabs.style.save') }}</NButton>
+                  <NButton size="small" @click="resetHighwayStyle" :loading="styleLoading">{{ t('views.network.roadNetworkWorkbench.tabs.style.reset') }}</NButton>
+                </div>
+              </div>
             </NTabPane>
             <NTabPane name="segment" :tab="t('views.network.roadNetworkWorkbench.tabs.segment.label')">
               <NSpace vertical>
@@ -1649,6 +1671,112 @@ async function runAIProcess() {
   margin-top: 2px;
 }
 
+/* ── 路网渲染配置样式 ── */
+.style-config {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.style-desc {
+  font-size: 13px;
+  color: #909399;
+  line-height: 1.5;
+}
+
+.style-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.style-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e8eaed;
+  background: #fafbfc;
+  font-size: 13px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.style-item:hover {
+  border-color: #c0c4cc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.style-label {
+  min-width: 70px;
+  max-width: 100px;
+  text-align: right;
+  color: #606266;
+  font-weight: 500;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.style-preview {
+  display: inline-block;
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  border-bottom: 3px solid;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.style-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.style-color-pick {
+  width: 30px;
+  height: 24px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #dcdfe6;
+  flex-shrink: 0;
+}
+
+.color-input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: block;
+}
+
+.color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-input::-webkit-color-swatch {
+  border: none;
+}
+
+.style-weight-input {
+  width: 68px;
+  flex-shrink: 0;
+}
+
+.style-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+
 /* ── 移动端适配（≤768px）── */
 @media (max-width: 768px) {
   .fullscreen-area {
@@ -1756,6 +1884,34 @@ async function runAIProcess() {
   /* ── 表格在小屏上横向滚动 ── */
   :deep(.n-data-table) {
     font-size: 12px;
+  }
+
+  /* ── 渲染配置手机适配 ── */
+  .style-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+    gap: 8px;
+    max-height: 280px;
+  }
+
+  .style-item {
+    padding: 10px 12px;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .style-label {
+    min-width: 56px;
+    max-width: 80px;
+    font-size: 12px;
+  }
+
+  .style-color-pick {
+    width: 34px;
+    height: 28px;
+  }
+
+  .style-weight-input {
+    width: 72px;
   }
 }
 </style>

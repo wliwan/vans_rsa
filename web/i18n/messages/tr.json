@@ -210,6 +210,18 @@
             "lengthLabel": "Segment uzunluğu (m):",
             "segmentAndSave": "Segmentle ve kaydet"
           },
+          "style": {
+            "label": "Görüntüleme Yapılandırması",
+            "description": "Yol rengini ve çizgi kalınlığını ayarlayın. Değişiklikleri uygulamak için 'Kaydet'e tıklayın.",
+            "weight": "Kalınlık",
+            "color": "Renk",
+            "save": "Yapılandırmayı Kaydet",
+            "reset": "Varsayılana Sıfırla",
+            "saved": "Görüntüleme yapılandırması kaydedildi. Yeni döşemeler hemen etkilenecek.",
+            "saveFail": "Kaydetme başarısız",
+            "resetDone": "Varsayılan görüntüleme yapılandırması geri yüklendi",
+            "resetFail": "Sıfırlama başarısız"
+          },
           "stats": {
             "label": "İstatistik detayları"
           }
