@@ -765,7 +765,7 @@ await obj.save()
 
 ---
 
-## 强制规则汇总（27 条）
+## 强制规则汇总（28 条）
 
 1. **后端**：所有控制器继承 `CRUDBase`，所有路由加 `summary` 中文描述
 2. **前端**：所有列表页必须用 `CrudTable`，禁止手写 `NDataTable` + 分页
@@ -794,6 +794,7 @@ await obj.save()
 25. **PNG 元数据**：导出图片的描述（description）写入 JSON 元数据（中心点、作者、路网统计），后端用 Pillow `PngInfo` 写入 tEXt 块
 26. **UnoCSS 字体**：全局 `html { font-size: 4px }` 使 1rem=4px，UnoCSS 的 `text-*` 类（rem）全部缩到 1/4。新建页面时**必须在 `<style scoped>` 中用 `!important` + px 覆盖 `text-xs` 到 `text-xl` 的 `font-size` 和 `line-height`**，禁止直接改全局 `html` 基准
 27. **CrudTable rowKey**：`row-key` prop 只接受 String（属性名），**不能传函数**。`(row) => row.key` 会被转为字符串导致所有行 key 为 undefined，checkbox 无法选中
+28. **热更新不自动触发**：改完代码后**禁止**主动询问"是否需要热更新？"或自动执行部署脚本。只有用户明确说出"热更新"、"部署到服务器"、"更新到远程"时才执行 `hot-update.sh`（前端）或 `hot-update-be.sh`（后端）
 
 ---
 
@@ -1123,9 +1124,9 @@ cd web && pnpm install && pnpm build
 
 ---
 
-## 前端热更新（部署到服务器）
+## 热更新（部署到服务器）
 
-> 改完前端代码后，构建并热更新到远程服务器，无需重建 Docker 镜像。
+> 改完代码后，通过脚本一键构建、打包、上传到远程服务器，无需重建 Docker 镜像。
 
 ### 服务器信息
 
@@ -1134,39 +1135,62 @@ cd web && pnpm install && pnpm build
 | 地址 | `http://192.168.0.153:1110` |
 | 用户 | `Vance` |
 | 密码 | `w570264649+` |
-| 上传接口 | `POST /api/v1/deploy/update-frontend` |
 | 鉴权方式 | `token` header（JWT） |
 
-### 一键热更新命令
+### 触发规则（强制）
+
+> **热更新不能自动触发。** 只有当用户在当前对话中**明确要求**"热更新"、"部署到服务器"、"更新到远程"等时，才执行热更新操作。代码修改完成后**禁止**主动询问"是否需要热更新？"或自动执行部署脚本。
+
+### 前端热更新
+
+修改 `web/` 下的前端代码后，构建 + 打包 + 上传。
+
+**上传接口：** `POST /api/v1/deploy/update-frontend`
+
+**一键命令：**
 
 ```bash
-# 进入项目目录，构建 + 打包 + 上传一条龙
-cd /home/vance/deepseek_tui/vue-fastapi-admin
-
-# 1. 构建前端
-cd web && pnpm install --silent && pnpm build && cd ..
-
-# 2. 打包 zip（跳过构建，用已有 dist/）
-bash package-frontend.sh --no-build -o hotfix.zip
-
-# 3. 登录获取 Token（必须加 --noproxy '*' 绕过本地代理）
-TOKEN=$(curl -s --noproxy '*' --connect-timeout 10 \
-  -X POST http://192.168.0.153:1110/api/v1/base/access_token \
-  -H "Content-Type: application/json" \
-  -d '{"username":"Vance","password":"w570264649+"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['access_token'])")
-
-# 4. 上传
-curl -s --noproxy '*' \
-  -X POST http://192.168.0.153:1110/api/v1/deploy/update-frontend \
-  -H "token: $TOKEN" \
-  -F "file=@dist_package/hotfix.zip"
+cd /home/vance/deepseek_tui/vue-fastapi-admin && bash hot-update.sh -p 'w570264649+'
 ```
+
+**脚本参数：**
+| 参数 | 说明 |
+|---|---|
+| `--no-build` | 跳过构建，上传已有 `web/dist/` |
+| `--build-only` | 仅构建 + 打包，不上传 |
+| `-p PASSWORD` | 指定密码（默认从环境变量读取） |
+
+**等同于：**
+```bash
+# 手动步骤
+cd web && pnpm install --silent && pnpm build && cd ..
+bash package-frontend.sh --no-build -o hotfix.zip
+TOKEN=$(curl -s --noproxy '*' --connect-timeout 10 -X POST http://192.168.0.153:1110/api/v1/base/access_token -H "Content-Type: application/json" -d '{"username":"Vance","password":"w570264649+"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['access_token'])")
+curl -s --noproxy '*' -X POST http://192.168.0.153:1110/api/v1/deploy/update-frontend -H "token: $TOKEN" -F "file=@dist_package/hotfix.zip"
+```
+
+### 后端热更新
+
+修改 `app/` 下的后端代码后，打包 + 上传。上传后容器自动重启（约 5-15 秒恢复）。
+
+**上传接口：** `POST /api/v1/deploy/update-backend`
+
+**一键命令：**
+
+```bash
+cd /home/vance/deepseek_tui/vue-fastapi-admin && bash hot-update-be.sh -p 'w570264649+'
+```
+
+**脚本参数：**
+| 参数 | 说明 |
+|---|---|
+| `--build-only` | 仅打包，不上传 |
+| `-p PASSWORD` | 指定密码（默认从环境变量读取） |
 
 ### 注意事项
 
-- **必须 `--noproxy '*'`**：本地环境有 HTTP 代理（127.0.0.1:7890），连接内网服务器必须绕过
-- **Token 有效期较短**，若上传报 401 需重新获取
+- **必须 `--noproxy '*'`**：本地环境有 HTTP 代理（127.0.0.1:7890），连接内网服务器必须绕过（脚本已内置）
+- **Token 有效期较短**，若上传报 401，脚本会自动重新获取
 - **header 用 `token`**（非 `Authorization: Bearer`），与后端 `AuthControl.is_authed` 对齐
-- 上传成功后 **Ctrl+F5** 强制刷新浏览器，Nginx 对 `index.html` 不设强缓存
-- `deploy-uploader.html` 也会随构建产物一起更新
+- 前端更新后 **Ctrl+F5** 强制刷新浏览器，Nginx 对 `index.html` 不设强缓存
+- 后端热更新上传后容器自动重启，旧代码备份在 `/opt/VansRSA/app_backup/`
