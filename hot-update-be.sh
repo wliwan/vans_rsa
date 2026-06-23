@@ -71,6 +71,27 @@ echo "  上传:       $( $UPLOAD && echo -e "${GREEN}是${NC}" || echo -e "${YEL
 echo ""
 
 # ──────────────────────────────────────────────────────────
+# 0. 更新 requirements.txt（从当前环境同步精确版本）
+# ──────────────────────────────────────────────────────────
+step "更新 requirements.txt 依赖版本 ..."
+if command -v uv &>/dev/null && [ -f "$ROOT/.venv/pyvenv.cfg" ]; then
+    # uv 管理的 venv，优先使用 uv pip freeze
+    uv pip freeze 2>/dev/null | grep -vE '^(-e |pip==|setuptools==|wheel==)' > "$ROOT/requirements.txt" || true
+else
+    # 传统 pip 环境
+    if [ -f "$ROOT/.venv/bin/python" ]; then
+        PYTHON="$ROOT/.venv/bin/python"
+    elif [ -f "$ROOT/venv/bin/python" ]; then
+        PYTHON="$ROOT/venv/bin/python"
+    else
+        PYTHON="python3"
+    fi
+    $PYTHON -m pip freeze 2>/dev/null | grep -vE '^(-e |pip==|setuptools==|wheel==)' > "$ROOT/requirements.txt" || true
+fi
+DEP_COUNT=$(wc -l < "$ROOT/requirements.txt")
+ok "依赖已更新 → ${DEP_COUNT} 个包"
+
+# ──────────────────────────────────────────────────────────
 # 1. 打包后端代码
 # ──────────────────────────────────────────────────────────
 step "打包后端代码 ..."
