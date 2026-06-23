@@ -65,6 +65,7 @@ def make_middlewares():
                 "/api/v1/workspace/static-file/batch-upload",
                 "/api/v1/workspace/static-file/download-file",
                 "/api/v1/workspace/static-file/batch-export",
+                "/api/v1/workspace/static-file/extract-images",
                 "/api/v1/workspace/sheet/batch-upload",
                 "/api/v1/workspace/document/batch-upload",
                 "/api/v1/i18n/export",
