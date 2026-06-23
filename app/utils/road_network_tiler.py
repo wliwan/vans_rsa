@@ -45,6 +45,38 @@ from app.settings.config import settings
 
 logger = logging.getLogger(__name__)
 
+
+# ── 路径兼容：跨环境迁移时自动修正文件路径 ──
+def _resolve_file_path(stored_path: str) -> str:
+    """
+    解析文件路径，兼容开发/生产环境路径变更。
+    Docker 部署后 BASE_DIR 可能从 /home/user/project 变为 /opt/VansRSA，
+    数据库中保存的绝对路径会失效。此函数自动修正。
+    """
+    if not stored_path:
+        return stored_path
+    if os.path.exists(stored_path):
+        return stored_path
+    # 从存储路径中提取相对路径（取 uploads/ 之后的部分）
+    parts = stored_path.replace("\\", "/").split("/")
+    try:
+        idx = parts.index("uploads")
+        relative = "/".join(parts[idx:])
+        resolved = os.path.join(settings.BASE_DIR, relative)
+        if os.path.exists(resolved):
+            logger.info(f"[PathFix] 路径已修正: {stored_path} → {resolved}")
+            return resolved
+    except ValueError:
+        pass
+    # 最后尝试直接用文件名查找
+    filename = os.path.basename(stored_path)
+    default_dir = os.path.join(settings.BASE_DIR, "uploads", "road_networks")
+    candidate = os.path.join(default_dir, filename)
+    if os.path.exists(candidate):
+        logger.info(f"[PathFix] 通过文件名定位: {stored_path} → {candidate}")
+        return candidate
+    return stored_path
+
 # ── mercantile 延迟导入（仅在需要坐标转换时加载）──
 
 # ── 道路等级颜色映射（与前端 highwayColors 同步） ──
@@ -72,6 +104,30 @@ HIGHWAY_COLORS: Dict[str, Tuple[int, int, int]] = {
 }
 DEFAULT_COLOR = (158, 158, 158)
 
+# ── 道路等级线宽系数（相对于 ZOOM_WEIGHTS 的倍率） ──
+HIGHWAY_WEIGHT_FACTOR: Dict[str, float] = {
+    "motorway": 1.3,
+    "motorway_link": 1.0,
+    "trunk": 1.2,
+    "trunk_link": 1.0,
+    "primary": 1.1,
+    "primary_link": 0.9,
+    "secondary": 1.0,
+    "secondary_link": 0.8,
+    "tertiary": 0.9,
+    "tertiary_link": 0.7,
+    "residential": 0.55,
+    "living_street": 0.45,
+    "unclassified": 0.7,
+    "road": 0.7,
+    "service": 0.5,
+    "footway": 0.35,
+    "cycleway": 0.4,
+    "path": 0.35,
+    "track": 0.4,
+    "pedestrian": 0.5,
+}
+
 # ── Zoom → 线宽映射 ──
 ZOOM_WEIGHTS: Dict[int, int] = {
     0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0,
@@ -81,6 +137,29 @@ ZOOM_WEIGHTS: Dict[int, int] = {
 
 TILE_SIZE = 256
 MAX_CACHED_GRAPHS = 5
+
+# ── 运行时可刷新的 highway 配置（由 API 设置）──
+_highway_colors_override: Optional[Dict[str, Tuple[int, int, int]]] = None
+_highway_weight_override: Optional[Dict[str, float]] = None
+
+
+def _get_highway_colors() -> Dict[str, Tuple[int, int, int]]:
+    return _highway_colors_override if _highway_colors_override else HIGHWAY_COLORS
+
+
+def _get_highway_weight(highway: str) -> float:
+    if _highway_weight_override:
+        return _highway_weight_override.get(highway, HIGHWAY_WEIGHT_FACTOR.get(highway, 0.7))
+    return HIGHWAY_WEIGHT_FACTOR.get(highway, 0.7)
+
+
+def apply_highway_config(colors: dict = None, weights: dict = None):
+    """由 API 调用以更新 highway 渲染配色与线宽"""
+    global _highway_colors_override, _highway_weight_override
+    if colors:
+        _highway_colors_override = {k: tuple(v) if isinstance(v, list) else v for k, v in colors.items()}
+    if weights:
+        _highway_weight_override = {k: float(v) for k, v in weights.items()}
 
 
 def _get_tiles_dir() -> str:
@@ -158,6 +237,9 @@ class RoadNetworkTiler:
         返回 (networkx_graph, STRtree, edge_meta_list)
         """
         import networkx as nx
+
+        # ── 路径兼容修正 ──
+        file_path = _resolve_file_path(file_path)
 
         # ── 快速路径：无锁缓存命中 ──
         # Python dict.get 在 CPython 中对于单键读取是线程安全的（GIL 保护），
@@ -347,6 +429,14 @@ class RoadNetworkTiler:
         if z < min(ZOOM_WEIGHTS.keys()):
             return cls._empty_tile()
 
+        # ── 路径兼容修正 ──
+        file_path = _resolve_file_path(file_path)
+
+        # ── 文件存在性检查 ──
+        if not os.path.exists(file_path):
+            logger.warning(f"[Tiler] 文件不存在: {file_path}")
+            return cls._empty_tile()
+
         # ── 磁盘缓存 ──
         tiles_root = _get_tiles_dir()
         fkey = _filter_key(selected_types)
@@ -360,6 +450,25 @@ class RoadNetworkTiler:
             except OSError:
                 pass
 
+        # ── 渲染（含异常保护） ──
+        try:
+            return cls._render_tile_impl(file_path, z, x, y, selected_types, cache_file, cache_dir)
+        except Exception as e:
+            logger.exception(f"[Tiler] 瓦片渲染失败: network_id={network_id} z={z} x={x} y={y} file={os.path.basename(file_path)}: {e}")
+            return cls._empty_tile()
+
+    @classmethod
+    def _render_tile_impl(
+        cls,
+        file_path: str,
+        z: int,
+        x: int,
+        y: int,
+        selected_types: Optional[List[str]],
+        cache_file: str,
+        cache_dir: str,
+    ) -> bytes:
+        """实际渲染逻辑（不含异常保护，由 render_tile 调用）"""
         # ── 瓦片边界 ──
         from mercantile import bounds as tile_bounds
         bbox = tile_bounds(x, y, z)
@@ -391,7 +500,8 @@ class RoadNetworkTiler:
             if type_set is not None and meta["highway"] not in type_set:
                 continue
 
-            color = HIGHWAY_COLORS.get(meta["highway"], DEFAULT_COLOR)
+            colors_map = _get_highway_colors()
+            color = colors_map.get(meta["highway"], DEFAULT_COLOR)
             coords = meta["coords"]
 
             # 将所有拐点转为像素坐标
@@ -410,10 +520,12 @@ class RoadNetworkTiler:
                     continue
                 ax, ay, bx, by = clipped
 
+                factor = _get_highway_weight(meta["highway"])
+                line_width = max(round(weight * factor), 1)
                 draw.line(
                     [(ax, ay), (bx, by)],
                     fill=color,
-                    width=max(weight, 1),
+                    width=line_width,
                 )
 
         # ── 保存磁盘缓存 ──

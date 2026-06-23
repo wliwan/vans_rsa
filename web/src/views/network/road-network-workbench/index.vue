@@ -150,6 +150,11 @@ const filterLoading = ref(false)
 const segmentLength = ref(1000)
 const segmentLoading = ref(false)
 
+// ── 路网渲染配置 ──
+const styleColors = ref({})
+const styleWeights = ref({})
+const styleLoading = ref(false)
+
 // ── 拖拽分隔条（Pointer 事件，同时支持鼠标和触屏）──
 const LK_SPLIT = 'rwb_split_pct'
 const LK_MAIN_H = 'rwb_main_h_pct'
@@ -823,6 +828,11 @@ watch(selectedHighways, () => {
   }
 }, { deep: true })
 
+// ── 切换到渲染配置 tab 时加载最新配置 ──
+watch(activeTab, (tab) => {
+  if (tab === 'style') loadHighwayStyle()
+})
+
 async function onFilter() {
   if (!selectedNetwork.value || !selectedHighways.value.length) { message.warning(t('views.network.roadNetworkWorkbench.messages.selectHighwayFirst')); return }
   filterLoading.value = true
@@ -832,6 +842,53 @@ async function onFilter() {
     onRegionChange(selectedRegion.value)
   } catch (_) { message.error(t('views.network.roadNetworkWorkbench.messages.filterFail')) } finally { filterLoading.value = false }
 }
+
+// ── 路网渲染配置 ──
+async function loadHighwayStyle() {
+  styleLoading.value = true
+  try {
+    const res = await api.getRoadHighwayStyle()
+    if (res.data) {
+      styleColors.value = res.data.colors || {}
+      styleWeights.value = res.data.weights || {}
+    }
+  } catch (_) { /* ignore */ }
+  styleLoading.value = false
+}
+
+function getHighwayColor(highway) {
+  const c = styleColors.value[highway]
+  if (!c) return '#9e9e9e'
+  if (Array.isArray(c)) return `rgb(${c[0]},${c[1]},${c[2]})`
+  return c
+}
+
+function setHighwayColor(highway, hexColor) {
+  const r = parseInt(hexColor.slice(1, 3), 16)
+  const g = parseInt(hexColor.slice(3, 5), 16)
+  const b = parseInt(hexColor.slice(5, 7), 16)
+  styleColors.value = { ...styleColors.value, [highway]: [r, g, b] }
+}
+
+async function saveHighwayStyle() {
+  styleLoading.value = true
+  try {
+    await api.updateRoadHighwayStyle({ colors: styleColors.value, weights: styleWeights.value })
+    message.success('渲染配置已保存，新瓦片将立即生效')
+  } catch (_) { message.error('保存失败') }
+  styleLoading.value = false
+}
+
+async function resetHighwayStyle() {
+  styleLoading.value = true
+  try {
+    await api.resetRoadHighwayStyle()
+    await loadHighwayStyle()
+    message.success('已恢复默认渲染配置')
+  } catch (_) { message.error('重置失败') }
+  styleLoading.value = false
+}
+
 async function onSegment() {
   if (!selectedNetwork.value || !segmentLength.value) { message.warning(t('views.network.roadNetworkWorkbench.messages.enterSegmentLength')); return }
   segmentLoading.value = true
@@ -1264,6 +1321,32 @@ async function runAIProcess() {
                 />
                 </NSpace>
                 <NButton type="primary" :loading="filterLoading" @click="onFilter" style="width:120px">{{ t('views.network.roadNetworkWorkbench.tabs.filter.saveAndFilter') }}</NButton>
+              </NSpace>
+            </NTabPane>
+            <NTabPane name="style" tab="路网渲染配置">
+              <NSpace vertical>
+                <div style="font-size:13px;color:#666;margin-bottom:6px">调整道路颜色的线宽。修改后点击「保存」立即生效到瓦片渲染。</div>
+                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; max-height: 320px; overflow-y: auto">
+                  <div v-for="hw in highwayTypes" :key="typeof hw === 'string' ? hw : hw.type"
+                    style="display:flex; align-items:center; gap: 8px; padding: 4px 8px; border-radius: 6px; border: 1px solid #e5e7eb; font-size:13px">
+                    <span style="min-width:80px;text-align:right;color:#555">{{ typeof hw === 'string' ? hw : (hw.name_zh || hw.type) }}</span>
+                    <input type="color"
+                      :value="getHighwayColor(typeof hw === 'string' ? hw : hw.type)"
+                      @input="e => setHighwayColor(typeof hw === 'string' ? hw : hw.type, e.target.value)"
+                      style="width:28px;height:22px;border:none;cursor:pointer;padding:0" />
+                    <NInputNumber
+                      :value="styleWeights[typeof hw === 'string' ? hw : hw.type]"
+                      :min="0.1" :max="5" :step="0.05"
+                      size="tiny" style="width:60px"
+                      placeholder="粗细"
+                      @update:value="v => styleWeights = { ...styleWeights, [(typeof hw === 'string' ? hw : hw.type)]: v }"
+                    />
+                  </div>
+                </div>
+                <NSpace style="margin-top:8px">
+                  <NButton type="primary" :loading="styleLoading" @click="saveHighwayStyle" size="small">保存配置</NButton>
+                  <NButton size="small" @click="resetHighwayStyle" :loading="styleLoading">恢复默认</NButton>
+                </NSpace>
               </NSpace>
             </NTabPane>
             <NTabPane name="segment" :tab="t('views.network.roadNetworkWorkbench.tabs.segment.label')">

@@ -61,6 +61,15 @@ class SetBaseUrlRequest(BaseModel):
     base_url: str = Field("", description="公网访问基础地址，如 http://example.com:9999")
 
 
+class ImportExtractedImagesRequest(BaseModel):
+    """导入从文档提取的图片到静态文件区"""
+    workspace_id: int = Field(..., description="工作区ID")
+    source_type: str = Field("original", description="导入目标层级: original / ai_analysis")
+    temp_paths: List[str] = Field(..., description="提取图片的临时文件路径列表")
+    file_names: List[str] = Field(default_factory=list, description="可选：与 temp_paths 一一对应的文件名")
+    source_doc_name: str = Field("", description="来源文档名称（用于记录来源）")
+
+
 # 支持的 OpenCV 操作及参数说明
 CV_OPERATIONS = {
     # 几何变换

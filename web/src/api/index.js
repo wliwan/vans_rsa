@@ -77,6 +77,9 @@ export default {
   getDownloadConfig: () => request.get('/system-config/download'),
   updateDownloadConfig: (data = {}) => request.post('/system-config/download', data),
   testProxy: (proxy_url) => request.post('/system-config/test-proxy', { proxy_url }),
+  getRoadHighwayStyle: () => request.get('/system-config/road-highway-style'),
+  updateRoadHighwayStyle: (data = {}) => request.post('/system-config/road-highway-style', data),
+  resetRoadHighwayStyle: () => request.delete('/system-config/road-highway-style'),
   // region-boundary
   getBoundaryStatus: (region_id) => request.get('/region/region-boundary/status', { params: { region_id } }),
   downloadBoundary: (data = {}) => request.post('/region/region-boundary/download', data, { timeout: 0 }),
@@ -253,6 +256,15 @@ export default {
   importStaticFilesFromMaterial: (data = {}) => request.post('/workspace/static-file/import-from-material', data, { timeout: 0 }),
   getStaticFileMaterialRegions: () => request.get('/workspace/static-file/material/regions'),
   getStaticFileMaterialsByRegion: (params = {}) => request.get('/workspace/static-file/material/list-by-region', { params }),
+  extractImagesFromDoc: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post('/workspace/static-file/extract-images', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
+    })
+  },
+  importExtractedImages: (data = {}) => request.post('/workspace/static-file/import-extracted', data, { timeout: 0 }),
   // vehicle
   getVehicleAccounts: () => request.get('/vehicle/accounts'),
   getVehicleCarTypes: (params = {}) => request.get('/vehicle/car-types', { params }),

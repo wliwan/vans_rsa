@@ -17,7 +17,7 @@ from app.log import logger
 from app.schemas.base import Fail, Success, SuccessExtra
 from app.schemas.static_file import (
     AIProcessRequest, BatchDeleteRequest, CopyRecordsRequest, CVProcessRequest,
-    CV_OPERATIONS, ImportRoadMaterialRequest, OCRRequest,
+    CV_OPERATIONS, ImportExtractedImagesRequest, ImportRoadMaterialRequest, OCRRequest,
     SetBaseUrlRequest, StaticFileUpdate,
 )
 
@@ -389,6 +389,61 @@ async def get_base_url():
 async def set_base_url(req: SetBaseUrlRequest):
     await system_config_controller.set_value(_BASE_URL_KEY, req.base_url.strip())
     return Success(msg="BaseUrl 已更新", data={"base_url": req.base_url.strip()})
+
+
+# ── 文档图片提取 ──
+
+@router.post("/extract-images", summary="从文档中提取图片（PPT/Word/Excel/PDF）")
+async def extract_images_from_document(
+    file: UploadFile = File(..., description="文档文件(.ppt/.pptx/.doc/.docx/.xls/.xlsx/.pdf)"),
+):
+    if not file.filename:
+        return Fail(code=400, msg="请选择文件")
+    file_data = await file.read()
+    if len(file_data) == 0:
+        return Fail(code=400, msg="文件为空")
+    try:
+        images = await static_file_controller.extract_images_from_document(
+            file_data=file_data, original_filename=file.filename,
+        )
+        # 返回时移除 temp_path（前端不需要知道服务器路径），保留 index 用于导入选择
+        safe_images = []
+        for img in images:
+            safe_images.append({
+                k: v for k, v in img.items() if not k.startswith("temp_")
+            })
+        return Success(data={
+            "images": safe_images,
+            "count": len(safe_images),
+            "temp_paths": [img["temp_path"] for img in images],  # 前端后续导入需要回传
+            "source_name": file.filename,
+        }, msg=f"提取完成：共 {len(safe_images)} 张图片")
+    except ValueError as e:
+        return Fail(code=400, msg=str(e))
+    except Exception as e:
+        logger.exception("文档图片提取失败")
+        return Fail(code=500, msg=f"提取失败: {str(e)}")
+
+
+@router.post("/import-extracted", summary="导入从文档提取的图片到静态文件区")
+async def import_extracted_images(req: ImportExtractedImagesRequest):
+    user_id = CTX_USER_ID.get()
+    ws = await workspace_controller.check_permission(req.workspace_id, user_id)
+    if not ws:
+        return Fail(code=403, msg="无权操作该工作区")
+    results, errors = await static_file_controller.import_extracted_images(
+        workspace_id=req.workspace_id,
+        temp_paths=req.temp_paths,
+        file_names=req.file_names,
+        source_type=req.source_type,
+        source_doc_name=req.source_doc_name,
+    )
+    return Success(data={
+        "results": results, "errors": errors,
+        "total": len(req.temp_paths),
+        "success_count": len(results),
+        "error_count": len(errors),
+    }, msg=f"导入完成：成功 {len(results)} 个，失败 {len(errors)} 个")
 
 
 # ── 短链接访问（独立 router，无鉴权）──

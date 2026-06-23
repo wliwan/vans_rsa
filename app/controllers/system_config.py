@@ -16,6 +16,36 @@ DEFAULT_CONFIGS = {
     "download_max_retries": {"value": "3", "description": "下载失败最大重试次数 (0-10)"},
     "download_timeout_seconds": {"value": "600", "description": "下载超时秒数 (60-3600)"},
     "download_ssl_verify": {"value": "true", "description": "SSL 证书验证 (true/false)。代理环境下出现 SSL 错误时可关闭"},
+    "road_highway_colors": {
+        "value": json.dumps({
+            "motorway": [230, 74, 25], "motorway_link": [230, 74, 25],
+            "trunk": [216, 67, 21], "trunk_link": [216, 67, 21],
+            "primary": [239, 108, 0], "primary_link": [239, 108, 0],
+            "secondary": [249, 168, 37], "secondary_link": [249, 168, 37],
+            "tertiary": [67, 160, 71], "tertiary_link": [67, 160, 71],
+            "residential": [30, 136, 229], "living_street": [30, 136, 229],
+            "unclassified": [158, 158, 158], "road": [158, 158, 158],
+            "service": [117, 117, 117], "footway": [161, 136, 127],
+            "cycleway": [102, 187, 106], "path": [141, 110, 99],
+            "track": [121, 85, 72], "pedestrian": [255, 183, 77],
+        }, ensure_ascii=False),
+        "description": "路网瓦片道路颜色映射 {highway: [R,G,B]}",
+    },
+    "road_highway_weights": {
+        "value": json.dumps({
+            "motorway": 1.3, "motorway_link": 1.0,
+            "trunk": 1.2, "trunk_link": 1.0,
+            "primary": 1.1, "primary_link": 0.9,
+            "secondary": 1.0, "secondary_link": 0.8,
+            "tertiary": 0.9, "tertiary_link": 0.7,
+            "residential": 0.55, "living_street": 0.45,
+            "unclassified": 0.7, "road": 0.7,
+            "service": 0.5, "footway": 0.35,
+            "cycleway": 0.4, "path": 0.35,
+            "track": 0.4, "pedestrian": 0.5,
+        }, ensure_ascii=False),
+        "description": "路网瓦片线宽系数 {highway: float}，相对于 zoom 基础线宽的倍率",
+    },
 }
 
 

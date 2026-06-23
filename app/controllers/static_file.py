@@ -185,6 +185,68 @@ class StaticFileController(CRUDBase[StaticFile, StaticFileCreate, StaticFileUpda
                 deleted += 1
         return deleted
 
+    # ── 文档图片提取 ──
+    async def extract_images_from_document(
+        self, file_data: bytes, original_filename: str,
+    ) -> List[dict]:
+        """从文档文件中提取所有图片，返回图片元数据列表（不写入数据库）"""
+        from app.utils.document_image_extractor import extract_images_from_document
+        return extract_images_from_document(file_data, original_filename)
+
+    # ── 导入提取的图片到静态文件区 ──
+    async def import_extracted_images(
+        self, workspace_id: int, temp_paths: List[str],
+        file_names: Optional[List[str]] = None,
+        source_type: str = "original",
+        source_doc_name: str = "",
+    ) -> Tuple[List[dict], List[dict]]:
+        """将已提取的临时图片导入到静态文件表"""
+        import shutil
+        results, errors = [], []
+        if not file_names:
+            file_names = [""] * len(temp_paths)
+        while len(file_names) < len(temp_paths):
+            file_names.append("")
+
+        for idx, temp_path in enumerate(temp_paths):
+            try:
+                if not temp_path or not os.path.exists(temp_path):
+                    errors.append({"index": idx, "error": "临时文件不存在"})
+                    continue
+                os.makedirs(UPLOAD_DIR, exist_ok=True)
+                ext = os.path.splitext(temp_path)[1] or ".png"
+                unique_name = f"{uuid.uuid4().hex}{ext}"
+                dest_path = os.path.join(UPLOAD_DIR, unique_name)
+                shutil.copy2(temp_path, dest_path)
+                file_size = os.path.getsize(dest_path)
+                props = self._extract_image_properties(dest_path)
+                short_token = self._gen_short_token()
+                display_name = file_names[idx] if idx < len(file_names) and file_names[idx] else os.path.basename(temp_path)
+                description = f"从文档提取: {source_doc_name}" if source_doc_name else "从文档提取"
+                obj = await self.model.create(
+                    workspace_id=workspace_id,
+                    name=display_name,
+                    description=description,
+                    file_name=display_name,
+                    file_path=dest_path,
+                    file_size=file_size,
+                    source_type=source_type,
+                    is_image=True,
+                    width=props.get("width"),
+                    height=props.get("height"),
+                    color_mode=props.get("color_mode"),
+                    bit_depth=props.get("bit_depth"),
+                    dpi=props.get("dpi"),
+                    format_type=props.get("format_type"),
+                    source="document_extract",
+                    short_url_token=short_token,
+                )
+                results.append(self._to_output(obj))
+            except Exception as e:
+                logger.exception(f"导入提取图片失败 [idx={idx}]: {e}")
+                errors.append({"index": idx, "error": str(e)})
+        return results, errors
+
     # ── 通过短链接令牌获取 ──
     async def get_by_short_token(self, token: str) -> Optional[StaticFile]:
         return await self.model.filter(short_url_token=token).first()

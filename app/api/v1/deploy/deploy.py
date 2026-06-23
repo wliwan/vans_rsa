@@ -207,6 +207,20 @@ async def update_backend(
         file_count = sum(1 for _ in _walk_files(app_src))
         size_mb = len(zip_bytes) / (1024 * 1024)
 
+        # 5.5. 安装依赖（如果 zip 中包含 requirements.txt）
+        req_file = _find_requirements_file(extract_dir, app_src)
+        if req_file:
+            try:
+                result = subprocess.run(
+                    [sys.executable, "-m", "pip", "install", "-r", req_file,
+                     "-i", "https://pypi.tuna.tsinghua.edu.cn/simple"],
+                    capture_output=True, text=True, timeout=120,
+                )
+                if result.returncode != 0:
+                    return Fail(code=500, msg=f"依赖安装失败: {result.stderr[-500:]}")
+            except subprocess.TimeoutExpired:
+                return Fail(code=500, msg="依赖安装超时（120s）")
+
         # 6. 延迟退出（给客户端响应时间）
         async def _delayed_restart():
             await asyncio.sleep(2)
@@ -258,6 +272,26 @@ def _find_app_dir(base: str) -> str | None:
         if os.path.isfile(os.path.join(sub, "run.py")) or os.path.isdir(os.path.join(sub, "controllers")):
             return sub
 
+    return None
+
+
+def _find_requirements_file(extract_dir: str, app_dir: str) -> str | None:
+    """在解压目录中查找 requirements.txt（可能和 app/ 同级或在外层目录）"""
+    # 和外层目录同级
+    parent = os.path.dirname(app_dir.rstrip("/")) if app_dir != extract_dir else extract_dir
+    req_path = os.path.join(parent, "requirements.txt")
+    if os.path.isfile(req_path):
+        return req_path
+    # extract_dir 根
+    req_path = os.path.join(extract_dir, "requirements.txt")
+    if os.path.isfile(req_path):
+        return req_path
+    # 遍历一层
+    for name in os.listdir(extract_dir):
+        sub = os.path.join(extract_dir, name)
+        candidate = os.path.join(sub, "requirements.txt")
+        if os.path.isdir(sub) and os.path.isfile(candidate):
+            return candidate
     return None
 
 

@@ -959,6 +959,15 @@ const staticFileCopyToForm = ref({ target_workspace_id: null })
 const showBaseUrlModal = ref(false)
 const baseUrlForm = ref({ base_url: '' })
 
+// 图片提取弹窗
+const showImageExtractModal = ref(false)
+const imageExtractUploading = ref(false)
+const imageExtractLoading = ref(false)
+const extractedImages = ref([])
+const extractedTempPaths = ref([])
+const extractedSourceName = ref('')
+const extractedSelectedIds = ref([])
+
 function formatResolution(w, h) {
   if (w == null && h == null) return ''
   return [w, h].filter(Boolean).join(' × ')
@@ -1187,6 +1196,78 @@ function openBaseUrlModal() { baseUrlForm.value = { base_url: staticFileBaseUrl.
 async function handleBaseUrlSubmit() {
   try { const res = await api.setStaticFileBaseUrl({ base_url: baseUrlForm.value.base_url.trim() }); staticFileBaseUrl.value = res.data?.base_url || baseUrlForm.value.base_url.trim(); message.success(t('views.statistic-center.label_cn_df261b91')); showBaseUrlModal.value = false }
   catch (e) { message.error(e?.response?.data?.msg || t('views.statistic-center.message_cn_930442e2')) }
+}
+
+// ── 图片提取 ──
+function openImageExtractModal() {
+  if (!selectedWs.value) { message.warning(t('views.statistic-center.placeholder_cn_aac7e445')); return }
+  extractedImages.value = []
+  extractedTempPaths.value = []
+  extractedSourceName.value = ''
+  extractedSelectedIds.value = []
+  imageExtractUploading.value = false
+  imageExtractLoading.value = false
+  showImageExtractModal.value = true
+}
+
+async function handleImageExtractUpload({ file }) {
+  if (!selectedWs.value) { message.warning(t('views.statistic-center.placeholder_cn_aac7e445')); return }
+  imageExtractUploading.value = true
+  imageExtractLoading.value = true
+  try {
+    const res = await api.extractImagesFromDoc(file.file)
+    extractedImages.value = res.data?.images || []
+    extractedTempPaths.value = res.data?.temp_paths || []
+    extractedSourceName.value = res.data?.source_name || file.file.name || ''
+    extractedSelectedIds.value = []
+    message.success(res.msg || t('views.statistic-center.message_cn_509132eb'))
+  } catch (e) {
+    message.error(e?.response?.data?.msg || t('views.statistic-center.message_cn_54e5de42'))
+    extractedImages.value = []
+    extractedTempPaths.value = []
+  }
+  imageExtractUploading.value = false
+  imageExtractLoading.value = false
+}
+
+function toggleAllExtractedImages() {
+  if (extractedSelectedIds.value.length === extractedImages.value.length && extractedImages.value.length > 0) {
+    extractedSelectedIds.value = []
+  } else {
+    extractedSelectedIds.value = extractedImages.value.map(img => img.index)
+  }
+}
+
+function toggleExtractedImageSelect(index) {
+  const idx = extractedSelectedIds.value.indexOf(index)
+  if (idx >= 0) extractedSelectedIds.value.splice(idx, 1)
+  else extractedSelectedIds.value.push(index)
+}
+
+async function handleImageExtractImport() {
+  if (!extractedSelectedIds.value.length) { message.warning('请选择要导入的图片'); return }
+  if (!selectedWs.value) return
+  imageExtractLoading.value = true
+  try {
+    const selectedPaths = extractedSelectedIds.value.map(i => extractedTempPaths.value[i])
+    const selectedNames = extractedSelectedIds.value.map(i => {
+      const img = extractedImages.value.find(img => img.index === i)
+      return img?.file_name || ''
+    })
+    const res = await api.importExtractedImages({
+      workspace_id: selectedWs.value.id,
+      source_type: staticFileSourceType.value,
+      temp_paths: selectedPaths,
+      file_names: selectedNames,
+      source_doc_name: extractedSourceName.value,
+    })
+    message.success(res.msg || `成功导入 ${res.data?.success_count || 0} 张图片`)
+    showImageExtractModal.value = false
+    await loadStaticFiles()
+  } catch (e) {
+    message.error(e?.response?.data?.msg || '导入失败')
+  }
+  imageExtractLoading.value = false
 }
 
 const _originalSelectWorkspace = selectWorkspace
@@ -1488,7 +1569,7 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- 数据源 Tab 切换 -->
-          <NTabs v-model:value="activeDataSource" type="card" class="flex-1 flex flex-col" style="min-height: 0">
+          <NTabs v-model:value="activeDataSource" type="card" class="flex-1 flex flex-col" style="min-height: 0; overflow: hidden">
             <NTabPane v-for="tab in dataSourceTabs" :key="tab.name" :name="tab.name">
               <template #tab>
                 <TheIcon :icon="tab.icon" :size="18" class="mr-2" />{{ tab.label }}
@@ -2070,6 +2151,7 @@ onBeforeUnmount(() => {
                   <NButton size="small" @click="openCVModal" :disabled="!selectedStaticFileIds.length"><TheIcon icon="material-symbols:tune" :size="16" class="mr-1" />{{ t('views.statistic-center.label_cn_cedfaa94') }}</NButton>
                   <NButton size="small" @click="openAIModal" :disabled="!selectedStaticFileIds.length"><TheIcon icon="material-symbols:auto-awesome" :size="16" class="mr-1" />{{ t('views.statistic-center.label_cn_98264bd9') }}</NButton>
                   <NButton size="small" @click="handleOCRExtract" :disabled="!selectedStaticFileIds.length"><TheIcon icon="material-symbols:text-scan" :size="16" class="mr-1" />{{ t('views.statistic-center.label_cn_0ff045c8') }}</NButton>
+                  <NButton size="small" type="primary" @click="openImageExtractModal"><TheIcon icon="material-symbols:image-search" :size="16" class="mr-1" />图片提取</NButton>
                   <NButton size="small" @click="openMaterialImportModal"><TheIcon icon="material-symbols:drive-folder-upload" :size="16" class="mr-1" />{{ t('views.statistic-center.label_cn_f747d2cc') }}</NButton>
                   <NButton size="small" :disabled="!selectedStaticFileIds.length" @click="openStaticFileCopyToModal"><TheIcon icon="material-symbols:content-copy" :size="16" class="mr-1" />{{ t('views.statistic-center.label_cn_a9ac3f71') }}</NButton>
                   <NButton size="small" @click="openBaseUrlModal"><TheIcon icon="material-symbols:link" :size="16" class="mr-1" />BaseUrl</NButton>
@@ -2524,6 +2606,90 @@ onBeforeUnmount(() => {
     <template #footer><NSpace justify="end"><NButton @click="showBaseUrlModal = false">{{ t('views.statistic-center.label_cn_625fb26b') }}</NButton><NButton type="primary" @click="handleBaseUrlSubmit">保存</NButton></NSpace></template>
   </NModal>
 
+  <!-- ── 图片提取弹窗 ── -->
+  <NModal v-model:show="showImageExtractModal" title="图片提取" preset="card" style="width: 750px; max-height: 85vh">
+    <div class="flex flex-col" style="max-height: 65vh">
+      <!-- 上传区 -->
+      <div v-if="!extractedImages.length" class="mb-4">
+        <NUpload :show-file-list="false" :default-upload="false" accept=".ppt,.pptx,.doc,.docx,.xls,.xlsx,.pdf" @change="handleImageExtractUpload">
+          <NUploadDragger class="w-full" style="border-radius: 8px; --n-border-hover: 2px dashed #10b981">
+            <div v-if="!imageExtractUploading" class="flex flex-col items-center py-6">
+              <div class="w-14 h-14 rounded-xl bg-green-50 flex items-center justify-center mb-3">
+                <TheIcon icon="material-symbols:image-search" :size="32" class="text-green-500" />
+              </div>
+              <div class="text-base font-semibold text-gray-700">上传文档提取图片</div>
+              <div class="text-sm text-gray-400 mt-1">支持 PPT、Word、Excel、PDF 文件</div>
+              <div class="flex items-center gap-2 mt-3 text-xs text-gray-400 bg-gray-100 rounded-full px-3 py-1">
+                <span>.ppt</span><span>.pptx</span><span>.doc</span><span>.docx</span><span>.xls</span><span>.xlsx</span><span>.pdf</span>
+              </div>
+            </div>
+            <div v-else class="flex flex-col items-center py-6">
+              <TheIcon icon="material-symbols:cloud-upload" :size="32" class="text-green-500 animate-pulse mb-2" />
+              <div class="text-sm font-semibold text-green-600">正在提取图片...</div>
+            </div>
+          </NUploadDragger>
+        </NUpload>
+      </div>
+
+      <!-- 提取结果 -->
+      <div v-else>
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <TheIcon icon="material-symbols:image" :size="18" class="text-green-500" />
+            <span class="font-semibold text-sm">提取结果：{{ extractedImages.length }} 张图片</span>
+            <NTag size="small" :bordered="false" type="info">{{ extractedSourceName }}</NTag>
+          </div>
+          <div class="flex items-center gap-2">
+            <NCheckbox size="small" :checked="extractedSelectedIds.length === extractedImages.length && extractedImages.length > 0" :indeterminate="extractedSelectedIds.length > 0 && extractedSelectedIds.length < extractedImages.length" @update:checked="toggleAllExtractedImages">
+              全选
+            </NCheckbox>
+          </div>
+        </div>
+
+        <div class="overflow-auto rounded-lg border border-gray-100 bg-gray-50/50 p-2" style="max-height: 380px">
+          <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))">
+            <div
+              v-for="(img, idx) in extractedImages"
+              :key="img.index"
+              class="bg-white rounded-lg border p-2 cursor-pointer hover:shadow-sm transition-shadow"
+              :class="{ 'border-green-400 bg-green-50/50': extractedSelectedIds.includes(img.index), 'border-gray-100': !extractedSelectedIds.includes(img.index) }"
+              @click="toggleExtractedImageSelect(img.index)"
+            >
+              <div class="flex items-center gap-2 mb-1.5">
+                <NCheckbox size="small" :checked="extractedSelectedIds.includes(img.index)" @click.stop />
+                <span class="text-xs text-gray-400">#{{ idx + 1 }}</span>
+              </div>
+              <div class="text-xs font-medium truncate mb-1" :title="img.file_name">{{ img.file_name }}</div>
+              <div class="flex items-center gap-1.5 text-xs text-gray-400 flex-wrap">
+                <span v-if="img.format_type">{{ img.format_type }}</span>
+                <span v-if="img.width">{{ img.width }}×{{ img.height }}</span>
+                <span>{{ formatFileSize(img.file_size) }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-if="!extractedImages.length" class="text-center text-gray-400 py-8">
+            未提取到图片
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <template #footer>
+      <NSpace justify="end">
+        <NButton @click="showImageExtractModal = false">关闭</NButton>
+        <NButton
+          v-if="extractedImages.length"
+          type="primary"
+          :disabled="!extractedSelectedIds.length"
+          :loading="imageExtractLoading"
+          @click="handleImageExtractImport"
+        >
+          导入选中图片 ({{ extractedSelectedIds.length }})
+        </NButton>
+      </NSpace>
+    </template>
+  </NModal>
+
   <!-- ── 工作区弹窗 ── -->
   <NModal v-model:show="showWsModal" :title="wsEditing ? '编辑工作区' : t('views.statistic-center.title_cn_9cb11943')" preset="card" style="width: 500px">
     <NForm :model="wsModalForm" label-placement="top">
@@ -2944,6 +3110,13 @@ onBeforeUnmount(() => {
     padding: 6px 10px !important;
     font-size: 13px !important;
   }
+}
+
+/* ── 修复 NTabs pane-wrapper 高度约束，使各 Tab 内容区可独立滚动 ── */
+:deep(.n-tabs-pane-wrapper) {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* ── 移动端右侧内容区：允许滚动 + 边距缩减 ── */
