@@ -217,11 +217,38 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════
+# 步骤 3: 更新 requirements.txt 依赖版本
+# ═══════════════════════════════════════════════════════════════
+
+echo ""
+echo -e "${BOLD}步骤 3/5: 更新依赖版本${NC}"
+echo ""
+
+if [ "$DRY_RUN" = false ]; then
+    if command -v uv &>/dev/null && [ -f "$PROJECT_DIR/.venv/pyvenv.cfg" ]; then
+        uv pip freeze 2>/dev/null | grep -vE '^(-e |pip==|setuptools==|wheel==)' > "$PROJECT_DIR/requirements.txt" || true
+    else
+        if [ -f "$PROJECT_DIR/.venv/bin/python" ]; then
+            PYTHON="$PROJECT_DIR/.venv/bin/python"
+        elif [ -f "$PROJECT_DIR/venv/bin/python" ]; then
+            PYTHON="$PROJECT_DIR/venv/bin/python"
+        else
+            PYTHON="python3"
+        fi
+        $PYTHON -m pip freeze 2>/dev/null | grep -vE '^(-e |pip==|setuptools==|wheel==)' > "$PROJECT_DIR/requirements.txt" || true
+    fi
+    DEP_COUNT=$(wc -l < "$PROJECT_DIR/requirements.txt")
+    echo -e "  ${GREEN}✓${NC} 依赖已更新 → ${DEP_COUNT} 个包"
+else
+    echo -e "  ${YELLOW}[DRY-RUN]${NC} 更新 requirements.txt 依赖版本"
+fi
+
+# ═══════════════════════════════════════════════════════════════
 # 步骤 4: 打包
 # ═══════════════════════════════════════════════════════════════
 
 echo ""
-echo -e "${BOLD}步骤 3/5: 打包项目${NC}"
+echo -e "${BOLD}步骤 4/5: 打包项目${NC}"
 echo ""
 
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
@@ -305,7 +332,7 @@ fi
 # ═══════════════════════════════════════════════════════════════
 
 echo ""
-echo -e "${BOLD}步骤 4/5: Git 提交${NC}"
+echo -e "${BOLD}步骤 5/5: Git 提交${NC}"
 echo ""
 
 if [ "$DRY_RUN" = false ]; then
