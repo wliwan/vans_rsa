@@ -273,6 +273,30 @@ withDirectives(h(NButton, { onClick: handleEdit }), [[vPermission, 'post/api/v1/
 }
 ```
 
+### Tab 内容区滚动 — flex 布局链约束（关键）
+
+在 Naive UI 的 `NTabs` + `NTabPane` 内部使用 flex 列布局时，必须**整条链**每个节点都满足：
+
+1. **成为 flex 容器**：`display: flex; flex-direction: column`
+2. **允许收缩**：`min-height: 0`
+3. **阻断溢出传播**：`overflow: hidden`
+
+链的每一层必须同时具备这三项，缺一即断——内容溢出会推动父容器膨胀，`overflow: auto` 失效。
+
+**完整链模板**：
+```
+.n-tab-pane           { display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden }
+  └── Tab 根 div       { flex-1 flex flex-col; min-height:0; overflow:hidden }  ← 每个 Tab 组件
+       ├── 工具栏/上传区  (固定高度)
+       └── 内容区        { flex-1; overflow:auto; min-height:0 }                ← 实际滚动的元素
+```
+
+**Naive UI 容器穿透**：`.n-tab-pane` 默认 `display:block`，必须用 `:deep()` 覆盖；`.n-spin-container` 默认无 flex 约束，必须补 `flex:1; min-height:0; overflow:hidden`。
+
+**双栏变体**：在列 flex 内嵌行 flex 双栏时，双栏容器和左右栏均需 `min-height:0; overflow:hidden`。
+
+**验证方法**：Playwright 注入 50 行数据后，检查滚动容器的 `clientHeight` 是否稳定（ΔCH=0），确认 `scrollTop` 可控且能滚动到底。
+
 ### NTree 使用规范
 
 - 必须加 `virtual-scroll` 避免大量节点卡顿
@@ -762,10 +786,11 @@ await obj.save()
 | Leaflet `tile.el` 不是 `<img>` | Leaflet 用 `<div class="leaflet-tile"><img/></div>` 包裹 | 用 `el.querySelector('img')` 递归取 `<img>` |
 | Canvas 绘制跨域瓦片报 SecurityError | 底图瓦片来自外部 CDN，无 CORS 头 | 用 `html-to-image` 库截取完整 DOM（或仅导出同源路网瓦片） |
 | **UnoCSS `text-*` 字体极小（如 `text-base` 只显示 4px）** | `web/src/styles/global.scss` 设 `html { font-size: 4px }`，导致 1rem=4px，UnoCSS 的 rem 字体类全部缩到 1/4 | 在该页面加 `<style scoped>` 用 `!important` + px 覆盖：`.text-base { font-size: 16px !important; line-height: 24px !important; }` 等。禁止直接改全局 `html` 基准 |
+| **Tab 内容区无法滚动（内容溢出但无滚动条）** | flex 布局链在中途断裂：`.n-tab-pane` 默认 `display:block`（子元素 `flex-1` 垂直失效）；中间容器缺少 `overflow:hidden` + `min-height:0`；Naive UI 组件（NSpin/NTabs）的 wrapper 未设置 flex 约束 | **3 层修复**：① index.vue 深度覆盖 `.n-tab-pane { display:flex; flex-direction:column }`、`.n-spin-container { flex:1; min-height:0; overflow:hidden }`；② 每个 Tab 组件的根 div 和所有 flex 列容器加 `overflow:hidden`；③ 双栏布局的左右栏容器加 `min-height:0; overflow:hidden`。验证方法：Playwright 注入数据后检查 `el.clientHeight` 是否稳定（ΔCH=0）
 
 ---
 
-## 强制规则汇总（28 条）
+## 强制规则汇总（29 条）
 
 1. **后端**：所有控制器继承 `CRUDBase`，所有路由加 `summary` 中文描述
 2. **前端**：所有列表页必须用 `CrudTable`，禁止手写 `NDataTable` + 分页
@@ -795,6 +820,7 @@ await obj.save()
 26. **UnoCSS 字体**：全局 `html { font-size: 4px }` 使 1rem=4px，UnoCSS 的 `text-*` 类（rem）全部缩到 1/4。新建页面时**必须在 `<style scoped>` 中用 `!important` + px 覆盖 `text-xs` 到 `text-xl` 的 `font-size` 和 `line-height`**，禁止直接改全局 `html` 基准
 27. **CrudTable rowKey**：`row-key` prop 只接受 String（属性名），**不能传函数**。`(row) => row.key` 会被转为字符串导致所有行 key 为 undefined，checkbox 无法选中
 28. **热更新不自动触发**：改完代码后**禁止**主动询问"是否需要热更新？"或自动执行部署脚本。只有用户明确说出"热更新"、"部署到服务器"、"更新到远程"时才执行 `hot-update.sh`（前端）或 `hot-update-be.sh`（后端）
+29. **Tab 内容区滚动布局链**（NTabs + NTabPane 场景）：整条 flex 列布局链每层必须同时具备 `display:flex; flex-direction:column` + `min-height:0` + `overflow:hidden`。`.n-tab-pane` 默认 `display:block` 必须用 `:deep()` 覆盖为 `flex`；`.n-spin-container` 必须补 `flex:1; min-height:0; overflow:hidden`；双栏容器和左右栏加 `min-height:0; overflow:hidden`。验证方法：Playwright 注入数据后检查 `el.clientHeight` 是否稳定（ΔCH=0）
 
 ---
 
