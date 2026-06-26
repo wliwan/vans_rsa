@@ -324,10 +324,19 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
         if not survey:
             raise ValueError("问卷不存在或已失效")
 
+        # 取 raw_data 第一个字段的值作为标题
+        title = None
+        raw = obj_in.raw_data or {}
+        if raw:
+            first_val = list(raw.values())[0] if raw else None
+            if first_val is not None and str(first_val).strip():
+                title = str(first_val).strip()[:500]
+
         submission = await SurveySubmission.create(
             survey_id=survey.id,
             submitter_name=obj_in.submitter_name or "匿名",
             submitter_info=obj_in.submitter_info or {},
+            title=title,
             content=obj_in.content,
             word_count=obj_in.word_count or len(obj_in.content.replace(" ", "").replace("\n", "")),
             raw_data=obj_in.raw_data or {},
@@ -337,6 +346,7 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
             "id": submission.id,
             "survey_id": submission.survey_id,
             "submitter_name": submission.submitter_name,
+            "title": submission.title,
             "content": submission.content,
             "word_count": submission.word_count,
             "save_type": submission.save_type,
@@ -365,6 +375,7 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
                 "survey_id": s.survey_id,
                 "submitter_name": s.submitter_name,
                 "submitter_info": s.submitter_info,
+                "title": s.title,
                 "content": s.content,
                 "word_count": s.word_count,
                 "raw_data": s.raw_data,

@@ -20,6 +20,11 @@ const listLoading = ref(false)
 const listSearch = ref('')
 const selectedSurvey = ref(null)
 
+const fullShortUrl = computed(() => {
+  if (!selectedSurvey.value?.short_url) return ''
+  return window.location.origin + selectedSurvey.value.short_url
+})
+
 const filteredList = computed(() => {
   if (!listSearch.value) return surveyList.value
   const kw = listSearch.value.toLowerCase()
@@ -209,6 +214,7 @@ async function doUpdateSurvey() {
 }
 
 const submissionColumns = [
+  { title: '标题', key: 'title', width: 150, ellipsis: { tooltip: true }, render: (row) => row.title || '-' },
   { title: '提交时间', key: 'created_at', width: 170, render: (row) => row.created_at?.replace('T', ' ').substring(0, 19) || '-' },
   { title: '提交者', key: 'submitter_name', width: 100 },
   { title: '类型', key: 'save_type', width: 80, render: (row) => row.save_type === 'submit' ? '提交' : '保存' },
@@ -229,15 +235,19 @@ const submissionColumns = [
   },
 ]
 
-// ── 复制短链接 ──
+// ── 复制 / 打开短链接 ──
 function copyShortUrl() {
-  if (!selectedSurvey.value?.short_url) return
-  const fullUrl = window.location.origin + selectedSurvey.value.short_url
-  navigator.clipboard.writeText(fullUrl).then(() => {
-    message.success('短链接已复制：' + fullUrl)
+  if (!fullShortUrl.value) return
+  navigator.clipboard.writeText(fullShortUrl.value).then(() => {
+    message.success('完整链接已复制：' + fullShortUrl.value)
   }).catch(() => {
     message.warning('复制失败，请手动复制')
   })
+}
+
+function openShortUrl() {
+  if (!fullShortUrl.value) return
+  window.open(fullShortUrl.value, '_blank')
 }
 
 onMounted(loadSurveys)
@@ -297,8 +307,8 @@ onMounted(loadSurveys)
             <div v-if="selectedSurvey" class="panel-actions">
               <NButton size="small" @click="openEditModal">编辑</NButton>
               <NButton size="small" type="primary" @click="openPreview()">预览网页</NButton>
-              <NTag v-if="selectedSurvey.short_url" type="info" size="small" style="cursor: pointer" @click="copyShortUrl">
-                {{ selectedSurvey.short_url }}
+              <NTag v-if="selectedSurvey.short_url" type="info" size="small" style="cursor: pointer" @click="copyShortUrl" @dblclick="openShortUrl">
+                {{ fullShortUrl }}
               </NTag>
             </div>
           </div>
@@ -311,13 +321,18 @@ onMounted(loadSurveys)
           <div class="info-grid">
             <div class="info-item"><span class="info-label">状态</span><NTag :type="selectedSurvey.is_valid ? 'success' : 'error'" size="small">{{ selectedSurvey.is_valid ? '已审核通过' : '安全审核未通过' }}</NTag></div>
             <div class="info-item"><span class="info-label">创建时间</span><span>{{ selectedSurvey.created_at?.replace('T', ' ').substring(0, 19) || '-' }}</span></div>
-            <div class="info-item"><span class="info-label">短链接</span><span style="font-family: monospace; font-size: 12px">{{ selectedSurvey.short_url || '无（审核未通过）' }}</span></div>
+            <div class="info-item"><span class="info-label">完整链接</span><span v-if="fullShortUrl" style="font-family: monospace; font-size: 12px; color: #2080f0; cursor: pointer" @click="copyShortUrl" :title="'点击复制，双击打开'">{{ fullShortUrl }}</span><span v-else style="font-family: monospace; font-size: 12px">无（审核未通过）</span></div>
             <div class="info-item"><span class="info-label">文件名</span><span style="font-family: monospace; font-size: 12px">{{ selectedSurvey.file_name || '-' }}</span></div>
           </div>
 
           <!-- 提交记录 -->
           <div style="margin-top: 16px">
-            <div class="section-title">提交记录 ({{ submissions.length }})</div>
+            <div class="section-title" style="display: flex; align-items: center; gap: 8px">
+              <span>提交记录 ({{ submissions.length }})</span>
+              <NButton size="tiny" quaternary @click="loadSubmissions" :loading="submissionsLoading">
+                <template #icon><TheIcon icon="material-symbols:refresh" /></template>
+              </NButton>
+            </div>
             <NSpin :show="submissionsLoading">
               <NDataTable
                 v-if="submissions.length"

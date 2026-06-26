@@ -370,6 +370,7 @@ class SurveySubmission(BaseModel, TimestampMixin):
     survey = fields.ForeignKeyField("models.Survey", related_name="submissions", description="所属问卷", index=True)
     submitter_name = fields.CharField(max_length=100, null=True, description="提交者姓名")
     submitter_info = fields.JSONField(null=True, description="提交者信息(JSON)")
+    title = fields.CharField(max_length=500, null=True, description="标题（取自表单第一个字段的值）")
     content = fields.TextField(description="提交内容(Markdown表格)")
     word_count = fields.IntField(default=0, description="内容总字数")
     raw_data = fields.JSONField(null=True, description="原始表单数据(JSON)")
