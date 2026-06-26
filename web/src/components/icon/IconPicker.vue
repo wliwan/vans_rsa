@@ -1,10 +1,13 @@
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { watchDebounced } from '@vueuse/core'
 import { NInput, NPopover } from 'naive-ui'
 
 import TheIcon from './TheIcon.vue'
 import iconData from '@/assets/js/icons'
+
+const { t } = useI18n()
 
 const props = defineProps({ value: String })
 const emit = defineEmits(['update:value'])

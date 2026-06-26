@@ -346,6 +346,39 @@ class RoadMaterial(BaseModel, TimestampMixin):
         table = "road_material"
 
 
+class Survey(BaseModel, TimestampMixin):
+    """调研问卷 — 调研中心问卷工作台"""
+    name = fields.CharField(max_length=200, description="问卷名称", index=True)
+    file_name = fields.CharField(max_length=300, description="原始文件名")
+    file_path = fields.CharField(max_length=500, description="网页文件存储路径")
+    file_size = fields.BigIntField(default=0, description="文件大小(字节)")
+    ai_proxy_id = fields.IntField(null=True, description="使用的AI代理ID", index=True)
+    skill_id = fields.IntField(null=True, description="使用的Skill ID", index=True)
+    prompt = fields.TextField(null=True, description="生成提示词")
+    short_url_token = fields.CharField(max_length=64, unique=True, null=True, description="短链接令牌", index=True)
+    is_valid = fields.BooleanField(default=True, description="安全审核是否通过", index=True)
+    security_log = fields.TextField(null=True, description="安全审核日志")
+    creator_id = fields.IntField(null=True, description="创建者ID", index=True)
+    users = fields.ManyToManyField("models.User", related_name="surveys", description="授权访问的用户")
+
+    class Meta:
+        table = "survey"
+
+
+class SurveySubmission(BaseModel, TimestampMixin):
+    """问卷提交记录 — 用户通过问卷网页提交的数据"""
+    survey = fields.ForeignKeyField("models.Survey", related_name="submissions", description="所属问卷", index=True)
+    submitter_name = fields.CharField(max_length=100, null=True, description="提交者姓名")
+    submitter_info = fields.JSONField(null=True, description="提交者信息(JSON)")
+    content = fields.TextField(description="提交内容(Markdown表格)")
+    word_count = fields.IntField(default=0, description="内容总字数")
+    raw_data = fields.JSONField(null=True, description="原始表单数据(JSON)")
+    save_type = fields.CharField(max_length=20, default="submit", description="保存类型: save(本地) / submit(提交)", index=True)
+
+    class Meta:
+        table = "survey_submission"
+
+
 class StaticFile(BaseModel, TimestampMixin):
     """静态文件数据 — 工作台静态文件TAB的两级目录管理"""
     workspace = fields.ForeignKeyField("models.Workspace", related_name="static_files", description="所属工作区", index=True)

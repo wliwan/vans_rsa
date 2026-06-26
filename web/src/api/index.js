@@ -336,5 +336,14 @@ export default {
   getFilterTemplates: () => request.get('/region/road-network/filter-templates'),
   createFilterTemplate: (data = {}) => request.post('/region/road-network/filter-templates/create', data),
   deleteFilterTemplate: (params = {}) => request.delete('/region/road-network/filter-templates/delete', { params }),
+  // survey - 调研问卷
+  getSurveyList: (params = {}) => request.get('/survey/list', { params }),
+  getSurveyById: (survey_id) => request.get('/survey/get', { params: { survey_id } }),
+  createSurvey: (data = {}) => request.post('/survey/create', data, { timeout: 0 }),
+  updateSurvey: (data = {}) => request.post('/survey/update', data),
+  deleteSurvey: (params = {}) => request.delete('/survey/delete', { params }),
+  getSurveySubmissions: (params = {}) => request.get('/survey/submissions', { params }),
+  deleteSurveySubmission: (params = {}) => request.delete('/survey/submission/delete', { params }),
+  getSurveyHtml: (params = {}) => request.get('/survey/html', { params }),
 }
   // 标签

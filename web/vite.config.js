@@ -36,6 +36,10 @@ export default defineConfig(({ command, mode }) => {
               target: 'http://127.0.0.1:9999',
               changeOrigin: true,
             },
+            '/static_web': {
+              target: 'http://127.0.0.1:9999',
+              changeOrigin: true,
+            },
           }
         : undefined,
     },

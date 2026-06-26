@@ -23,6 +23,7 @@ from .vehicle import vehicle_router
 from .report import report_router
 from .workspace import workspace_router
 from .database import router as database_router
+from .survey import survey_router, survey_public_router, short_router as survey_short_router
 from .deploy import deploy_router
 
 v1_router = APIRouter()
@@ -51,6 +52,9 @@ v1_router.include_router(report_router, prefix="/report", dependencies=[DependPe
 v1_router.include_router(system_config_router, prefix="/system-config", dependencies=[DependPermission])
 v1_router.include_router(i18n_router, prefix="/i18n", dependencies=[DependPermission])
 v1_router.include_router(deploy_router, prefix="/deploy", dependencies=[DependPermission])
+# 调研问卷
+v1_router.include_router(survey_router, prefix="/survey", dependencies=[DependPermission])
+v1_router.include_router(survey_public_router, prefix="/survey")  # 公开接口，无需鉴权
 # v1_router.include_router(announcement_router, prefix="/announcement", dependencies=[DependPermission])
 # v1_router.include_router(article_router, prefix="//content/article", dependencies=[DependPermission])
 # v1_router.include_router(article_router, prefix="/content/article", dependencies=[DependPermission])
