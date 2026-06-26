@@ -167,14 +167,11 @@ class StaticFileController(CRUDBase[StaticFile, StaticFileCreate, StaticFileUpda
 
     # ── 删除 ──
     async def delete_file(self, file_id: int) -> bool:
+        from app.utils.file_utils import safe_delete_file
         obj = await self.model.filter(id=file_id).first()
         if not obj:
             return False
-        try:
-            if os.path.exists(obj.file_path):
-                os.remove(obj.file_path)
-        except Exception as e:
-            logger.warning(f"删除文件失败: {e}")
+        await safe_delete_file(obj.file_path, self.model, obj.id)
         await obj.delete()
         return True
 

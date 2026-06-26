@@ -645,7 +645,7 @@ defineExpose({ loadOriginalDocuments, loadAnalysisDocuments })
 
 <!-- 原始文档复制到弹窗 -->
   <NModal v-model:show="showDocCopyToModal" title="复制文档到其他工作区" preset="card" style="width: 480px">
-    <div class="text-sm text-gray-500 mb-4">将复制 {{ selectedDocIds.length }} 个文档到目标工作区（仅创建记录，不拷贝文件）</div>
+    <div class="text-sm text-gray-500 mb-4">将复制 {{ selectedDocIds.length }} 个文档到目标工作区。<br/>新建数据库记录指向源文件，共享同一物理文件。删除记录时不会影响其他工作区。</div>
     <NForm label-placement="top">
       <NFormItem label="目标工作区" required>
         <NSelect v-model:value="docCopyToForm.target_workspace_id" :options="docCopyToWorkspaces" placeholder="选择目标工作区" filterable />
@@ -662,7 +662,7 @@ defineExpose({ loadOriginalDocuments, loadAnalysisDocuments })
 
 <!-- 分析文档复制到弹窗 -->
   <NModal v-model:show="showAnalysisDocCopyToModal" title="复制分析文档到其他工作区" preset="card" style="width: 480px">
-    <div class="text-sm text-gray-500 mb-4">将复制 {{ selectedAnalysisDocIds.length }} 个分析文档到目标工作区（仅创建记录，不拷贝文件）</div>
+    <div class="text-sm text-gray-500 mb-4">将复制 {{ selectedAnalysisDocIds.length }} 个分析文档到目标工作区。<br/>新建数据库记录指向源文件，共享同一物理文件。删除记录时不会影响其他工作区。</div>
     <NForm label-placement="top">
       <NFormItem label="目标工作区" required>
         <NSelect v-model:value="analysisDocCopyToForm.target_workspace_id" :options="analysisDocCopyToWorkspaces" placeholder="选择目标工作区" filterable />

@@ -14,6 +14,7 @@ from app.core.ctx import CTX_USER_ID
 from app.models.admin import AnalysisSheet, OriginalSheet, Workspace
 from app.schemas.base import Fail, Success, SuccessExtra
 from app.schemas.workspace import *
+from app.utils.file_utils import safe_delete_file
 from app.utils.http_utils import make_download_response
 
 logger = logging.getLogger(__name__)
@@ -62,15 +63,26 @@ async def delete_workspace(workspace_id: int = Query(..., description="工作区
     ws = await workspace_controller.check_permission(workspace_id, user_id)
     if not ws:
         return Fail(code=403, msg="无权删除该工作区")
-    # 删除关联的表格文件
+    # 删除关联的表格文件（使用引用计数，避免破坏复制到其他工作区的共享文件）
     sheets = await OriginalSheet.filter(workspace_id=workspace_id).all()
     for s in sheets:
-        if os.path.exists(s.file_path):
-            os.remove(s.file_path)
+        await safe_delete_file(s.file_path, OriginalSheet, s.id)
+        await s.delete()
     analyses = await AnalysisSheet.filter(workspace_id=workspace_id).all()
     for a in analyses:
-        if os.path.exists(a.file_path):
-            os.remove(a.file_path)
+        await safe_delete_file(a.file_path, AnalysisSheet, a.id)
+        await a.delete()
+    # 删除关联的文档文件
+    from app.models.admin import Document, StaticFile
+    docs = await Document.filter(workspace_id=workspace_id).all()
+    for d in docs:
+        await safe_delete_file(d.file_path, Document, d.id)
+        await d.delete()
+    # 删除关联的静态文件
+    sfiles = await StaticFile.filter(workspace_id=workspace_id).all()
+    for sf in sfiles:
+        await safe_delete_file(sf.file_path, StaticFile, sf.id)
+        await sf.delete()
     await ws.delete()
     return Success(msg="删除成功")
 
@@ -152,8 +164,7 @@ async def delete_sheet(sheet_id: int = Query(..., description="表格ID")):
     ws = await workspace_controller.check_permission(sheet.workspace_id, user_id)
     if not ws:
         return Fail(code=403, msg="无权操作")
-    if os.path.exists(sheet.file_path):
-        os.remove(sheet.file_path)
+    await safe_delete_file(sheet.file_path, OriginalSheet, sheet.id)
     await sheet.delete()
     return Success(msg="删除成功")
 
@@ -183,8 +194,7 @@ async def batch_delete_sheets(req: BatchDeleteSheetsRequest):
         ws = await workspace_controller.check_permission(sheet.workspace_id, user_id)
         if not ws:
             continue
-        if os.path.exists(sheet.file_path):
-            os.remove(sheet.file_path)
+        await safe_delete_file(sheet.file_path, OriginalSheet, sheet.id)
         await sheet.delete()
         deleted += 1
     return Success(msg=f"已删除 {deleted} 个原始表格")
@@ -321,8 +331,7 @@ async def delete_analysis(analysis_id: int = Query(..., description="分析ID"))
     ws = await workspace_controller.check_permission(analysis.workspace_id, user_id)
     if not ws:
         return Fail(code=403, msg="无权操作")
-    if os.path.exists(analysis.file_path):
-        os.remove(analysis.file_path)
+    await safe_delete_file(analysis.file_path, AnalysisSheet, analysis.id)
     await analysis.delete()
     return Success(msg="删除成功")
 
@@ -338,8 +347,7 @@ async def batch_delete_analyses(req: BatchDeleteRequest):
         ws = await workspace_controller.check_permission(analysis.workspace_id, user_id)
         if not ws:
             continue
-        if os.path.exists(analysis.file_path):
-            os.remove(analysis.file_path)
+        await safe_delete_file(analysis.file_path, AnalysisSheet, analysis.id)
         await analysis.delete()
         deleted += 1
     return Success(msg=f"已删除 {deleted} 个分析表格")
@@ -353,8 +361,7 @@ async def clear_analyses(workspace_id: int = Query(..., description="工作区ID
         return Fail(code=403, msg="无权操作")
     analyses = await AnalysisSheet.filter(workspace_id=workspace_id).all()
     for a in analyses:
-        if os.path.exists(a.file_path):
-            os.remove(a.file_path)
+        await safe_delete_file(a.file_path, AnalysisSheet, a.id)
         await a.delete()
     return Success(msg=f"已清空 {len(analyses)} 个分析表格")
 

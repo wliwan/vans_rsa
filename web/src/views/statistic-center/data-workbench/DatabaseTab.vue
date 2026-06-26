@@ -434,7 +434,7 @@ defineExpose({ loadDatabaseDocs })
 
   <!-- ── 复制到弹窗 ── -->
   <NModal v-model:show="showCopyToModal" :title="t('views.statistic-center.label_cn_2008c3ff')" preset="card" style="width: 480px">
-    <div class="text-sm text-gray-500 mb-4">将复制 {{ selectedDatabaseDocIds.length }} 项数据库导入数据到目标工作区</div>
+    <div class="text-sm text-gray-500 mb-4">将复制 {{ selectedDatabaseDocIds.length }} 项数据库导入数据到目标工作区。<br/>新建数据库记录指向源文件，共享同一物理文件。删除记录时不会影响其他工作区。</div>
     <NForm label-placement="top"><NFormItem :label="t('views.statistic-center.label_cn_9269a338')" required><NSelect v-model:value="copyToForm.target_workspace_id" :options="copyToWorkspaces" :placeholder="t('views.statistic-center.placeholder_cn_96d6caf0')" filterable /></NFormItem></NForm>
     <template #footer><NSpace justify="end"><NButton @click="showCopyToModal = false">取消</NButton><NButton type="primary" :disabled="!copyToForm.target_workspace_id" :loading="dbLoading" @click="handleCopyToWorkspace">{{ t('views.statistic-center.message_cn_d987a67e') }}</NButton></NSpace></template>
   </NModal>

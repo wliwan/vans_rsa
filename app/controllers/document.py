@@ -81,13 +81,10 @@ class DocumentController:
 
     @staticmethod
     async def delete(document_id: int):
+        from app.utils.file_utils import safe_delete_file
         doc = await Document.filter(id=document_id).first()
         if doc:
-            if doc.file_path and os.path.exists(doc.file_path):
-                try:
-                    os.remove(doc.file_path)
-                except OSError:
-                    pass
+            await safe_delete_file(doc.file_path, Document, doc.id)
             await doc.delete()
 
     @staticmethod
@@ -117,13 +114,10 @@ class DocumentController:
 
     @staticmethod
     async def clear_by_workspace(workspace_id: int):
+        from app.utils.file_utils import safe_delete_file
         docs = await Document.filter(workspace_id=workspace_id).all()
         for doc in docs:
-            if doc.file_path and os.path.exists(doc.file_path):
-                try:
-                    os.remove(doc.file_path)
-                except OSError:
-                    pass
+            await safe_delete_file(doc.file_path, Document, doc.id)
         await Document.filter(workspace_id=workspace_id).delete()
 
     # ── AI 分析 ──

@@ -244,7 +244,6 @@ export default {
   deleteStaticFile: (params = {}) => request.delete('/workspace/static-file/delete', { params }),
   batchDeleteStaticFiles: (data = {}) => request.post('/workspace/static-file/batch-delete', data),
   batchExportStaticFiles: (data = {}) => request.post('/workspace/static-file/batch-export', data, { responseType: 'blob' }),
-  copyStaticFileRecords: (data = {}) => request.post('/workspace/static-file/copy-records', data),
   getStaticFileBaseUrl: () => request.get('/workspace/static-file/base-url'),
   setStaticFileBaseUrl: (data = {}) => request.put('/workspace/static-file/base-url', data),
   downloadStaticFile: (params = {}) => request.get('/workspace/static-file/download-file', { params, responseType: 'blob' }),

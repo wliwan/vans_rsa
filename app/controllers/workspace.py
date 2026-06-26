@@ -882,9 +882,8 @@ class CopyService:
                 )
                 copied["documents"] += 1
 
-        # 复制静态文件
-        import secrets, shutil
-        STATIC_UPLOAD_DIR = os.path.join(settings.BASE_DIR, "uploads", "static_files")
+        # 复制静态文件（仅创建数据库记录，指向同一物理文件）
+        import secrets
         skipped_files: List[dict] = []
         for sfid in static_file_ids:
             src = await StaticFile.filter(id=sfid).first()
@@ -899,19 +898,13 @@ class CopyService:
 
             new_token = secrets.token_hex(16)
 
-            # 生成新的物理文件路径并复制文件
-            ext = os.path.splitext(src.file_name)[1] or ".bin"
-            new_filename = f"{uuid.uuid4().hex}{ext}"
-            os.makedirs(STATIC_UPLOAD_DIR, exist_ok=True)
-            new_filepath = os.path.join(STATIC_UPLOAD_DIR, new_filename)
-            shutil.copy2(src.file_path, new_filepath)
-
+            # 不拷贝物理文件，创建数据库记录指向同一文件（复制到工作区共享源文件）
             await StaticFile.create(
                 workspace_id=target_workspace_id,
                 name=src.name,
                 description=src.description,
                 file_name=src.file_name,
-                file_path=new_filepath,
+                file_path=src.file_path,  # 指向同一物理文件
                 file_size=src.file_size,
                 source_type=src.source_type,
                 is_image=src.is_image,

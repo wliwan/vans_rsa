@@ -346,7 +346,7 @@ async function loadAllDataSources(wsId) {
       api.getSheetList({ workspace_id: wsId }),
       api.getAnalysisList({ workspace_id: wsId }),
       api.getDocumentList({ workspace_id: wsId }),
-      api.getStaticFileList({ workspace_id: wsId }),
+      api.getStaticFileList({ workspace_id: wsId, page_size: 99999 }),
     ])
     allSheets.value = sh.data || []
     allAnalyses.value = an.data || []

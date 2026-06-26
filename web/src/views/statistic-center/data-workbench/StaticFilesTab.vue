@@ -67,6 +67,40 @@ const extractedTempPaths = ref([])
 const extractedSourceName = ref('')
 const extractedSelectedIds = ref([])
 
+// ── 文件重命名 ──
+const renamingFileId = ref(null)
+const renameForm = ref('')
+const renameSaving = ref(false)
+
+function startRename(file) {
+  renamingFileId.value = file.id
+  renameForm.value = file.name || ''
+}
+
+function cancelRename() {
+  renamingFileId.value = null
+  renameForm.value = ''
+}
+
+async function confirmRename() {
+  const trimmed = renameForm.value.trim()
+  if (!trimmed || !renamingFileId.value) { cancelRename(); return }
+  renameSaving.value = true
+  try {
+    await api.updateStaticFile({ id: renamingFileId.value, name: trimmed })
+    if (selectedStaticFile.value && selectedStaticFile.value.id === renamingFileId.value) {
+      selectedStaticFile.value.name = trimmed
+    }
+    const idx = staticFiles.value.findIndex(f => f.id === renamingFileId.value)
+    if (idx >= 0) staticFiles.value[idx].name = trimmed
+    message.success('重命名成功')
+  } catch (e) {
+    message.error(e?.response?.data?.msg || '重命名失败')
+  }
+  renameSaving.value = false
+  cancelRename()
+}
+
 function formatResolution(w, h) {
   if (w == null && h == null) return ''
   return [w, h].filter(Boolean).join(' × ')
@@ -288,7 +322,7 @@ async function openStaticFileCopyToModal() {
 async function handleStaticFileCopyToWorkspace() {
   if (!staticFileCopyToForm.value.target_workspace_id) { message.warning(t('views.statistic-center.placeholder_cn_946eef8d')); return }
   loading.value = true; showStaticFileCopyToModal.value = false
-  try { const res = await api.copyStaticFileRecords({ file_ids: [...selectedStaticFileIds.value], target_workspace_id: staticFileCopyToForm.value.target_workspace_id }); message.success(res.msg || `成功复制 ${res.data?.success_count || 0} 个文件`) }
+  try { const res = await api.copyToWorkspace({ static_file_ids: [...selectedStaticFileIds.value], target_workspace_id: staticFileCopyToForm.value.target_workspace_id }); message.success(res.msg || `成功复制 ${res.data?.static_files || 0} 个文件`) }
   catch (e) { message.error(e?.response?.data?.msg || t('views.statistic-center.message_cn_5154ae17')) }
   loading.value = false
 }
@@ -469,9 +503,22 @@ defineExpose({ loadStaticFiles })
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/70 sticky top-0 z-10">
           <div class="flex items-center gap-2.5 min-w-0 flex-1">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" :class="selectedStaticFile.is_image ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'"><TheIcon :icon="selectedStaticFile.is_image ? 'material-symbols:image' : 'material-symbols:description'" :size="20" /></div>
-            <div class="min-w-0"><div class="text-sm font-semibold truncate">{{ selectedStaticFile.name }}</div><div class="flex items-center gap-1.5 text-xs text-gray-400 mt-0.5"><span>{{ selectedStaticFile.format_type || 'FILE' }}</span><span>·</span><span>{{ formatFileSize(selectedStaticFile.file_size) }}</span></div></div>
+            <div class="min-w-0 flex-1">
+              <template v-if="renamingFileId === selectedStaticFile.id">
+                <div class="flex items-center gap-1.5">
+                  <NInput v-model:value="renameForm" size="small" class="flex-1" @keyup.enter="confirmRename" @keyup.esc="cancelRename" />
+                  <NButton size="tiny" type="primary" :loading="renameSaving" @click="confirmRename"><TheIcon icon="material-symbols:check" :size="16" /></NButton>
+                  <NButton size="tiny" @click="cancelRename"><TheIcon icon="material-symbols:close" :size="16" /></NButton>
+                </div>
+              </template>
+              <template v-else>
+                <div class="text-sm font-semibold truncate">{{ selectedStaticFile.name }}</div>
+              </template>
+              <div class="flex items-center gap-1.5 text-xs text-gray-400 mt-0.5"><span>{{ selectedStaticFile.format_type || 'FILE' }}</span><span>·</span><span>{{ formatFileSize(selectedStaticFile.file_size) }}</span></div>
+            </div>
           </div>
           <NSpace size="small" class="flex-shrink-0">
+            <NButton size="tiny" quaternary @click="startRename(selectedStaticFile)" :title="'重命名'"><TheIcon icon="material-symbols:edit" :size="18" /></NButton>
             <NButton size="tiny" quaternary @click="downloadStaticFileItem(selectedStaticFile)" :title="t('views.statistic-center.label_cn_f26ef914')"><TheIcon icon="material-symbols:download" :size="18" /></NButton>
             <NButton size="tiny" quaternary @click="copyShortLink(selectedStaticFile)" :title="t('views.statistic-center.label_cn_0ed3d703')"><TheIcon icon="material-symbols:link" :size="18" /></NButton>
             <div v-if="selectedStaticFile.is_image"><NButton size="tiny" quaternary :title="t('views.statistic-center.label_cn_80fb2db8')" @click="window.open(`/api/sf/${selectedStaticFile.short_url_token}`, '_blank')"><TheIcon icon="material-symbols:open-in-new" :size="18" /></NButton></div>
@@ -623,7 +670,7 @@ defineExpose({ loadStaticFiles })
 
   <!-- ── 复制到工作区弹窗 ── -->
   <NModal v-model:show="showStaticFileCopyToModal" :title="t('views.statistic-center.label_cn_86919bd3')" preset="card" style="width: 480px">
-    <div class="text-sm text-gray-500 mb-4">将选中的 {{ selectedStaticFileIds.length }} 个文件复制到另一工作区。<br/>仅创建数据库记录指向同一文件，不拷贝物理文件。</div>
+    <div class="text-sm text-gray-500 mb-4">将选中的 {{ selectedStaticFileIds.length }} 个文件复制到另一工作区。<br/>新建数据库记录指向源文件，共享同一物理文件。删除记录时不会影响其他工作区。</div>
     <NForm label-placement="top"><NFormItem :label="t('views.statistic-center.label_cn_9269a338')" required><NSelect v-model:value="staticFileCopyToForm.target_workspace_id" :options="staticFileCopyToWorkspaces" :placeholder="t('views.statistic-center.placeholder_cn_96d6caf0')" filterable /></NFormItem></NForm>
     <template #footer><NSpace justify="end"><NButton @click="showStaticFileCopyToModal = false">取消</NButton><NButton type="primary" :disabled="!staticFileCopyToForm.target_workspace_id" :loading="loading" @click="handleStaticFileCopyToWorkspace">{{ t('views.statistic-center.message_cn_d987a67e') }}</NButton></NSpace></template>
   </NModal>

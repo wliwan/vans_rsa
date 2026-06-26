@@ -31,7 +31,7 @@ async def list_files(
     workspace_id: int = Query(..., description="工作区ID"),
     source_type: str = Query("original", description="目录层级: original / ai_analysis"),
     page: int = Query(1, description="页码", ge=1),
-    page_size: int = Query(50, description="每页数量", ge=1, le=500),
+    page_size: int = Query(50, description="每页数量", ge=1, le=99999),
 ):
     user_id = CTX_USER_ID.get()
     ws = await workspace_controller.check_permission(workspace_id, user_id)
