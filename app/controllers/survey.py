@@ -2,6 +2,7 @@
 import asyncio
 import json
 import os
+import re
 import secrets
 import uuid
 from typing import List, Optional, Tuple
@@ -22,36 +23,29 @@ SURVEY_CSS_URL = "/api/v1/survey/static/survey-lib.css"
 # AI 生成问卷网页的 System Prompt
 AI_SURVEY_SYSTEM_PROMPT = """你是一个专业的前端开发者，负责创建用户调查问卷网页。
 
-## 要求
+## 核心要求（必须遵守，否则问卷无法正常工作）
 1. 只输出完整的 HTML 文件（从 <!DOCTYPE html> 开始）
-2. 必须引用以下 CSS/JS 库：
-   - CSS: /api/v1/survey/static/survey-lib.css
-   - JS: /api/v1/survey/static/survey-lib.js
-3. 页面中必须使用 survey-lib.css 的 CSS 类名（sv-*）来构建表单控件
-4. 在页面底部必须有两个按钮："保存草稿"（class="sv-save sv-btn sv-btn-default"）和"提交问卷"（class="sv-submit sv-btn sv-btn-primary"）
-5. 使用 window.__SURVEY_CONFIG__ 配置 SurveyLib，包含 surveyToken（用占位符 __SURVEY_TOKEN__）
-6. 表单控件使用标准 HTML 元素：input, select, textarea，并始终设置 name 属性
-7. 所有控件必须使用 sv-input, sv-select, sv-textarea, sv-radio-group, sv-checkbox-group 等 CSS 类
-8. 绝对禁止包含任何 <script> 标签（除了引用 survey-lib.js 的那个）
-9. 绝对禁止使用 eval、fetch、XMLHttpRequest、innerHTML、onclick 等 JS 代码
-10. 绝对禁止文件读写或网络请求代码
+2. 必须引入 SurveyLib JS 库：<script src="/api/v1/survey/static/survey-lib.js"></script>
+3. 在页面底部必须有两个按钮，class 必须精确为：
+   - "保存草稿"按钮：class="sv-save"
+   - "提交问卷"按钮：class="sv-submit"
+   （SurveyLib 通过这两个 class 绑定点击事件，不可改名）
+4. 在 <script src="survey-lib.js"> 之前必须配置：
+   <script>
+     window.__SURVEY_CONFIG__ = { surveyToken: '__SURVEY_TOKEN__' };
+   </script>
+   （SurveyLib 自动读取此配置初始化，占位符 __SURVEY_TOKEN__ 会被后端替换为真实 token）
+5. 所有表单控件（input、select、textarea）必须设置 name 属性
+   （SurveyLib 通过 name 属性收集和恢复表单数据）
+6. 样式可完全自由设计，不强制使用任何特定 CSS 类名或样式库
+7. 可以包含自定义 <script> 标签和任意 JS 交互逻辑
 
-## CSS 类速查
-- 容器：sv-container
-- 标题：sv-title / sv-subtitle
-- 段落：sv-section / sv-section-title
-- 行/列：sv-row / sv-col / sv-col-full
-- 标签：sv-label / sv-required
-- 输入框：sv-input
-- 下拉框：sv-select
-- 文本域：sv-textarea
-- 单选组：sv-radio-group / sv-radio
-- 多选组：sv-checkbox-group / sv-checkbox
-- 评分：sv-rating
-- 开关：sv-switch / sv-switch-slider
-- 按钮：sv-btn / sv-btn-primary / sv-btn-default / sv-btn-success / sv-btn-lg / sv-btn-block
-- 按钮组：sv-btn-group
-- 提示：sv-hint
+## SurveyLib 提供的功能（通过 sv-save 和 sv-submit 按钮自动触发）
+- collectFormData()：收集所有带 name 的表单数据
+- toMarkdownTable()：将数据转为 Markdown 表格
+- saveToLocal()：保存草稿到浏览器 localStorage
+- restore(data) / restoreLastSave()：从 localStorage 恢复表单数据
+- submit()：提交问卷到服务器
 
 ## 示例输出结构
 <!DOCTYPE html>
@@ -60,18 +54,24 @@ AI_SURVEY_SYSTEM_PROMPT = """你是一个专业的前端开发者，负责创建
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>问卷标题</title>
-  <link rel="stylesheet" href="/api/v1/survey/static/survey-lib.css">
 </head>
 <body>
-  <div class="sv-container">
-    <h1 class="sv-title">问卷标题</h1>
-    <p class="sv-subtitle">描述信息</p>
-    <!-- 表单内容 -->
-    <div class="sv-btn-group">
-      <button type="button" class="sv-save sv-btn sv-btn-default">保存草稿</button>
-      <button type="button" class="sv-submit sv-btn sv-btn-primary">提交问卷</button>
-    </div>
-  </div>
+  <h1>问卷标题</h1>
+  <p>描述信息</p>
+
+  <label>姓名：<input type="text" name="name"></label>
+
+  <fieldset>
+    <legend>性别</legend>
+    <label><input type="radio" name="gender" value="male"> 男</label>
+    <label><input type="radio" name="gender" value="female"> 女</label>
+  </fieldset>
+
+  <label><input type="checkbox" name="agree" value="yes"> 我同意条款</label>
+
+  <button type="button" class="sv-save">保存草稿</button>
+  <button type="button" class="sv-submit">提交问卷</button>
+
   <script>
     window.__SURVEY_CONFIG__ = { surveyToken: '__SURVEY_TOKEN__' };
   </script>
@@ -166,11 +166,11 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
             user_prompt=user_prompt,
         )
 
-        # 5. 安全审核
+        # 5. 风险评估（不拦截，仅记录）
         from app.utils.survey_security import check_html_content
         security_result = check_html_content(html_content)
 
-        # 6. 保存文件（不管是否通过审核都先保存，审核不通过的文件不提供短链接）
+        # 6. 保存文件（始终提供短链接）
         os.makedirs(SURVEY_WEB_DIR, exist_ok=True)
         file_name = f"survey_{uuid.uuid4().hex[:12]}.html"
         file_path = os.path.join(SURVEY_WEB_DIR, file_name)
@@ -194,13 +194,13 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
             ai_proxy_id=obj_in.ai_proxy_id,
             skill_id=obj_in.skill_id,
             prompt=obj_in.prompt,
-            short_url_token=short_token if security_result["passed"] else None,
-            is_valid=security_result["passed"],
+            short_url_token=short_token,
+            is_valid=True,
             security_log=security_log_json,
             creator_id=creator_id,
         )
 
-        # 8. 设置授权用户
+        # 8. 关联授权用户
         if obj_in.user_ids:
             await self.update_users(survey, obj_in.user_ids)
 
@@ -208,34 +208,27 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
         result = self._to_output(survey)
         result["security"] = security_result
 
-        if not security_result["passed"]:
-            result["message"] = "问卷网页已生成但安全审核未通过，短链接已禁用。请检查 Prompt 并重新创建。"
+        risk_count = len(security_result.get("issues", []))
+        if risk_count:
+            result["message"] = f"问卷已生成，检测到 {risk_count} 条风险信息（未拦截）。"
 
         return result
 
-    # ── 调用 AI API ──
     async def _call_ai_api(
-        self, url: str, token: str, model: str,
-        system_prompt: str, user_prompt: str,
+        self,
+        url: str,
+        token: str,
+        model: str,
+        system_prompt: str,
+        user_prompt: str,
     ) -> str:
-        """使用 OpenAI SDK 调用 AI API 生成 HTML"""
-        from openai import AsyncOpenAI
+        """调用 AI API 生成问卷网页（使用 openai SDK）"""
+        from openai import OpenAI
 
-        # 构造 base_url（需包含 /v1 路径）
-        base_url = url.rstrip("/")
-        if not base_url.endswith("/v1"):
-            base_url += "/v1"
+        client = OpenAI(base_url=url, api_key=token)
 
-        client = AsyncOpenAI(
-            base_url=base_url,
-            api_key=token,
-            timeout=180.0,
-            max_retries=2,
-        )
-
-        try:
-            # extra_body 关闭 thinking 模式，确保 content 字段有内容
-            response = await client.chat.completions.create(
+        def _sync_call():
+            response = client.chat.completions.create(
                 model=model,
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -243,62 +236,42 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
                 ],
                 temperature=0.7,
                 max_tokens=8192,
-                extra_body={"thinking": {"type": "disabled"}},
             )
-            choice = response.choices[0]
-            content = choice.message.content or ""
-            logger.info(f"AI 响应长度: content={len(content)}, model={model}")
-
+            content = response.choices[0].message.content
             if not content:
-                logger.error(f"AI 返回空内容，完整响应: {response}")
-                raise ValueError("AI 返回了空内容，请检查模型配置")
+                raise ValueError("AI 返回内容为空")
+            return content
 
-            # 提取 HTML 内容
-            html = self._extract_html(content)
-            if not html.strip().startswith("<"):
-                logger.error(f"提取后内容不以 < 开头: {html[:200]}")
-                raise ValueError(f"AI 生成内容不是 HTML 格式")
-            return html
-        except Exception as e:
-            logger.exception(f"AI API 调用异常: {e}")
-            raise ValueError(f"AI API 调用失败: {str(e)}")
+        import asyncio
+        html_content = await asyncio.to_thread(_sync_call)
 
-    @staticmethod
-    def _extract_html(content: str) -> str:
-        """从 AI 响应中提取 HTML 内容"""
-        content = content.strip()
+        # 提取 HTML 代码块（如果 AI 将其包裹在 markdown 代码块中）
+        html_match = re.search(r"```html\s*(.*?)\s*```", html_content, re.DOTALL)
+        if html_match:
+            return html_match.group(1).strip()
 
-        # 如果包含 markdown 代码块，提取其中内容
-        if "```html" in content:
-            start = content.index("```html") + 7
-            end = content.rindex("```")
-            content = content[start:end].strip()
-        elif "```" in content:
-            start = content.index("```") + 3
-            end = content.rindex("```")
-            content = content[start:end].strip()
+        # 否则，尝试提取 <!DOCTYPE html> 之后的所有内容
+        doctype_match = re.search(r"<!DOCTYPE html>.*", html_content, re.DOTALL | re.IGNORECASE)
+        if doctype_match:
+            return doctype_match.group(0).strip()
 
-        # 如果不以 <!DOCTYPE 或 <html 开头，尝试找到开头
-        if not content.lower().startswith(("<!doctype", "<html")):
-            lower = content.lower()
-            for tag in ("<!doctype html>", "<html>", "<html "):
-                idx = lower.find(tag)
-                if idx >= 0:
-                    content = content[idx:]
-                    break
-
-        return content
+        return html_content.strip()
 
     # ── 更新问卷 ──
-    async def update_survey(self, survey_id: int, obj_in: SurveyUpdate) -> Optional[dict]:
+    async def update_survey(self, survey_id: int, obj_in: SurveyUpdate) -> dict:
         survey = await self.model.filter(id=survey_id).first()
         if not survey:
-            return None
-        if obj_in.name is not None:
-            survey.name = obj_in.name
-            await survey.save()
-        if obj_in.user_ids is not None:
-            await self.update_users(survey, obj_in.user_ids)
+            raise ValueError("问卷不存在")
+
+        update_data = obj_in.model_dump(exclude_unset=True)
+        user_ids = update_data.pop("user_ids", None)
+
+        if update_data:
+            await survey.update_from_dict(update_data).save()
+
+        if user_ids is not None:
+            await self.update_users(survey, user_ids)
+
         return self._to_output(survey)
 
     # ── 删除问卷 ──

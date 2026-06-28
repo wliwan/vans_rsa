@@ -201,9 +201,39 @@ const showEditModal = ref(false)
 const editData = ref({ id: 0, name: '', description: '' })
 
 function onEdit() {
-  if (!previewMaterial.value) { message.warning(t('views.network.message_cn_31e89ba0')); return }
-  editData.value = { id: previewMaterial.value.id, name: previewMaterial.value.name, description: previewMaterial.value.description || '' }
+  // 优先使用预览素材，否则使用第一个选中的素材
+  const target = previewMaterial.value || materialList.value.find(m => m.id === selectedMaterialIds.value[0])
+  if (!target) { message.warning(t('views.network.message_cn_31e89ba0')); return }
+  editData.value = { id: target.id, name: target.name, description: target.description || '' }
   showEditModal.value = true
+}
+
+// ── 预览区名称内联编辑 ──
+const previewRenameActive = ref(false)
+const previewRenameValue = ref('')
+
+function startPreviewRename() {
+  if (!previewMaterial.value) return
+  previewRenameValue.value = previewMaterial.value.name
+  previewRenameActive.value = true
+}
+
+function cancelPreviewRename() {
+  previewRenameActive.value = false
+  previewRenameValue.value = ''
+}
+
+async function confirmPreviewRename() {
+  if (!previewRenameValue.value.trim()) { message.warning('名称不能为空'); return }
+  if (!previewMaterial.value) return
+  try {
+    await api.updateMaterial({ id: previewMaterial.value.id, name: previewRenameValue.value.trim() })
+    message.success(t('views.network.region.messages.updateSuccess'))
+    previewRenameActive.value = false
+    if (activeRegionId.value) await loadMaterials(activeRegionId.value)
+    // 同步更新预览区
+    previewMaterial.value = materialList.value.find(m => m.id === previewMaterial.value.id) || previewMaterial.value
+  } catch (e) { message.error('重命名失败: ' + (e.message || t('views.network.roadNetworkWorkbench.messages.unknownError'))) }
 }
 
 async function onEditSubmit() {
@@ -716,7 +746,7 @@ onMounted(() => {
               <template #icon><TheIcon icon="material-symbols:upload" size="14" /></template>
               上传
             </NButton>
-            <NButton size="small" @click="onEdit" :disabled="!previewMaterial">
+            <NButton size="small" @click="onEdit()" :disabled="!previewMaterial && !selectedMaterialIds.length">
               <template #icon><TheIcon icon="material-symbols:edit" size="14" /></template>
               编辑
             </NButton>
@@ -822,7 +852,16 @@ onMounted(() => {
 
           <!-- 元数据 -->
           <NDescriptions :column="1" size="small" label-placement="left" style="margin-top: 16px;">
-            <NDescriptionsItem :label="t('views.network.region.formLabels.name')">{{ previewMaterial.name }}</NDescriptionsItem>
+            <NDescriptionsItem :label="t('views.network.region.formLabels.name')">
+              <template v-if="previewRenameActive">
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <NInput size="tiny" v-model:value="previewRenameValue" style="width:160px;" @keydown="(e) => { if (e.key === 'Enter') confirmPreviewRename(); if (e.key === 'Escape') cancelPreviewRename() }" />
+                  <NButton size="tiny" type="primary" @click="confirmPreviewRename">✓</NButton>
+                  <NButton size="tiny" @click="cancelPreviewRename">✗</NButton>
+                </div>
+              </template>
+              <span v-else style="cursor:pointer;" title="点击编辑名称" @click="startPreviewRename">{{ previewMaterial.name }}</span>
+            </NDescriptionsItem>
             <NDescriptionsItem :label="t('views.network.roadNetwork.fileColumns.fileSize')">{{ previewMaterial.file_size_str }}</NDescriptionsItem>
             <NDescriptionsItem :label="t('views.network.title_cn_874a5816')">{{ previewMaterial.resolution }}</NDescriptionsItem>
             <NDescriptionsItem :label="t('views.network.label_cn_90b6fb5f')">{{ previewMaterial.color_mode || '-' }}</NDescriptionsItem>

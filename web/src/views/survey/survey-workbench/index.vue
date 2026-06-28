@@ -198,6 +198,25 @@ function openEditModal() {
   showEditModal.value = true
 }
 
+// ── 风险信息弹窗 ──
+const showRiskModal = ref(false)
+const riskInfo = ref(null)
+const riskLoading = ref(false)
+
+async function doShowRisk() {
+  if (!selectedSurvey.value) return
+  riskLoading.value = true
+  showRiskModal.value = true
+  try {
+    const res = await api.getSurveyRisk({ survey_id: selectedSurvey.value.id })
+    riskInfo.value = res.data?.security || null
+  } catch (e) {
+    riskInfo.value = { passed: true, issues: [], detail: '加载失败: ' + (e.message || '未知错误') }
+  } finally {
+    riskLoading.value = false
+  }
+}
+
 async function doUpdateSurvey() {
   try {
     await api.updateSurvey({
@@ -307,6 +326,7 @@ onMounted(loadSurveys)
             <div v-if="selectedSurvey" class="panel-actions">
               <NButton size="small" @click="openEditModal">编辑</NButton>
               <NButton size="small" type="primary" @click="openPreview()">预览网页</NButton>
+              <NButton size="small" type="warning" @click="doShowRisk">查看风险</NButton>
               <NTag v-if="selectedSurvey.short_url" type="info" size="small" style="cursor: pointer" @click="copyShortUrl" @dblclick="openShortUrl">
                 {{ fullShortUrl }}
               </NTag>
@@ -379,6 +399,42 @@ onMounted(loadSurveys)
         <NSpace justify="end">
           <NButton @click="showCreateModal = false">取消</NButton>
           <NButton type="primary" :loading="createLoading" @click="doCreateSurvey">确认创建</NButton>
+        </NSpace>
+      </template>
+    </NModal>
+
+    <!-- 风险信息弹窗 -->
+    <NModal v-model:show="showRiskModal" title="风险评估" preset="card" style="width: 640px; max-height: 80vh">
+      <NSpin :show="riskLoading">
+        <div v-if="riskInfo" style="max-height: 55vh; overflow-y: auto">
+          <div v-if="!riskInfo.issues || riskInfo.issues.length === 0" style="text-align: center; padding: 40px 0; color: #18a058">
+            ✓ 未检测到风险
+          </div>
+          <div v-else>
+            <div style="margin-bottom: 12px; font-size: 13px; color: #666">
+              检测到 {{ riskInfo.issues.length }} 条风险信息：
+            </div>
+            <div
+              v-for="(issue, idx) in riskInfo.issues" :key="idx"
+              style="padding: 10px 12px; margin-bottom: 8px; background: #fff7e6; border: 1px solid #ffd591; border-radius: 6px; font-size: 13px"
+            >
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px">
+                <NTag size="tiny" type="warning">行 {{ issue.line }}</NTag>
+                <span style="font-weight: 500; color: #d46b08">{{ issue.message }}</span>
+              </div>
+              <div v-if="issue.snippet" style="font-family: monospace; font-size: 11px; color: #999; word-break: break-all; background: #fff; padding: 4px 8px; border-radius: 3px; margin-top: 4px">
+                {{ issue.snippet }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else-if="!riskLoading" style="text-align: center; padding: 40px 0; color: #999">
+          无风险数据
+        </div>
+      </NSpin>
+      <template #footer>
+        <NSpace justify="end">
+          <NButton @click="showRiskModal = false">关闭</NButton>
         </NSpace>
       </template>
     </NModal>

@@ -41,20 +41,11 @@ async def get_survey(survey_id: int = Query(..., description="问卷ID")):
 
 @survey_router.post("/create", summary="AI创建问卷")
 async def create_survey(obj_in: SurveyCreate):
-    """通过 AI 生成问卷网页，安全审核后保存"""
+    """通过 AI 生成问卷网页，风险评估后保存（不拦截）"""
     user_id = CTX_USER_ID.get()
     try:
         result = await survey_controller.create_with_ai(obj_in, creator_id=user_id)
-        if result.get("security", {}).get("passed"):
-            return Success(data=result, msg="问卷创建成功，安全审核通过")
-        else:
-            security_issues = result.get("security", {}).get("issues", [])
-            issue_summary = "; ".join([f"行{i.get('line','?')}: {i.get('message','')}" for i in security_issues[:3]])
-            return Fail(
-                code=422,
-                msg=f"安全审核未通过：{issue_summary}",
-                data=result,
-            )
+        return Success(data=result, msg=result.get("message", "问卷创建成功"))
     except ValueError as e:
         return Fail(code=400, msg=str(e))
     except Exception as e:
@@ -109,6 +100,19 @@ async def get_survey_html(survey_id: int = Query(..., description="问卷ID")):
     if not html:
         return Fail(code=404, msg="问卷网页文件不存在")
     return Success(data={"html": html})
+
+
+@survey_router.get("/risk", summary="查看问卷风险信息")
+async def get_survey_risk(survey_id: int = Query(..., description="问卷ID")):
+    """查看已有问卷的风险评估信息（只读）"""
+    try:
+        result = await survey_controller.get_risk_info(survey_id)
+        return Success(data=result, msg="风险评估信息")
+    except ValueError as e:
+        return Fail(code=400, msg=str(e))
+    except Exception as e:
+        logger.exception("获取风险信息失败")
+        return Fail(code=500, msg=f"获取风险信息失败: {str(e)}")
 
 
 # ═══════════════════════════════════════

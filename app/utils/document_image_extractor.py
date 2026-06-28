@@ -317,6 +317,9 @@ def extract_images_from_document(file_data: bytes, original_filename: str) -> Li
 
     try:
         blobs = extractor(tmp_doc)
+    except Exception:
+        logger.warning(f"图片提取失败: {original_filename}", exc_info=True)
+        blobs = []
     finally:
         # 清理临时文档文件
         try:

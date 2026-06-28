@@ -24,6 +24,7 @@ class DocumentCreateText(BaseModel):
 class DocumentUpdateContent(BaseModel):
     document_id: int = Field(..., description="文档ID")
     content: str = Field(..., description="文档内容(Markdown)")
+    name: Optional[str] = Field(None, description="文档名称（可选，不传则不更新）")
 
 
 class DocumentBatchExport(BaseModel):

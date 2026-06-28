@@ -732,6 +732,102 @@ await obj.save()
 
 ---
 
+## 调研问卷模块指导（Survey）
+
+### 架构概览
+
+```
+用户创建问卷 → AI 生成 HTML 网页 → 安全审核（仅记录）→ 保存为 .html 文件 → 生成短链接
+用户填写问卷 → SurveyLib 收集数据 → Markdown 表格 + raw_data → 提交到服务器
+```
+
+**核心依赖**：`openai` SDK 调 AI、`survey-lib.js` 前端数据管道、`survey_security.py` 安全审计。
+
+### AI 生成问卷网页的 System Prompt（`AI_SURVEY_SYSTEM_PROMPT`）
+
+位于 `app/controllers/survey.py` 第 23-81 行。AI 生成问卷时必须遵守的核心约束：
+
+| # | 规则 | 原因 |
+|---|---|---|
+| 1 | 引用 `<script src="/api/v1/survey/static/survey-lib.js">` | 前端数据管道必备 |
+| 2 | 按钮 class 必须为 `sv-save` 和 `sv-submit` | SurveyLib 通过 class 绑定事件 |
+| 3 | 配置 `__SURVEY_CONFIG__ = { surveyToken: '__SURVEY_TOKEN__' }` | 自动初始化 + 后端替换占位符 |
+| 4 | 所有控件设 `name` 属性 | SurveyLib 通过 name 收集/恢复数据 |
+| 5 | 样式自由设计 | 不强制 sv-* 类名或 survey-lib.css |
+| 6 | 允许自定义 `<script>` 和 JS | 不做安全限制，风险由 security 审计记录 |
+
+**Prompt 扩充**：创建问卷时如果关联了 Skill，Skill 内容会以 `## 以下为参考技能内容` 追加到 System Prompt 末尾。
+
+### SurveyLib JS 库（`uploads/static_web/survey-lib.js` v1.3.0+）
+
+问卷网页通过 `<script>` 引入的客户端库，自动绑定 `sv-save`/`sv-submit` 按钮：
+
+| 方法 | 功能 |
+|---|---|
+| `collectFormData()` | 收集所有带 `name` 属性的表单数据（checkbox 组为数组） |
+| `toMarkdownTable(data)` | 转为 Markdown 表格（智能识别类型：checkbox 用中文标签、rating 用 ★、switch 用开/关、动态表格用子表格） |
+| `submit(options)` | 提交到服务器（含 `raw_data` + `content` Markdown） |
+| `saveToLocal()` | 保存草稿到 localStorage |
+| `restore(data)` | 从数据对象恢复表单（自动增行、恢复 checkbox/radio/switch） |
+| `restoreLastSave()` | 从 localStorage 恢复最新草稿 |
+| `addTableRow(tableEl)` | 向动态表格追加行（自动更新 name 索引） |
+| `addField(containerEl, cfg)` | 动态添加表单字段 |
+| `getTableRows(tableEl)` | 获取表格所有行数据 |
+
+**数据流**：`collectFormData` → `toMarkdownTable` + `raw_data` → 提交时 `content`(md) + `raw_data`(JSON) 都存到 `SurveySubmission` 表。
+
+### 安全审核（`app/utils/survey_security.py`）
+
+AI 生成的 HTML 会经过 17 条规则扫描，**不拦截仅记录**，结果存入 `security_log`（JSON）：
+
+| 类别 | 检测项 |
+|---|---|
+| 代码执行 | `eval`, `new Function`, `setTimeout/setInterval` 字符串参数 |
+| 网络外泄 | `fetch`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `Image.src` |
+| 存储写入 | `localStorage.setItem`, `sessionStorage.setItem` |
+| 页面劫持 | `location.href`, `document.write`, `innerHTML/outerHTML` |
+| 文件操作 | `fs.`, `require('fs')`, `FileReader`, `Blob` |
+| 动态脚本 | `createElement('script')`, `import/export` |
+| 其他 | `javascript:` 协议, XSS 向量 |
+
+### 创建流程（`create_with_ai`）
+
+```
+1. 验证 AI 代理配置（URL + Token）
+2. 获取 Skill 内容（如有）
+3. 构建 System Prompt（AI_SURVEY_SYSTEM_PROMPT + skill_content）
+4. 调用 OpenAI SDK（asyncio.to_thread 包装）
+   client = OpenAI(base_url=url, api_key=token)
+   response = client.chat.completions.create(model=model, messages=[...])
+5. 安全审核 check_html_content(html_content) → 仅记录
+6. 保存 HTML 文件 → uploads/static_web/survey_{uuid}.html
+7. 替换 __SURVEY_TOKEN__ → 真实 short_url_token
+8. 创建 Survey 数据库记录
+9. 关联授权用户
+10. 返回结果 + security 信息
+```
+
+### 短链接路由
+
+公开访问路由在 `app/api/v1/survey/survey.py` 中定义：
+
+| 路由 | 说明 |
+|---|---|
+| `GET /api/sv/{token}` | 读取并返回生成的问卷 HTML 网页 |
+| `GET /api/v1/survey/static/survey-lib.js` | SurveyLib JS 库（优先读本地文件，回退到嵌入版） |
+| `GET /api/v1/survey/static/survey-lib.css` | SurveyLib CSS 库 |
+| `POST /api/v1/survey/submit` | 问卷提交接口（公开，无需鉴权） |
+
+### 开发注意事项
+
+- **AI 调用必须用 openai SDK**：`OpenAI(base_url=url, api_key=token) → asyncio.to_thread(_sync_call)`，禁止直接 httpx 调用
+- **Prompt 修改后需重启后端**：`AI_SURVEY_SYSTEM_PROMPT` 是模块级常量，修改后需重载
+- **survey-lib.js 热更新**：本地文件更新后后端自动读取（`survey_static.py` 的 `_read_or_default` 优先本地文件），无需重启
+- **安全审核不拦截**：`check_html_content` 结果仅供参考，问卷仍会正常生成和发布
+- **短链接不可逆**：`short_url_token` 生成后与问卷一一对应，删除问卷会同时删除提交记录
+
+---
+
 ## 完整开发流程速查（新模块）
 
 ### 后端
@@ -777,6 +873,9 @@ await obj.save()
 | 耗时任务切换页面后进度条消失 | 进度条嵌入页面内 | 使用全局 TaskProgressPanel + Pinia Store |
 | `pip` 依赖冲突 | `requirements.txt` 版本过时 | 与 `pyproject.toml` 保持同步 |
 | CSS `calc(100vh - 430)` 报错 | Vue 模板将 calc 当作 JS 表达式 | 加引号：`:max-height="'calc(100vh - 430)'"` |
+| 问卷提交后 Markdown 信息丢失（checkbox 无中文标签、动态表格扁平化） | `toMarkdownTable` 未利用 DOM 上下文 | 升级到 survey-lib.js v1.2.0+，自动从 DOM 查找 label 和识别字段类型 |
+| 问卷 `getLocalSaves()` 无法还原表单（checkbox、动态列表） | 缺少 `restore()` 方法 | 调用 `restore(data)` 或 `restoreLastSave()`（v1.3.0+） |
+| 问卷 AI 生成超时或报错 | 使用 httpx 直调 API | 必须用 openai SDK + `asyncio.to_thread()` |
 | CodeMirror 高度为 0 | `.CodeMirror` 不自动填充父容器 | `cmInstance.getWrapperElement().style.height='100%'` + CSS `.CodeMirror{height:100%!important}` |
 | 菜单树不显示 | 后端返回的 children 字段名不是 `children` | 确保树数据字段名为 `children` |
 | 登录页/界面布局变形 | SVG logo 带固定像素尺寸 | 移除 `width`/`height`，只保留 `viewBox` |
@@ -790,7 +889,7 @@ await obj.save()
 
 ---
 
-## 强制规则汇总（29 条）
+## 强制规则汇总（30 条）
 
 1. **后端**：所有控制器继承 `CRUDBase`，所有路由加 `summary` 中文描述
 2. **前端**：所有列表页必须用 `CrudTable`，禁止手写 `NDataTable` + 分页
@@ -821,6 +920,7 @@ await obj.save()
 27. **CrudTable rowKey**：`row-key` prop 只接受 String（属性名），**不能传函数**。`(row) => row.key` 会被转为字符串导致所有行 key 为 undefined，checkbox 无法选中
 28. **热更新不自动触发**：改完代码后**禁止**主动询问"是否需要热更新？"或自动执行部署脚本。只有用户明确说出"热更新"、"部署到服务器"、"更新到远程"时才执行 `hot-update.sh`（前端）或 `hot-update-be.sh`（后端）
 29. **Tab 内容区滚动布局链**（NTabs + NTabPane 场景）：整条 flex 列布局链每层必须同时具备 `display:flex; flex-direction:column` + `min-height:0` + `overflow:hidden`。`.n-tab-pane` 默认 `display:block` 必须用 `:deep()` 覆盖为 `flex`；`.n-spin-container` 必须补 `flex:1; min-height:0; overflow:hidden`；双栏容器和左右栏加 `min-height:0; overflow:hidden`。验证方法：Playwright 注入数据后检查 `el.clientHeight` 是否稳定（ΔCH=0）
+30. **Survey AI 调用**：必须使用 openai SDK（`OpenAI(base_url=url, api_key=token) → asyncio.to_thread(_sync_call)`），禁止 httpx 直调。`AI_SURVEY_SYSTEM_PROMPT` 中必须保留 `sv-save`/`sv-submit` class、`__SURVEY_CONFIG__` 和控件 `name` 属性，其余可自由设计
 
 ---
 
@@ -851,6 +951,8 @@ await obj.save()
 | Document | BaseModel, TimestampMixin | workspace(FK), name, file_path, file_type, source_type, source(JSON) |
 | Report | BaseModel, TimestampMixin | workspace(FK), title, content(HTML), filter_template(JSON) |
 | SystemConfig | BaseModel, TimestampMixin | key, value |
+| Survey | BaseModel, TimestampMixin | name, file_name, file_path, file_size, ai_proxy_id(FK), skill_id(FK), prompt, short_url_token, is_valid, security_log(JSON), users(M2M→User) |
+| SurveySubmission | BaseModel, TimestampMixin | survey(FK), submitter_name, submitter_info(JSON), title, content, word_count, raw_data(JSON), save_type |
 
 ### 控制器方法速查
 
@@ -898,6 +1000,12 @@ await obj.save()
 | `/sysconfig` | SystemConfigController | `init_defaults`, `get_all`, `get_value`, `set_value`, `set_all`, `test_proxy` |
 | `/i18n` | I18nController | `get_all`, `get_list`, `update`, `batch_update`, `export_data`, `import_data`, `ai_generate`（AI 翻译）, `scan_frontend`（扫描硬编码）, `replace_hardcoded` |
 
+#### 调研问卷模块
+
+| 路由 | 控制器 | 关键方法 |
+|---|---|---|
+| `/survey` | SurveyController (CRUDBase) | `get_by_short_token`, `list_accessible`, `create_with_ai`（AI 生成问卷网页）, `update_users`, `get_survey_html`, `get_risk_info`, `delete_survey`, `create_submission`, `list_submissions`, `delete_submission` |
+
 ### 后端工具类速查（`app/utils/`）
 
 | 工具 | 文件 | 核心功能 |
@@ -915,6 +1023,9 @@ await obj.save()
 | 火山引擎视觉 | `volcengine_visual.py` | 火山引擎视觉 API 封装（AI 图片处理） |
 | HTTP 工具 | `http_utils.py` | `make_download_response`（统一文件下载响应） |
 | 外部 API | `xiangsu_api.py` | 像素平台外部 API 封装 |
+| 问卷安全审计 | `survey_security.py` | `check_html_content`：扫描 JS 危险模式（eval/fetch/文件读写等），17 条检测规则，仅记录不拦截 |
+| 问卷 JS/CSS 静态 | `survey_static.py` | 内嵌 survey-lib.js 和 survey-lib.css 的默认版本，优先读取本地文件 |
+| SurveyLib JS 库 | `../uploads/static_web/survey-lib.js` | `collectFormData`, `toMarkdownTable`, `submit`, `saveToLocal`, `restore`, `restoreLastSave`, `addTableRow`, `addField` 等 |
 
 ### 已实现页面速查
 
@@ -928,6 +1039,7 @@ await obj.save()
 | 路网工作台 | `/region/road-network` | `views/network/road-network-workbench/index.vue` | Leaflet 多底图 + 瓦片叠加 + 图层导出 + AI/CV 处理 |
 | 路网素材 | `/region/road-material` | `views/network/road-material/index.vue` | 上传/编辑/删除 + AI/CV 处理 + 预览（缩放旋转+GPS地图） |
 | 国际化 | `/i18n` | `views/system/i18n/index.vue` | 翻译编辑 + AI 批量翻译 + 导入导出 |
+| 调研问卷 | `/survey` | `views/survey/index.vue` | AI 生成问卷网页 + 安全审核 + 短链接 + 提交记录管理 |
 
 ### 路网工作台前端库
 

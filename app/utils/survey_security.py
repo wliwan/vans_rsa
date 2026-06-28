@@ -19,8 +19,6 @@ ALLOWED_REMOVE = [
 ]
 
 DANGEROUS_PATTERNS = [
-    (r"<\s*script[\s>]", "检测到禁止的 <script> 标签"),
-    (r"\bon\w+\s*=", "检测到行内事件处理器(onclick/onload等)"),
     (r"javascript\s*:", "检测到 javascript: 协议"),
     (r"\b(?:fs\.|require\s*\(\s*['\"]fs|open\s*\(\s*['\"][\/\w]|readFile|writeFile|createWriteStream|createReadStream|FileReader|Blob\()",
      "检测到文件读写操作"),
@@ -32,6 +30,20 @@ DANGEROUS_PATTERNS = [
     (r"sessionStorage\.(?:setItem|removeItem|clear)\s*\(", "检测到 sessionStorage 写入"),
     (r"document\.write\s*\(", "检测到 document.write 调用"),
     (r"\.innerHTML\s*=", "检测到 innerHTML 赋值"),
+    (r"\.outerHTML\s*=", "检测到 outerHTML 赋值"),
+
+    # ── 数据外泄渠道 ──
+    (r"\bnavigator\.sendBeacon\s*\(", "检测到 sendBeacon 调用（疑似数据外泄）"),
+    (r"\bnew\s+Image\s*\([^)]*\)\s*\.\s*src\s*=", "检测到 Image.src 赋值（疑似数据外泄）"),
+
+    # ── 页面劫持/重定向 ──
+    (r"\blocation\s*\.\s*(?:href|replace|assign)\s*=", "检测到 location 重定向"),
+    (r"\bwindow\s*\.\s*open\s*\(", "检测到 window.open 调用"),
+
+    # ── 动态执行/加载 ──
+    (r"\bsetTimeout\s*\(\s*['\"]", "检测到 setTimeout 字符串参数（隐式 eval）"),
+    (r"\bsetInterval\s*\(\s*['\"]", "检测到 setInterval 字符串参数（隐式 eval）"),
+    (r"createElement\s*\(\s*['\"]script['\"]", "检测到动态创建 script 标签"),
 ]
 
 

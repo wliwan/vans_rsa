@@ -101,7 +101,7 @@ class DocumentController:
             return f.read()
 
     @staticmethod
-    async def update_content(document_id: int, content: str) -> Optional[Document]:
+    async def update_content(document_id: int, content: str, name: Optional[str] = None) -> Optional[Document]:
         doc = await Document.filter(id=document_id).first()
         if not doc or not doc.file_path:
             return None
@@ -109,6 +109,8 @@ class DocumentController:
             f.write(content)
         doc.char_count = len(content)
         doc.file_size = os.path.getsize(doc.file_path)
+        if name is not None:
+            doc.name = name
         await doc.save()
         return doc
 

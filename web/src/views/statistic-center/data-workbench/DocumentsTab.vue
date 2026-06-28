@@ -41,6 +41,7 @@ const docTextForm = ref({ name: '', content: '' })
 
 const showDocEditModal = ref(false)
 const editingDoc = ref(null)
+const editingDocName = ref('')
 const editingDocContent = ref('')
 const docSaving = ref(false)
 const docEditorContainer = ref(null)
@@ -100,7 +101,11 @@ async function downloadDocument(doc) {
     const blob = new Blob([res.data], { type: 'application/octet-stream' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = doc.name; a.click()
+    let filename = doc.name || 'document'
+    if (doc.source_type === 'analysis' && !filename.endsWith('.md')) {
+      filename += '.md'
+    }
+    a.href = url; a.download = filename; a.click()
     URL.revokeObjectURL(url)
   } catch (e) { message.error(t('views.network.label_cn_65e200d3')) }
 }
@@ -328,6 +333,7 @@ function destroyDocVditor() {
 
 async function openDocEditor(doc) {
   editingDoc.value = doc
+  editingDocName.value = doc.name || ''
   showDocEditModal.value = true
   editingDocContent.value = ''
   try {
@@ -341,9 +347,14 @@ async function openDocEditor(doc) {
 
 async function handleDocSave() {
   const content = docVditorInstance ? docVditorInstance.getValue() : editingDocContent.value
+  const name = editingDocName.value?.trim()
   docSaving.value = true
   try {
-    const res = await api.updateDocumentContent({ document_id: editingDoc.value.id, content })
+    const payload = { document_id: editingDoc.value.id, content }
+    if (name && name !== editingDoc.value.name) {
+      payload.name = name
+    }
+    const res = await api.updateDocumentContent(payload)
     message.success(t('views.skill.message_cn_3b108349'))
     // 更新列表中的文档信息
     const idx = analysisDocuments.value.findIndex((d) => d.id === editingDoc.value.id)
@@ -628,12 +639,16 @@ defineExpose({ loadOriginalDocuments, loadAnalysisDocuments })
 <!-- 文档编辑弹窗（Vditor） -->
   <NModal
     v-model:show="showDocEditModal"
-    :title="t('views.statistic-center.title_cn_0b61ccf8') + (editingDoc?.name || '')"
+    :title="t('views.statistic-center.title_cn_0b61ccf8') + (editingDocName || editingDoc?.name || '')"
     preset="card"
     style="width: 900px"
     @after-leave="destroyDocVditor"
   >
-    <div ref="docEditorContainer" style="height: 60vh; min-height: 400px" />
+    <div class="mb-3">
+      <div class="text-sm text-gray-500 mb-1">{{ $t('views.statistic-center.label_cn_59cd198d') }}名称</div>
+      <NInput v-model:value="editingDocName" placeholder="输入文档名称" />
+    </div>
+    <div ref="docEditorContainer" style="height: 55vh; min-height: 380px" />
     <template #footer>
       <NSpace justify="end">
         <NButton @click="handleDocEditCancel">{{ t('views.statistic-center.label_cn_625fb26b') }}</NButton>

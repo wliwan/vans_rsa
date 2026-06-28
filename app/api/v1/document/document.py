@@ -82,7 +82,10 @@ async def download_document(
         return Fail(code=404, msg="文档不存在")
     if not os.path.exists(doc.file_path):
         return Fail(code=404, msg="文件不存在")
-    return FileResponse(doc.file_path, filename=doc.name, media_type="application/octet-stream")
+    filename = doc.name
+    if doc.file_path.endswith('.md') and not filename.endswith('.md'):
+        filename += '.md'
+    return FileResponse(doc.file_path, filename=filename, media_type="application/octet-stream")
 
 
 @router.delete("/delete", summary="删除文档")
@@ -172,7 +175,7 @@ async def get_document_content(
 
 @router.post("/update-content", summary="更新文档内容")
 async def update_document_content(body: DocumentUpdateContent):
-    doc = await document_controller.update_content(body.document_id, body.content)
+    doc = await document_controller.update_content(body.document_id, body.content, body.name)
     if doc is None:
         return Fail(code=404, msg="文档不存在")
     return Success(data=await doc.to_dict(), msg="保存成功")
