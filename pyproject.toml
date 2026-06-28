@@ -1,6 +1,6 @@
 [project]
 name = "vue-fastapi-admin"
-version = "1.2.11"
+version = "1.2.12"
 description = "Vue Fastapi admin"
 authors = [
     {name = "mizhexiaoxiao", email = "mizhexiaoxiao@gmail.com"},
@@ -11,7 +11,7 @@ dependencies = [
     "tortoise-orm==0.23.0",
     "pydantic==2.10.5",
     "email-validator==2.2.0",
-    "passlib==1.7.4",
+    # passlib 已移除 — 改用 argon2-cffi 直接实现 (app/utils/password.py)
     "pyjwt==2.10.1",
     "black==24.10.0",
     "isort==5.13.2",
