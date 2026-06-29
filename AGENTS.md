@@ -284,6 +284,7 @@ python scripts/scaffold.py --name category --cn 分类 --fields "name:str:50:名
 28. 热更新不能自动触发，仅用户明确要求时执行
 29. Tab 内容区滚动：flex 列链每层 `display:flex;flex-direction:column` + `min-height:0` + `overflow:hidden`
 30. Survey AI 调用用 openai SDK + `asyncio.to_thread()`
+31. **所有 AI 调用必须从 AIProxy 读取 `max_tokens` 参数**，禁止硬编码。AIProxy 模型已内置 `max_tokens` 字段（默认 16384），新 AI 功能通过 `proxy.max_tokens or 16384` 获取
 
 ---
 
@@ -312,6 +313,7 @@ python scripts/scaffold.py --name category --cn 分类 --fields "name:str:50:名
 | Tab 内容区无法滚动 | flex 链断裂 | 3 层修复：`:deep(.n-tab-pane)`, `.n-spin-container`, 双栏容器 |
 | CodeMirror 高度 0 | `.CodeMirror` 不自动填充 | `cmInstance.getWrapperElement().style.height='100%'` + CSS `!important` |
 | `CrudTable` checkbox 无法选中 | `row-key` 传了函数 | 传属性名字符串 |
+| AI 生成内容截断/拼接错误 | `max_tokens` 硬编码 8192 过小 | 从 AIProxy 读取 `max_tokens`，默认 16384 |
 
 ---
 

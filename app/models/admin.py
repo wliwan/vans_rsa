@@ -227,6 +227,7 @@ class AIProxy(BaseModel, TimestampMixin):
     url = fields.CharField(max_length=500, null=True, description="接口地址")
     token = fields.CharField(max_length=500, null=True, description="认证令牌")
     model = fields.CharField(max_length=200, null=True, description="模型名称")
+    max_tokens = fields.IntField(null=True, default=16384, description="单次最大输出 token 数")
     users = fields.ManyToManyField("models.User", related_name="ai_proxies", description="可访问的用户")
 
     class Meta:

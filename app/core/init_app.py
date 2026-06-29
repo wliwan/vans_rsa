@@ -29,7 +29,6 @@ from app.settings.config import settings
 
 from .middlewares import BackGroundTaskMiddleware, HttpAuditLogMiddleware
 
-
 def make_middlewares():
     middleware = [
         Middleware(
@@ -82,14 +81,12 @@ def make_middlewares():
     ]
     return middleware
 
-
 def register_exceptions(app: FastAPI):
     app.add_exception_handler(DoesNotExist, DoesNotExistHandle)
     app.add_exception_handler(HTTPException, HttpExcHandle)
     app.add_exception_handler(IntegrityError, IntegrityHandle)
     app.add_exception_handler(RequestValidationError, RequestValidationHandle)
     app.add_exception_handler(ResponseValidationError, ResponseValidationHandle)
-
 
 def register_routers(app: FastAPI, prefix: str = "/api"):
     app.include_router(api_router, prefix=prefix)
@@ -101,48 +98,6 @@ def register_routers(app: FastAPI, prefix: str = "/api"):
     app.include_router(static_file_short_router, prefix="/api/sf", tags=["静态文件短链接"])
     app.include_router(survey_short_router, prefix="/api/sv", tags=["问卷短链接"])
 
-
-def _ensure_survey_static_files(target_dir: str):
-    """确保问卷静态文件目录存在，文件缺失时从内置备份自动恢复。
-
-    生产环境（Docker）中 uploads/ 目录常被 volume 挂载覆盖，
-    此函数在启动时自动从 app/survey_assets/（不受 volume 影响）恢复缺失文件。
-    """
-    import os
-    import shutil
-    from app.log import logger
-    os.makedirs(target_dir, exist_ok=True)
-
-    # 内置资源目录（在 app/ 下，不会被 Docker volume 覆盖）
-    _builtin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "survey_assets")
-
-    for filename in ("survey-lib.js", "survey-lib.css"):
-        path = os.path.join(target_dir, filename)
-        builtin_path = os.path.join(_builtin_dir, filename)
-        if not os.path.exists(builtin_path):
-            if not os.path.exists(path):
-                logger.warning(
-                    f"问卷静态文件 {filename} 缺失，且内置备份也不存在。"
-                    f"API /api/v1/survey/static/{filename} 将返回 404。"
-                )
-            continue
-        # 内置备份是权威源 → 文件缺失或与内置不一致时自动刷新
-        need_copy = not os.path.exists(path)
-        if not need_copy:
-            import hashlib
-            with open(builtin_path, "rb") as fb:
-                builtin_hash = hashlib.sha256(fb.read()).digest()
-            with open(path, "rb") as ft:
-                target_hash = hashlib.sha256(ft.read()).digest()
-            need_copy = (builtin_hash != target_hash)
-        if need_copy:
-            shutil.copy2(builtin_path, path)
-            logger.info(
-                f"已更新问卷静态文件: {filename} ({os.path.getsize(path)} bytes)"
-            )
-
-
-
 def register_static(app: FastAPI):
     """[已弃用] 挂载前端静态文件（无需 Nginx）。仅在 web/dist/ 存在时生效。
     
@@ -152,16 +107,10 @@ def register_static(app: FastAPI):
     import os
     from fastapi.staticfiles import StaticFiles
 
-    # 先挂载问卷静态文件（必须在 SPA fallback 之前）
-    survey_static_dir = os.path.join(settings.BASE_DIR, "uploads", "static_web")
-    _ensure_survey_static_files(survey_static_dir)
-    app.mount("/static_web", StaticFiles(directory=survey_static_dir), name="survey_static")
-
     static_dir = os.path.join(settings.BASE_DIR, "web", "dist")
     if os.path.isdir(static_dir):
         # html=True 实现 SPA fallback: 非 /api 路径 404 时返回 index.html
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
-
 
 async def init_superuser():
     user = await user_controller.model.exists()
@@ -175,7 +124,6 @@ async def init_superuser():
                 is_superuser=True,
             )
         )
-
 
 async def init_menus():
     menus = await Menu.exists()
@@ -378,12 +326,10 @@ async def init_menus():
             redirect="",
         )
 
-
 async def init_apis():
     apis = await api_controller.model.exists()
     if not apis:
         await api_controller.refresh_api()
-
 
 async def init_db():
     """初始化数据库：首次部署时建表，后续启动仅执行增量迁移。
@@ -395,7 +341,11 @@ async def init_db():
     """
     import sqlite3
 
-    db_path = settings.TORTOISE_ORM["connections"]["default"]["credentials"]["database"]
+    # 从配置中动态获取默认连接的数据库文件路径（避免硬编码键名）
+    default_conn = settings.TORTOISE_ORM["apps"]["models"]["default_connection"]
+    db_creds = settings.TORTOISE_ORM["connections"][default_conn]["credentials"]
+    # SQLite 用 file_path，MySQL/PostgreSQL 用 database
+    db_path = db_creds.get("file_path") or db_creds.get("database")
     already_inited = False
     try:
         conn = sqlite3.connect(db_path)
@@ -423,7 +373,6 @@ async def init_db():
 
     await command.upgrade(run_in_transaction=True)
 
-
 async def init_roles():
     roles = await Role.exists()
     if not roles:
@@ -448,7 +397,6 @@ async def init_roles():
         basic_apis = await Api.filter(Q(method__in=["GET"]) | Q(tags="基础模块"))
         await user_role.apis.add(*basic_apis)
 
-
 async def init_system_config():
     """初始化系统下载配置默认值"""
     try:
@@ -457,7 +405,6 @@ async def init_system_config():
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f"系统配置初始化失败: {e}")
-
 
 async def init_data():
     await init_db()

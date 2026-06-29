@@ -8,6 +8,7 @@ class AIProxyCreate(BaseModel):
     url: Optional[str] = Field(None, description="接口地址", example="https://api.openai.com/v1")
     token: Optional[str] = Field(None, description="认证令牌")
     model: Optional[str] = Field(None, description="模型名称", example="gpt-4")
+    max_tokens: Optional[int] = Field(16384, description="单次最大输出 token 数")
     user_ids: Optional[List[int]] = Field(default_factory=list, description="可访问用户ID列表")
 
     def create_dict(self):
@@ -19,4 +20,5 @@ class AIProxyUpdate(BaseModel):
     url: Optional[str] = Field(None, description="接口地址")
     token: Optional[str] = Field(None, description="认证令牌")
     model: Optional[str] = Field(None, description="模型名称")
+    max_tokens: Optional[int] = Field(None, description="单次最大输出 token 数")
     user_ids: Optional[List[int]] = Field(default_factory=list, description="可访问用户ID列表")

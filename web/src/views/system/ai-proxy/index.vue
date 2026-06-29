@@ -8,6 +8,7 @@ import {
 
   NButton,
   NInput,
+  NInputNumber,
   NSelect,
   NTag,
   NPopconfirm,
@@ -48,7 +49,7 @@ const {
   handleAdd,
 } = useCRUD({
   name: t('views.skill.label_cn_c1dfc5cf'),
-  initForm: { name: '', url: '', token: '', model: '', user_ids: [] },
+  initForm: { name: '', url: '', token: '', model: '', max_tokens: 16384, user_ids: [] },
   doCreate: api.createAIProxy,
   doUpdate: api.updateAIProxy,
   doDelete: api.deleteAIProxy,
@@ -88,6 +89,7 @@ function handleClone(row) {
     url: row.url || '',
     token: row.token || '',
     model: row.model || '',
+    max_tokens: row.max_tokens || 16384,
     user_ids: (row.users || []).map(u => u.id),
   }
   modalVisible.value = true
@@ -102,6 +104,9 @@ const columns = [
   },
   {
     title: t('views.system.title_cn_8000f187'), key: 'model', width: 60, align: 'center', ellipsis: { tooltip: true },
+  },
+  {
+    title: 'Max Tokens', key: 'max_tokens', width: 50, align: 'center',
   },
   {
     title: t('views.system.title_cn_9f66731b'), key: 'token', width: 70, align: 'center',
@@ -193,6 +198,9 @@ const columns = [
         </NFormItem>
         <NFormItem :label="t('views.system.label_cn_920fe38e')">
           <NInput v-model:value="modalForm.model" :placeholder="t('views.system.placeholder_cn_5b6e06ac')" />
+        </NFormItem>
+        <NFormItem label="Max Tokens">
+          <NInputNumber v-model:value="modalForm.max_tokens" :min="512" :max="131072" placeholder="单次最大输出 token 数" />
         </NFormItem>
         <NFormItem :label="t('views.skill.label_cn_5f07f1ad')">
           <NSelect

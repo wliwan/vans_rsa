@@ -3,14 +3,13 @@ import os
 from typing import List, Optional
 
 from fastapi import APIRouter, Query
-from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse
 
-from app.controllers.survey import SURVEY_WEB_DIR, survey_controller
+from app.controllers.survey import survey_controller
 from app.core.ctx import CTX_USER_ID
 from app.log import logger
 from app.schemas.base import Fail, Success, SuccessExtra
 from app.schemas.survey import SurveyCreate, SurveySubmissionCreate, SurveyUpdate
-from app.settings.config import settings
 
 survey_router = APIRouter()
 survey_public_router = APIRouter()  # 公开接口，无需鉴权
@@ -184,67 +183,4 @@ async def submit_survey(obj_in: SurveySubmissionCreate):
         return Fail(code=500, msg=f"提交失败: {str(e)}")
 
 
-# ═══════════════════════════════════════
-#  通用库文件访问（无需鉴权）
-# ═══════════════════════════════════════
 
-def _read_static_file(filename: str) -> str:
-    """读取问卷静态文件，优先从 uploads/static_web/ 读取，
-    缺失时从内置备份 app/survey_assets/ 恢复并返回。"""
-    import shutil
-    target = os.path.join(SURVEY_WEB_DIR, filename)
-    if os.path.exists(target):
-        with open(target, encoding="utf-8") as f:
-            return f.read()
-    # 从内置备份恢复（settings.BASE_DIR 指向项目根目录）
-    builtin = os.path.join(settings.BASE_DIR, "app", "survey_assets", filename)
-    if os.path.exists(builtin):
-        os.makedirs(os.path.dirname(target), exist_ok=True)
-        shutil.copy2(builtin, target)
-        with open(target, encoding="utf-8") as f:
-            return f.read()
-    raise FileNotFoundError(f"{filename} 缺失，且内置备份也不存在")
-
-
-@survey_public_router.get("/static/survey-lib.js", summary="获取问卷通用JS库（已弃用，保留向后兼容）")
-async def get_survey_lib_js():
-    """[已弃用 v3.0] 返回问卷通用 JS 库（无需鉴权）。
-    v3.0 起问卷不再引用此外部 JS，改为内联方案。
-    仅保留此路由向后兼容旧版问卷。"""
-    try:
-        content = _read_static_file("survey-lib.js")
-    except FileNotFoundError as e:
-        return Response(
-            content=f"/* {e} */\nconsole.error('SurveyLib 加载失败：文件缺失，请联系管理员。');\n",
-            media_type="application/javascript; charset=utf-8",
-            status_code=404,
-        )
-    except Exception as e:
-        return Response(
-            content=f"/* 加载失败: {e} */\nconsole.error('SurveyLib 加载失败', {str(e)!r});\n",
-            media_type="application/javascript; charset=utf-8",
-            status_code=500,
-        )
-    return Response(content=content, media_type="application/javascript; charset=utf-8")
-
-
-@survey_public_router.get("/static/survey-lib.css", summary="获取问卷通用CSS库（已弃用，保留向后兼容）")
-async def get_survey_lib_css():
-    """[已弃用 v3.0] 返回问卷通用 CSS 库（无需鉴权）。
-    v3.0 起问卷样式全部内联，不再引用此外部 CSS。
-    仅保留此路由向后兼容旧版问卷。"""
-    try:
-        content = _read_static_file("survey-lib.css")
-    except FileNotFoundError as e:
-        return Response(
-            content=f"/* {e} */\n",
-            media_type="text/css; charset=utf-8",
-            status_code=404,
-        )
-    except Exception as e:
-        return Response(
-            content=f"/* 加载失败: {e} */\n",
-            media_type="text/css; charset=utf-8",
-            status_code=500,
-        )
-    return Response(content=content, media_type="text/css; charset=utf-8")

@@ -57,6 +57,7 @@ ZIP_NAME="backend-${TIMESTAMP}.zip"
 ZIP_PATH="$OUTPUT_DIR/$ZIP_NAME"
 ZIP_INCLUDE=(
   "app/"
+  "migrations/"
   "run.py"
   "requirements.txt"
   "pyproject.toml"

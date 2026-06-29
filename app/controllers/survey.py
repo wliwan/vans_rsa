@@ -4,6 +4,8 @@ import json
 import os
 import re
 import secrets
+import subprocess
+import tempfile
 import time
 import uuid
 from typing import Dict, List, Optional, Tuple
@@ -18,9 +20,7 @@ from app.settings.config import settings
 
 # 问卷网页文件存放目录
 SURVEY_WEB_DIR = os.path.join(settings.BASE_DIR, "uploads", "static_web")
-SURVEY_LIB_URL = "/api/v1/survey/static/survey-lib.js"
-# SURVEY_CSS_URL 已废弃 — v2.0 不再要求 AI 引入 CSS 文件
-# 保留路由和文件仅为向后兼容旧版问卷
+
 
 # ── 进度状态文件目录 ──
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "cache")
@@ -29,6 +29,26 @@ os.makedirs(SURVEY_PROGRESS_DIR, exist_ok=True)
 
 # 内存中正在运行的任务缓存
 _running_tasks: Dict[str, dict] = {}
+
+# Node.js 可用性标志（用于 JS 语法检查）
+_NODE_AVAILABLE: Optional[bool] = None
+
+
+def _check_node_available() -> bool:
+    """检测 Node.js 是否可用，结果缓存。"""
+    global _NODE_AVAILABLE
+    if _NODE_AVAILABLE is None:
+        try:
+            subprocess.run(
+                ["node", "--version"],
+                capture_output=True,
+                timeout=5,
+            )
+            _NODE_AVAILABLE = True
+        except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
+            _NODE_AVAILABLE = False
+            logger.warning("Node.js 不可用，JS 语法检查将被跳过。如需启用，请在服务器上安装 Node.js。")
+    return _NODE_AVAILABLE
 
 
 def _progress_file(task_id: str) -> str:
@@ -67,236 +87,66 @@ def _update_progress(task_id: str, status: str, phase: str, progress: int, messa
     _running_tasks[task_id] = p
     _save_progress(task_id, p)
 
-# AI 生成问卷网页的 System Prompt
-AI_SURVEY_SYSTEM_PROMPT = """根据用户需求，创建用户调查问卷网页。
+# AI 生成问卷网页的 System Prompt（引擎模板由后端自动注入，此处只含约束）
+AI_SURVEY_SYSTEM_PROMPT = """根据用户需求，创建用户调查问卷网页。系统会自动注入问卷引擎（数据采集/保存恢复/提交/动态表格管理）。
 
-## 核心规则（必须遵守，否则问卷无法正常工作）
+## 核心规则
 
 1. 只输出完整的 HTML 文件（从 <!DOCTYPE html> 开始）
-2. **不需要引入任何外部 JS/CSS 文件**，所有逻辑和样式全部内联在 HTML 中。
+2. **禁止引入任何外部 JS/CSS 文件**（<link> 或 <script src>）
 3. 在 </body> 之前，必须按顺序包含：
-   (a) __SURVEY_CONFIG__ 配置脚本（不可省略，__SURVEY_TOKEN__ 会被后端替换为真实 token）：
+   (a) __SURVEY_CONFIG__ 配置脚本：
        <script>
-         window.__SURVEY_CONFIG__ = { surveyToken: '__SURVEY_TOKEN__' };
+       window.__SURVEY_CONFIG__ = { surveyToken: '__SURVEY_TOKEN__' };
        </script>
-   (b) 问卷核心逻辑脚本（参见下方「内联 JS 模板」）。
-   (c) 业务交互脚本（你的自定义表单交互逻辑）。
-4. 页面底部必须有两个按钮，class 必须精确为：
-   <button class="sv-save">保存草稿</button>
-   <button class="sv-submit">提交问卷</button>
-   （JS 通过这两个 class 绑定点击事件，不可改名）
-5. 所有表单控件（input、textarea、select）必须设置 **id 和 name 属性**。
-   - **id**：唯一标识，优先通过 id 保存和恢复数据。
-     动态添加的元素也必须分配唯一 id（建议用递增索引，如 items_0_name、items_1_name）。
-   - **name**：表单提交的标准属性，且用于复选框组分组。
+   (b) 占位符 <!--ENGINE_PLACEHOLDER-->（系统在此自动注入引擎，你不需要包含引擎代码）
+   (c) 自定义业务交互脚本（如有特殊验证、条件显示等需求）
+4. 必须包含两个按钮，class 精确为 sv-save 和 sv-submit
 
-## id / name 属性命名规范
+## 数据命名规范
 
-- **普通字段**：id="customer_name" name="customer_name"
-  → 保存为 {"customer_name": "value"}
-- **复选框组（多选）**：name="interests[]"（所有同组 checkbox 共用此 name）
-  每个 checkbox 需要有唯一的 id，如 id="interests_tech"、id="interests_sports"
-  → 保存为 {"interests[]": ["v1", "v2"]}
-- **单选组**：name="gender"，每个 radio 有唯一 id
-  → 保存为 {"gender": "male"}（以选中的 radio 的 value 为值，key 用 name）
-- **动态表格**：id="items_0_name" name="items[0][name]"
-  id="items_1_name" name="items[1][name]"
-  → 保存为 {"items_0_name": "a", "items_1_name": "b"}
-  行索引从 0 开始，JS 添加行时分配递增 id
+- 所有表单控件必须同时设置 id 和 name 属性
+- 普通字段（text/textarea/select/date 等）：key 取 id，value 取控件值
+- 单选组（radio）：同组 name 相同，key 取 name，value 取选中项的 value
+- 复选框组：同组 name 以 [] 结尾，保存为 {name: [选中值数组]}
 
-## 内联 JS 模板 — 问卷核心逻辑（你必须包含在 HTML 中）
+## 可用全局 API（引擎注入后自动暴露）
 
-以下代码是问卷的「引擎」，你必须在 HTML 中包含以下逻辑（可以调整细节，但核心流程不可变）：
-```
-<script>
-(function() {
-  var cfg = window.__SURVEY_CONFIG__ || {};
-  var token = cfg.surveyToken || '';
-  var LS_KEY = 'survey_' + token;
+  window.__engineCollectData()    - 收集所有表单数据返回 JSON
+  window.__engineRestoreData(d)   - 恢复数据到表单
+  window.__engineSaveLocal()      - 保存到 localStorage
+  window.__engineRestoreLast()    - 从 localStorage 恢复
+  window.__engineDoSubmit()       - 提交到服务器
+  window.__engineShowToast(m,t)   - 显示提示 (m=消息,t=success|error|info)
+  window.__engineAddTableRow(n)   - 向表格 n 添加一行
 
-  // ── 数据采集：所有带 name 属性控件 → 扁平 JSON ──
-  function collectData() {
-    var data = {}, seen = {};
-    var els = document.querySelectorAll('[name]');
-    for (var i = 0; i < els.length; i++) {
-      var el = els[i];
-      var nm = el.getAttribute('name');
-      if (!nm) continue;
-      if ((el.type === 'radio' || el.type === 'checkbox') && !el.checked) continue;
-      if (el.type === 'checkbox' && /\[\]$/.test(nm)) {
-        if (!seen[nm]) { data[nm] = []; seen[nm] = true; }
-        data[nm].push(el.value);
-      } else {
-        var key = el.id || nm;
-        data[key] = el.value;
-      }
-    }
-    return data;
-  }
+## 动态表格声明（无需写 JS，引擎自动管理）
 
-  // ── 保存到本地（localStorage JSON）──
-  function saveLocal() {
-    try {
-      var data = collectData();
-      var list = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-      list.push({ data: data, savedAt: new Date().toISOString() });
-      localStorage.setItem(LS_KEY, JSON.stringify(list));
-      showToast('已保存到本地 \u2713', 'success');
-    } catch(e) { showToast('保存失败：' + e.message, 'error'); }
-  }
+  <!-- 表格声明 -->
+  <table data-survey-table="表名" data-survey-columns="列名:类型,...">
+    <thead><tr><th>列标题</th>...<th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <!-- 添加按钮声明 -->
+  <button data-survey-table-add="表名">添加行</button>
 
-  // ── 恢复最近一次本地保存 ──
-  function restoreLast() {
-    try {
-      var list = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-      if (list.length === 0) return;
-      var record = list[list.length - 1];
-      if (!record || !record.data) return;
-      restoreData(record.data);
-      showToast('已恢复上次保存 \u2713', 'success');
-    } catch(e) {}
-  }
+  列类型: text(默认), number, select:选项1/选项2/...
+  例如: data-survey-columns="NAME:text,AGE:number,ROLE:select:员工/经理/总监"
+  id 自动格式: {表名}_{列名}_{索引}  索引从 0 递增
 
-  // ── 恢复数据到表单 ──
-  function restoreData(data) {
-    if (!data) return;
-    // 复选框组
-    for (var key in data) {
-      if (!/\[\]$/.test(key)) continue;
-      var vals = Array.isArray(data[key]) ? data[key] : [data[key]];
-      var cbs = document.querySelectorAll('input[type="checkbox"][name="' + key + '"]');
-      for (var ci = 0; ci < cbs.length; ci++) {
-        cbs[ci].checked = vals.indexOf(cbs[ci].value) !== -1;
-      }
-    }
-    // 单值字段：优先 id 查找，回退 name
-    for (var key in data) {
-      if (/\[\]$/.test(key)) continue;
-      var v = data[key];
-      var el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-      if (!el) continue;
-      if (el.type === 'radio') {
-        var rn = el.getAttribute('name');
-        var radios = document.querySelectorAll('[name="' + rn + '"]');
-        for (var ri = 0; ri < radios.length; ri++) {
-          radios[ri].checked = (radios[ri].value === String(v));
-        }
-      } else if (el.type === 'checkbox') {
-        el.checked = (v === true || v === 'true' || v === 'on' || v === '1');
-      } else {
-        el.value = v;
-      }
-    }
-  }
+## 样式与交互
 
-  // ── 提交到服务器 ──
-  function doSubmit() {
-    var data = collectData();
-    var payload = {
-      survey_token: token,
-      submitter_name: '',
-      content: JSON.stringify(data),
-      word_count: JSON.stringify(data).replace(/\\s/g, '').length,
-      raw_data: data,
-      save_type: 'submit'
-    };
-    fetch('/api/v1/survey/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).then(function(r) { return r.json(); })
-      .then(function(res) {
-        showToast(res.code === 200 ? '提交成功 \u2713' : '提交失败：' + (res.msg || '未知错误'),
-                 res.code === 200 ? 'success' : 'error');
-        if (res.code === 200) {
-          // 提交成功后清除本地保存
-          localStorage.removeItem(LS_KEY);
-        }
-      })
-      .catch(function(err) { showToast('提交失败：' + err.message, 'error'); });
-  }
+- CSS 自由设计，必须内联（<style> 或 style 属性）
+- 可编写自定义 script 实现验证、条件显示、动画等
+- 交互结果必须反映到带 id 和 name 的控件上
 
-  // ── Toast 提示 ──
-  function showToast(msg, type) {
-    var colors = {
-      success: 'background:#e6f7e6;color:#2e7d32;border:1px solid #a5d6a7;',
-      error: 'background:#fdecea;color:#c62828;border:1px solid #ef9a9a;',
-      info: 'background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;'
-    };
-    var t = document.createElement('div');
-    t.textContent = msg;
-    t.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;padding:12px 24px;border-radius:6px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:svFadeIn 0.3s ease;font-family:sans-serif;' + (colors[type] || colors.info);
-    document.body.appendChild(t);
-    setTimeout(function() { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 300); }, 2500);
-  }
+## 安全注意事项
 
-  // ── 绑定按钮 + 自动恢复 ──
-  function bind() {
-    document.addEventListener('click', function(e) {
-      if (e.target.closest('.sv-save')) { e.preventDefault(); saveLocal(); }
-      if (e.target.closest('.sv-submit')) { e.preventDefault(); doSubmit(); }
-    });
-    // 页面加载后，如果表单为空则尝试恢复本地保存
-    var hasInput = false;
-    var inputs = document.querySelectorAll('input[name], textarea[name], select[name]');
-    for (var i = 0; i < inputs.length; i++) {
-      var el = inputs[i];
-      if (el.type === 'checkbox' || el.type === 'radio') {
-        if (el.checked) { hasInput = true; break; }
-      } else if (el.value && el.value.trim()) {
-        hasInput = true; break;
-      }
-    }
-    if (!hasInput) restoreLast();
-  }
-
-  // 添加 fadeIn 动画
-  var style = document.createElement('style');
-  style.textContent = '@keyframes svFadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}';
-  document.head.appendChild(style);
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
-  else bind();
-})();
-</script>
-```
-
-**重要**：以上模板代码是问卷正常运行的最少必要逻辑，不可省略核心流程（collectData / saveLocal / restoreLast / doSubmit / bind）。你可以在此基础上扩展（如添加提交前验证、自定义 toast 样式），但不能删除这些核心函数。
-
-## 数据格式
-
-- 本地存储：localStorage key 为 `survey_{token}`，value 为 JSON 数组 `[{data:{...}, savedAt:"..."}, ...]`
-- 提交到服务器：POST `/api/v1/survey/submit`，body 为 JSON
-- 数据隔离：不同问卷的 token 不同，localStorage key 不同，天然隔离
-
-## 样式设计自由
-
-- CSS 完全由你自由设计：内联 <style> 标签或 style 属性
-- 可以设计任何视觉风格：极简、卡通、商务、暗色模式、渐变、毛玻璃等
-
-## 交互实现自由
-
-- 可以自由编写额外的 <script> 标签和任意 JS 逻辑
-- 动态表格、全选按钮、条件显示、输入验证、动画等，全部由你在 HTML 中用原生 JS 自由实现
-- 唯一要求：交互的最终结果必须反映到带正确 id + name 属性的表单控件上
-
-## 交互实现建议（非强制）
-
-- 动态表格：用 insertRow / deleteRow 或 cloneNode 实现添加/删除行，行索引自行管理
-- 复选框全选：用 querySelectorAll + forEach 实现切换
-- 条件显示：用 onchange / onclick 事件控制 display/visibility
-- 输入验证：在 doSubmit 前用自定义 JS 校验
-- 字数统计：textarea 的 oninput 事件实时更新计数
-
-## 注意事项
-
-- 禁止在 <summary> 标签内放置交互式元素（button、input、select、a），
-  这些元素在 <summary> 内无法正常工作。全选按钮等必须放在 <details> 内容区。
-- 确保所有自定义 JS 在 DOMContentLoaded 之后执行或放在 </body> 之前。
-- **不要引入任何外部 JS/CSS 文件**（不要使用 <link> 或外部 <script src>），全部内联。
+- 禁止 import/export、eval、document.write、innerHTML 赋值
+- 禁止在 <summary> 内放置交互式元素
+- 确保所有内联 JavaScript 无语法错误
 
 无需额外说明，直接输出完整代码。
-
 """
 
 class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
@@ -356,6 +206,32 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
                 await survey.users.add(u)
 
     # ── AI 创建问卷（异步后台，通过 progress 轮询结果）──
+    @staticmethod
+    def _inject_engine(html: str, short_token: str) -> str:
+        """向 AI 生成的 HTML 注入引擎模板。
+
+        引擎模板从 app/survey_assets/engine-template.js 读取，
+        替换 <!--ENGINE_PLACEHOLDER--> 占位符（缺失时注入到 </body> 前），
+        同时替换 __SURVEY_TOKEN__ 为真实 token。
+        """
+        import os as _os
+        assets_dir = _os.path.join(
+            _os.path.dirname(_os.path.dirname(__file__)), "survey_assets"
+        )
+        engine_path = _os.path.join(assets_dir, "engine-template.js")
+        with open(engine_path, encoding="utf-8") as f:
+            engine_js = f.read()
+
+        inject_code = "<script>\n" + engine_js + "\n</script>"
+        placeholder = "<!--ENGINE_PLACEHOLDER-->"
+
+        if placeholder in html:
+            html = html.replace(placeholder, inject_code)
+        else:
+            html = html.replace("</body>", inject_code + "\n</body>")
+
+        return html.replace("__SURVEY_TOKEN__", short_token)
+
     async def start_create_survey(self, obj_in: SurveyCreate, creator_id: int) -> str:
         """启动异步问卷创建，返回 task_id。前端通过轮询获取进度和结果。"""
         # 预先校验 AI 代理
@@ -419,21 +295,59 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 progress_callback=_on_round,
+                max_tokens=proxy.max_tokens or 16384,
             )
 
-            _update_progress(task_id, "running", "generating", 87, "AI 生成完成，正在进行安全审核...")
+            # ── JS 语法检查 + 自动修复（兜底机制）──
+            js_errors = await self._validate_js_syntax(html_content)
+            MAX_FIX_RETRIES = 2
+            for fix_attempt in range(MAX_FIX_RETRIES):
+                if not js_errors:
+                    break
+                logger.warning(
+                    f"检测到 JS 语法错误，第 {fix_attempt + 1}/{MAX_FIX_RETRIES} 次自动修复: "
+                    f"{len(js_errors)} 个错误"
+                )
+                _update_progress(
+                    task_id, "running", "fixing", 86,
+                    f"检测到 {len(js_errors)} 处 JS 语法错误，正在第 {fix_attempt + 1} 次自动修复..."
+                )
+                fix_prompt = (
+                    "以下 HTML 中的 JavaScript 存在语法错误，请修复后输出完整的正确 HTML。\n\n"
+                    "JS 语法错误：\n" + "\n".join(f"- {e}" for e in js_errors) + "\n\n"
+                    "原始 HTML：\n```html\n" + html_content + "\n```"
+                )
+                html_content = await self._call_ai_api(
+                    url=proxy.url,
+                    token=proxy.token,
+                    model=proxy.model or "deepseek-chat",
+                    system_prompt="你是 HTML/JS 修复专家。只输出修复后的完整 HTML，不要任何解释。",
+                    user_prompt=fix_prompt,
+                    progress_callback=None,
+                    max_tokens=proxy.max_tokens or 16384,
+                )
+                js_errors = await self._validate_js_syntax(html_content)
 
-            # ── 阶段 3: 安全审核 + 保存 (87-100%) ──
+            if js_errors:
+                logger.warning(
+                    f"JS 语法错误修复失败（{MAX_FIX_RETRIES} 次重试后仍有 "
+                    f"{len(js_errors)} 个错误），问卷已生成但可能存在问题"
+                )
+
+            _update_progress(task_id, "running", "generating", 86, "AI 生成完成，正在注入问卷引擎...")
+
+            # ── 阶段 3: 注入引擎 + 安全审核 + 保存 (86-100%) ──
+            short_token = self._gen_short_token()
+            html_content = self._inject_engine(html_content, short_token)
+
+            _update_progress(task_id, "running", "saving", 90, "正在进行安全审核...")
             from app.utils.survey_security import check_html_content
             security_result = check_html_content(html_content)
-            _update_progress(task_id, "running", "saving", 90, "安全审核完成，正在保存文件...")
+            _update_progress(task_id, "running", "saving", 93, "安全审核完成，正在保存文件...")
 
             os.makedirs(SURVEY_WEB_DIR, exist_ok=True)
             file_name = f"survey_{uuid.uuid4().hex[:12]}.html"
             file_path = os.path.join(SURVEY_WEB_DIR, file_name)
-
-            short_token = self._gen_short_token()
-            html_content = html_content.replace("__SURVEY_TOKEN__", short_token)
 
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
@@ -511,6 +425,7 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
         system_prompt: str,
         user_prompt: str,
         progress_callback=None,
+        max_tokens: int = 16384,
     ) -> str:
         """调用 AI API 生成问卷网页（使用 openai SDK），支持自动续写被截断的回复"""
         from openai import OpenAI
@@ -561,7 +476,7 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
                     model=model,
                     messages=messages,
                     temperature=0.7,
-                    max_tokens=8192,
+                    max_tokens=max_tokens,
                 )
 
                 choice = response.choices[0]
@@ -587,10 +502,17 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
                     break
 
                 # finish_reason == "length"：内容被截断，需要继续
-                # 追加 assistant 回复（使用原始内容保持历史准确）和 continue 指令
+                # 追加 assistant 回复（使用原始内容保持历史准确）
                 messages.append({"role": "assistant", "content": raw_content})
+                # 续写指令：携带截断位置的末尾上下文，帮助 AI 精确定位续写起点
+                tail = raw_content[-200:] if len(raw_content) > 200 else raw_content
                 messages.append(
-                    {"role": "user", "content": "直接从截断处继续输出HTML代码，不要输出任何解释、前言或代码围栏，只输出纯HTML片段。"}
+                    {"role": "user", "content": (
+                        "上一轮输出在以下位置被硬截断（末尾200字符）：\n"
+                        "```\n" + tail + "\n```\n"
+                        "请从截断处精确继续，不要重复已输出的任何字符，"
+                        "不要输出解释、前言或代码围栏，只输出纯HTML片段。"
+                    )}
                 )
             else:
                 logger.warning(f"AI 续写达到最大轮次上限 {max_rounds}，可能内容仍未完整")
@@ -613,6 +535,47 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
             return doctype_match.group(0).strip()
 
         return html_content.strip()
+
+    @staticmethod
+    async def _validate_js_syntax(html: str) -> list:
+        """检查 HTML 中所有 script 块的 JS 语法，返回错误信息列表（空列表表示无错误）。
+        通过 node --check 实现，跳过第一个 script 块（配置脚本）和空块。
+        如果 Node.js 不可用，跳过检查并返回空列表。"""
+        if not _check_node_available():
+            return []
+        scripts = re.findall(r"<script>(.*?)</script>", html, re.DOTALL)
+        errors = []
+
+        for i, js in enumerate(scripts):
+            js_stripped = js.strip()
+            if not js_stripped:
+                continue
+            # 跳过纯配置脚本（第一个 script 块通常是 __SURVEY_CONFIG__）
+            if i == 0 and "window.__SURVEY_CONFIG__" in js_stripped:
+                continue
+
+            def _check():
+                result = subprocess.run(
+                    ["node", "--check", "-"],
+                    input=js_stripped,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                return result
+
+            try:
+                result = await asyncio.to_thread(_check)
+            except subprocess.TimeoutExpired:
+                errors.append(f"Script 块 {i} 语法检查超时")
+                continue
+
+            if result.returncode != 0:
+                # 格式化错误信息，只取前 300 字符
+                err_text = result.stderr.strip()[:300]
+                errors.append(f"Script 块 {i}: {err_text}")
+
+        return errors
 
     # ── 更新问卷 ──
     async def update_survey(self, survey_id: int, obj_in: SurveyUpdate) -> dict:
