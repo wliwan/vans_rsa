@@ -8,11 +8,13 @@ import {
 import CommonPage from '@/components/page/CommonPage.vue'
 import TheIcon from '@/components/icon/TheIcon.vue'
 import api from '@/api'
+import { useTaskProgressStore } from '@/store/modules/taskProgress'
 
 defineOptions({ name: 'SurveyWorkbench' })
 
 const message = useMessage()
 const s = (key) => key  // simple i18n placeholder
+const taskProgress = useTaskProgressStore()
 
 // ── 问卷列表 ──
 const surveyList = ref([])
@@ -107,13 +109,48 @@ async function doCreateSurvey() {
       prompt: createForm.value.prompt,
       user_ids: createForm.value.user_ids,
     })
-    if (res.code === 200) {
-      message.success('问卷创建成功！')
-      showCreateModal.value = false
-      loadSurveys()
-    } else {
+    if (res.code !== 200 || !res.data?.task_id) {
       message.error(res.msg || '创建失败')
+      return
     }
+
+    const taskId = res.data.task_id
+    showCreateModal.value = false
+
+    // 注册到全局进度面板
+    const progressId = taskProgress.startTask('创建问卷: ' + createForm.value.name)
+
+    // 轮询直到完成
+    const poll = async () => {
+      try {
+        const pRes = await api.getSurveyCreateProgress({ task_id: taskId })
+        const data = pRes.data || pRes
+        if (data.status === 'done') {
+          taskProgress.finishTask(progressId, data.message || '问卷创建成功')
+          loadSurveys()
+          const resultRes = await api.getSurveyCreateResult({ task_id: taskId })
+          if (resultRes.code === 200 && resultRes.data) {
+            selectedSurvey.value = resultRes.data
+          }
+          return
+        }
+        if (data.status === 'error') {
+          taskProgress.failTask(progressId, { message: '问卷创建失败', detail: data.detail || data.message || '' })
+          return
+        }
+        // 更新进度
+        taskProgress.updateProgress(progressId, {
+          progress: data.progress || 0,
+          message: data.message || '',
+          phase: data.phase || '',
+        })
+        setTimeout(poll, 800)
+      } catch (e) {
+        taskProgress.failTask(progressId, { message: '轮询进度失败', detail: e.message || '' })
+      }
+    }
+    setTimeout(poll, 500)
+
   } catch (e) {
     message.error('创建失败：' + (e.message || '未知错误'))
   } finally {
@@ -238,7 +275,7 @@ const submissionColumns = [
   { title: '提交者', key: 'submitter_name', width: 100 },
   { title: '类型', key: 'save_type', width: 80, render: (row) => row.save_type === 'submit' ? '提交' : '保存' },
   { title: '总字数', key: 'word_count', width: 80 },
-  { title: 'MD内容', key: 'content', ellipsis: { tooltip: true }, maxWidth: 300 },
+  { title: '提交数据', key: 'content', ellipsis: { tooltip: true }, maxWidth: 300, render: (row) => { try { const d = JSON.parse(row.content); return Object.keys(d).length + ' 个字段'; } catch(e) { return (row.content || '').substring(0, 60); } } },
   {
     title: '操作', key: 'actions', width: 180,
     render(row) {

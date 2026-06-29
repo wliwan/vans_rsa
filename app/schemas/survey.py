@@ -21,23 +21,23 @@ class SurveyUpdate(BaseModel):
 
 
 class SurveySubmissionCreate(BaseModel):
-    """问卷提交（来自问卷网页）"""
+    """问卷提交（来自问卷网页）— v3.0 content 改为 JSON 文本"""
     survey_token: str = Field(..., description="问卷短链接令牌")
     submitter_name: Optional[str] = Field(None, description="提交者姓名")
     submitter_info: Optional[dict] = Field(None, description="提交者信息")
-    content: str = Field(..., description="提交内容(Markdown表格)")
+    content: str = Field(..., description="提交内容(JSON文本)")
     word_count: Optional[int] = Field(0, description="内容字数")
-    raw_data: Optional[dict] = Field(None, description="原始表单数据")
+    raw_data: Optional[dict] = Field(None, description="原始表单数据(扁平JSON)")
     save_type: str = Field("submit", description="保存类型: save(本地草稿) / submit(提交)")
 
 
 class SurveySubmissionOut(BaseModel):
-    """问卷提交记录输出"""
+    """问卷提交记录输出 — v3.0 content 为 JSON 文本"""
     id: int
     survey_id: int
     submitter_name: Optional[str] = None
     submitter_info: Optional[dict] = None
-    content: str
+    content: str  # JSON 文本
     word_count: int
     raw_data: Optional[dict] = None
     save_type: str

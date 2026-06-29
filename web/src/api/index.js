@@ -346,5 +346,7 @@ export default {
   deleteSurveySubmission: (params = {}) => request.delete('/survey/submission/delete', { params }),
   getSurveyHtml: (params = {}) => request.get('/survey/html', { params }),
   getSurveyRisk: (params = {}) => request.get('/survey/risk', { params }),
+  getSurveyCreateProgress: (params = {}) => request.get('/survey/create-progress', { params }),
+  getSurveyCreateResult: (params = {}) => request.get('/survey/create-result', { params }),
 }
   // 标签

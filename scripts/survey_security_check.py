@@ -1,9 +1,11 @@
-"""调研问卷安全审核脚本
+"""调研问卷安全审核脚本 — v3.0
 
-检查 AI 生成的调查网页是否包含危险内容：
-1. <script> 标签或事件处理中的 JS 代码
-2. 文件读写操作引用
-3. XSS 攻击向量
+v3.0 起问卷不再引用外部 survey-lib.js，改为内联原生 JS。
+安全审核相应调整：
+  - 允许内联 <script> 标签（问卷逻辑全部内联）
+  - 允许 fetch 网络请求（提交数据到后端）
+  - 允许 localStorage 读写（本地草稿保存/恢复）
+  - 继续禁止：行内事件处理器、eval、文件操作、document.write、innerHTML 赋值、外部脚本引用
 """
 import re
 import sys
@@ -11,24 +13,17 @@ import json
 from pathlib import Path
 
 
-# ── 危险模式 ──
-
 # ── 允许的安全模式（预处理时移除，再检查危险内容）──
 ALLOWED_REMOVE = [
-    # survey-lib.js 引用
-    r'<\s*script\s+src=["\']/api/v1/survey/static/survey-lib\.js["\']\s*>\s*</\s*script\s*>',
-    # __SURVEY_CONFIG__ 配置脚本
+    # __SURVEY_CONFIG__ 配置脚本（安全）
     r'<\s*script\s*>\s*window\.__SURVEY_CONFIG__\s*=\s*\{[^}]*\}\s*;\s*</\s*script\s*>',
     # HTML 注释
     r'<!--[\s\S]*?-->',
 ]
 
 DANGEROUS_PATTERNS = [
-    # ── <script> 标签（任何残留的都禁止）──
-    (r"<\s*script[\s>]", "检测到禁止的 <script> 标签，问卷网页仅允许引用 survey-lib.js"),
-
     # ── 行内事件处理器 ──
-    (r"\bon\w+\s*=", "检测到行内事件处理器(onclick/onload等)，问卷网页禁止JS代码"),
+    (r"\bon\w+\s*=", "检测到行内事件处理器(onclick/onload等)，请使用 addEventListener"),
 
     # ── javascript: 协议 ──
     (r"javascript\s*:", "检测到 javascript: 协议，存在XSS风险"),
@@ -40,22 +35,14 @@ DANGEROUS_PATTERNS = [
     # ── eval / Function 构造函数 ──
     (r"\beval\s*\(|new\s+Function\s*\(", "检测到 eval/Function 动态代码执行"),
 
-    # ── import / export ──
-    (r"\bimport\s+[\{*]|\bexport\s+(?:default\s+)?(?:\{|class|function|const|let|var)",
-     "检测到 import/export 模块语法"),
-
-    # ── fetch / XMLHttpRequest / WebSocket ──
-    (r"\bfetch\s*\(|XMLHttpRequest|WebSocket\s*\(", "检测到网络请求代码，问卷网页禁止主动发起网络请求"),
-
-    # ── localStorage / sessionStorage / indexedDB（仅禁止写入，允许读取） ──
-    (r"localStorage\.(?:setItem|removeItem|clear)\s*\(", "检测到 localStorage 写入操作"),
-    (r"sessionStorage\.(?:setItem|removeItem|clear)\s*\(", "检测到 sessionStorage 写入操作"),
-
     # ── document.write ──
     (r"document\.write\s*\(", "检测到 document.write 调用"),
 
     # ── innerHTML 赋值 ──
     (r"\.innerHTML\s*=", "检测到 innerHTML 赋值，存在XSS风险"),
+
+    # ── 外部脚本引用（禁止加载外部 JS 文件）──
+    (r'<\s*script\s+src\s*=\s*["\'][^"\']*["\']', "检测到外部脚本引用，问卷禁止加载外部 JS 文件"),
 ]
 
 

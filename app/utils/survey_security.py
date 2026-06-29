@@ -1,9 +1,11 @@
-"""调研问卷安全审核
+"""调研问卷安全审核 — v3.0
 
-检查 AI 生成的调查网页是否包含危险内容：
-1. <script> 标签或事件处理中的 JS 代码
-2. 文件读写操作引用
-3. XSS 攻击向量
+v3.0 起问卷不再引用外部 survey-lib.js，改为内联原生 JS。
+安全审核相应调整：
+  - 允许内联 <script> 标签（问卷逻辑全部内联）
+  - 允许 fetch 网络请求（提交数据到后端）
+  - 允许 localStorage 读写（本地草稿保存/恢复）
+  - 继续禁止：行内事件处理器、eval、文件操作、document.write、innerHTML 赋值等
 
 注意：此模块与 scripts/survey_security_check.py 保持同步。
 """
@@ -13,21 +15,28 @@ from pathlib import Path
 
 # ── 允许的安全模式（预处理时移除，再检查危险内容）──
 ALLOWED_REMOVE = [
-    r'<\s*script\s+src=["\']/api/v1/survey/static/survey-lib\.js["\']\s*>\s*</\s*script\s*>',
+    # __SURVEY_CONFIG__ 配置脚本（安全）
     r'<\s*script\s*>\s*window\.__SURVEY_CONFIG__\s*=\s*\{[^}]*\}\s*;\s*</\s*script\s*>',
+    # HTML 注释
     r'<!--[\s\S]*?-->',
 ]
 
 DANGEROUS_PATTERNS = [
+    # ── 协议攻击 ──
     (r"javascript\s*:", "检测到 javascript: 协议"),
+
+    # ── 文件读写 ──
     (r"\b(?:fs\.|require\s*\(\s*['\"]fs|open\s*\(\s*['\"][\/\w]|readFile|writeFile|createWriteStream|createReadStream|FileReader|Blob\()",
      "检测到文件读写操作"),
+
+    # ── 动态代码执行 ──
     (r"\beval\s*\(|new\s+Function\s*\(", "检测到 eval/Function 动态代码执行"),
+
+    # ── 模块语法（内联 JS 不需要 import/export）──
     (r"\bimport\s+[\{*]|\bexport\s+(?:default\s+)?(?:\{|class|function|const|let|var)",
      "检测到 import/export 模块语法"),
-    (r"\bfetch\s*\(|XMLHttpRequest|WebSocket\s*\(", "检测到网络请求代码"),
-    (r"localStorage\.(?:setItem|removeItem|clear)\s*\(", "检测到 localStorage 写入"),
-    (r"sessionStorage\.(?:setItem|removeItem|clear)\s*\(", "检测到 sessionStorage 写入"),
+
+    # ── DOM 操作风险 ──
     (r"document\.write\s*\(", "检测到 document.write 调用"),
     (r"\.innerHTML\s*=", "检测到 innerHTML 赋值"),
     (r"\.outerHTML\s*=", "检测到 outerHTML 赋值"),
@@ -44,6 +53,9 @@ DANGEROUS_PATTERNS = [
     (r"\bsetTimeout\s*\(\s*['\"]", "检测到 setTimeout 字符串参数（隐式 eval）"),
     (r"\bsetInterval\s*\(\s*['\"]", "检测到 setInterval 字符串参数（隐式 eval）"),
     (r"createElement\s*\(\s*['\"]script['\"]", "检测到动态创建 script 标签"),
+
+    # ── 外部脚本引用 ──
+    (r'<\s*script\s+src\s*=\s*["\'][^"\']*["\']', "检测到外部脚本引用，问卷禁止加载外部 JS 文件"),
 ]
 
 

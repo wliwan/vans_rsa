@@ -6,7 +6,6 @@ from fastapi import APIRouter, Query
 from fastapi.responses import FileResponse, HTMLResponse, Response
 
 from app.controllers.survey import SURVEY_WEB_DIR, survey_controller
-from app.utils.survey_static import SURVEY_LIB_JS, SURVEY_LIB_CSS
 from app.core.ctx import CTX_USER_ID
 from app.log import logger
 from app.schemas.base import Fail, Success, SuccessExtra
@@ -39,18 +38,44 @@ async def get_survey(survey_id: int = Query(..., description="问卷ID")):
     return Success(data=survey_controller._to_output(obj))
 
 
-@survey_router.post("/create", summary="AI创建问卷")
+@survey_router.post("/create", summary="AI创建问卷（异步）")
 async def create_survey(obj_in: SurveyCreate):
-    """通过 AI 生成问卷网页，风险评估后保存（不拦截）"""
+    """通过 AI 生成问卷网页（异步后台），立即返回 task_id。
+    前端通过 GET /survey/create-progress?task_id=xxx 轮询进度，
+    完成后通过 GET /survey/create-result?task_id=xxx 获取结果。"""
     user_id = CTX_USER_ID.get()
     try:
-        result = await survey_controller.create_with_ai(obj_in, creator_id=user_id)
-        return Success(data=result, msg=result.get("message", "问卷创建成功"))
+        task_id = await survey_controller.start_create_survey(obj_in, creator_id=user_id)
+        return Success(data={"task_id": task_id}, msg="问卷创建任务已启动")
     except ValueError as e:
         return Fail(code=400, msg=str(e))
     except Exception as e:
         logger.exception("创建问卷失败")
         return Fail(code=500, msg=f"创建问卷失败: {str(e)}")
+
+
+@survey_router.get("/create-progress", summary="查询问卷创建进度")
+async def get_create_progress(task_id: str = Query(..., description="任务ID")):
+    """轮询问卷创建进度，返回 status/phase/progress/message"""
+    try:
+        progress = survey_controller.get_create_progress(task_id)
+        return Success(data=progress)
+    except Exception as e:
+        logger.exception("查询问卷创建进度失败")
+        return Fail(code=500, msg=f"查询进度失败: {str(e)}")
+
+
+@survey_router.get("/create-result", summary="获取已创建的问卷结果")
+async def get_create_result(task_id: str = Query(..., description="任务ID")):
+    """获取创建完成的问卷数据。仅在 status=done 时返回结果。"""
+    try:
+        result = await survey_controller.get_create_result(task_id)
+        if result is None:
+            return Fail(code=404, msg="问卷尚未完成或不存在")
+        return Success(data=result, msg="问卷创建完成")
+    except Exception as e:
+        logger.exception("获取问卷结果失败")
+        return Fail(code=500, msg=f"获取结果失败: {str(e)}")
 
 
 @survey_router.post("/update", summary="更新问卷")
@@ -146,9 +171,9 @@ async def access_survey_by_short_token(token: str):
 #  问卷提交（无需鉴权）— 公开接口
 # ═══════════════════════════════════════
 
-@survey_public_router.post("/submit", summary="提交问卷数据（公开接口，无需鉴权）")
+@survey_public_router.post("/submit", summary="提交问卷数据（公开接口，无需鉴权）— v3.0 content 为 JSON")
 async def submit_survey(obj_in: SurveySubmissionCreate):
-    """用户通过问卷网页提交数据，无需登录"""
+    """用户通过问卷网页提交数据（无需登录）。v3.0 content 为 JSON 文本。"""
     try:
         result = await survey_controller.create_submission(obj_in)
         return Success(data=result, msg="提交成功")
@@ -163,13 +188,63 @@ async def submit_survey(obj_in: SurveySubmissionCreate):
 #  通用库文件访问（无需鉴权）
 # ═══════════════════════════════════════
 
-@survey_public_router.get("/static/survey-lib.js", summary="获取问卷通用JS库")
+def _read_static_file(filename: str) -> str:
+    """读取问卷静态文件，优先从 uploads/static_web/ 读取，
+    缺失时从内置备份 app/survey_assets/ 恢复并返回。"""
+    import shutil
+    target = os.path.join(SURVEY_WEB_DIR, filename)
+    if os.path.exists(target):
+        with open(target, encoding="utf-8") as f:
+            return f.read()
+    # 从内置备份恢复（settings.BASE_DIR 指向项目根目录）
+    builtin = os.path.join(settings.BASE_DIR, "app", "survey_assets", filename)
+    if os.path.exists(builtin):
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        shutil.copy2(builtin, target)
+        with open(target, encoding="utf-8") as f:
+            return f.read()
+    raise FileNotFoundError(f"{filename} 缺失，且内置备份也不存在")
+
+
+@survey_public_router.get("/static/survey-lib.js", summary="获取问卷通用JS库（已弃用，保留向后兼容）")
 async def get_survey_lib_js():
-    """返回问卷通用 JS 库（无需鉴权，问卷网页引用）"""
-    return Response(content=SURVEY_LIB_JS, media_type="application/javascript; charset=utf-8")
+    """[已弃用 v3.0] 返回问卷通用 JS 库（无需鉴权）。
+    v3.0 起问卷不再引用此外部 JS，改为内联方案。
+    仅保留此路由向后兼容旧版问卷。"""
+    try:
+        content = _read_static_file("survey-lib.js")
+    except FileNotFoundError as e:
+        return Response(
+            content=f"/* {e} */\nconsole.error('SurveyLib 加载失败：文件缺失，请联系管理员。');\n",
+            media_type="application/javascript; charset=utf-8",
+            status_code=404,
+        )
+    except Exception as e:
+        return Response(
+            content=f"/* 加载失败: {e} */\nconsole.error('SurveyLib 加载失败', {str(e)!r});\n",
+            media_type="application/javascript; charset=utf-8",
+            status_code=500,
+        )
+    return Response(content=content, media_type="application/javascript; charset=utf-8")
 
 
-@survey_public_router.get("/static/survey-lib.css", summary="获取问卷通用CSS库")
+@survey_public_router.get("/static/survey-lib.css", summary="获取问卷通用CSS库（已弃用，保留向后兼容）")
 async def get_survey_lib_css():
-    """返回问卷通用 CSS 库（无需鉴权，问卷网页引用）"""
-    return Response(content=SURVEY_LIB_CSS, media_type="text/css; charset=utf-8")
+    """[已弃用 v3.0] 返回问卷通用 CSS 库（无需鉴权）。
+    v3.0 起问卷样式全部内联，不再引用此外部 CSS。
+    仅保留此路由向后兼容旧版问卷。"""
+    try:
+        content = _read_static_file("survey-lib.css")
+    except FileNotFoundError as e:
+        return Response(
+            content=f"/* {e} */\n",
+            media_type="text/css; charset=utf-8",
+            status_code=404,
+        )
+    except Exception as e:
+        return Response(
+            content=f"/* 加载失败: {e} */\n",
+            media_type="text/css; charset=utf-8",
+            status_code=500,
+        )
+    return Response(content=content, media_type="text/css; charset=utf-8")
