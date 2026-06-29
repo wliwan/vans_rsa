@@ -130,8 +130,8 @@ AI_SURVEY_SYSTEM_PROMPT = """根据用户需求，创建用户调查问卷网页
   <!-- 添加按钮声明 -->
   <button data-survey-table-add="表名">添加行</button>
 
-  列类型: text(默认), number, select:选项1/选项2/...
-  例如: data-survey-columns="NAME:text,AGE:number,ROLE:select:员工/经理/总监"
+  列类型: text(默认), number, date, select:选项1/选项2/...
+  例如: data-survey-columns="事件:text,数量:number,日期:date,角色:select:员工/经理/总监"
   id 自动格式: {表名}_{列名}_{索引}  索引从 0 递增
 
 ## 样式与交互
@@ -139,6 +139,17 @@ AI_SURVEY_SYSTEM_PROMPT = """根据用户需求，创建用户调查问卷网页
 - CSS 自由设计，必须内联（<style> 或 style 属性）
 - 可编写自定义 script 实现验证、条件显示、动画等
 - 交互结果必须反映到带 id 和 name 的控件上
+- **sv-save / sv-submit 按钮必须固定在视口底部**（position: sticky; bottom: 0;），
+  始终可见不随页面滚动消失。可使用半透明背景 + 上边框分隔，确保不与内容重叠。
+- **禁止为 sv-save / sv-submit 按钮绑定 click 事件**：引擎已自动处理保存/提交，
+  你添加的 handler 会导致重复提交。只需放置按钮本身即可，引擎会自动接管。
+
+## 动态自定义项约定
+
+- 动态添加的 checkbox 容器（如硬件方案自定义、待标注模型等）必须添加属性
+  `data-survey-custom-container="字段name"`，如：
+  `<div id="custom-hw-container" data-survey-custom-container="硬件方案[]"></div>`
+  引擎在还原数据时，会在此容器中自动重建保存过的动态项，确保刷新后不丢失。
 
 ## 安全注意事项
 

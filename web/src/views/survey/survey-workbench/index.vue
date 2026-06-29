@@ -200,18 +200,15 @@ async function openPreview(submission) {
   try {
     const res = await api.getSurveyHtml({ survey_id: selectedSurvey.value.id })
     if (res.data?.html) {
-      // 替换占位符为短链接令牌，注入提交数据
+      // 替换占位符，注入提交数据到表单
       let html = res.data.html
       html = html.replace('__SURVEY_TOKEN__', selectedSurvey.value.short_url_token || '')
-      // 注入已有数据到表单（用作展示）
+      // 通过引擎 restoreData 完整还原所有字段（checkbox数组/radio/select/表格/动态元素）
       if (submission?.raw_data) {
-        const rd = submission.raw_data
-        Object.keys(rd).forEach(key => {
-          html = html.replace(
-            new RegExp(`name="${key}"`, 'g'),
-            `name="${key}" value="${String(rd[key]).replace(/"/g, '&quot;')}"`
-          )
-        })
+        html += '<script>setTimeout(function(){try{' +
+          'var __pv=window.__engineRestoreData||window.__restoreData;' +
+          'if(__pv){__pv(' + JSON.stringify(submission.raw_data) + ')}' +
+          '}catch(e){console.log("preview restore:",e)}},200);<\/script>'
       }
       previewHtml.value = html
     }

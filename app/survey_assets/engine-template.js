@@ -48,8 +48,35 @@
       if (!/\[\]$/.test(key)) continue;
       var vals = Array.isArray(data[key]) ? data[key] : [data[key]];
       var cbs = document.querySelectorAll('input[type="checkbox"][name="' + key + '"]');
-      for (var ci = 0; ci < cbs.length; ci++)
+      var seenValues = {};
+      for (var ci = 0; ci < cbs.length; ci++) {
         cbs[ci].checked = vals.indexOf(cbs[ci].value) !== -1;
+        seenValues[cbs[ci].value] = true;
+      }
+      // 重建 DOM 中不存在的 checkbox（动态添加后刷新页面丢失的项）
+      for (var vi = 0; vi < vals.length; vi++) {
+        var v = vals[vi];
+        if (seenValues[v]) continue;
+        var container = document.querySelector('[data-survey-custom-container="' + key + '"]');
+        if (!container && cbs.length > 0) {
+          var p = cbs[0].parentNode;
+          container = p && p.parentNode ? p.parentNode : document.body;
+        }
+        if (!container) container = document.body;
+        var wrapper = document.createElement('div');
+        var cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.name = key; cb.value = v;
+        cb.checked = true; cb.style.cssText = 'margin-right:6px;';
+        // id: 去掉 [] 后缀 + _restored_ + 序号
+        var base = key.replace(/\[\]$/, '');
+        cb.id = base + '_restored_' + vi;
+        var lbl = document.createElement('label');
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(v));
+        wrapper.appendChild(lbl);
+        container.appendChild(wrapper);
+        restored++;
+      }
       restored++;
     }
 
@@ -231,7 +258,9 @@
       return sel;
     }
     var inp = document.createElement('input');
-    inp.type = type === 'number' ? 'number' : 'text';
+    if (type === 'number') inp.type = 'number';
+    else if (type === 'date') inp.type = 'date';
+    else inp.type = 'text';
     inp.id = id; inp.name = id; inp.placeholder = col;
     return inp;
   }
