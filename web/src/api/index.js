@@ -27,6 +27,16 @@ export default {
   updateMenu: (data = {}) => request.post('/menu/update', data),
   deleteMenu: (params = {}) => request.delete('/menu/delete', { params }),
   scanViews: () => request.get('/menu/scan-views'),
+  aiAnalyzeViews: (data = {}) => request.post('/menu/ai-analyze-views', data, { timeout: 0 }),
+  batchSaveMenus: (data = {}) => request.post('/menu/batch-save', data),
+  exportMenus: () => request.get('/menu/export', { responseType: 'blob' }),
+  importMenus: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post('/menu/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
   // apis
   getApis: (params = {}) => request.get('/api/list', { params }),
   createApi: (data = {}) => request.post('/api/create', data),
@@ -59,59 +69,55 @@ export default {
   syncTracks: (data = {}) => request.post('/track/sync', data, { timeout: 0 }),
   clearTracks: (data = {}) => request.post('/track/clear', data),
   // regions
-  getRegionTree: () => request.get('/region/tree'),
-  getRegionChildren: (parent_id) => request.get('/region/children', { params: { parent_id } }),
-  getRegionById: (region_id) => request.get('/region/get', { params: { region_id } }),
   getRegionList: (params = {}) => request.get('/region/list', { params }),
+  getRegionById: (params = {}) => request.get('/region/get', { params }),
   createRegion: (data = {}) => request.post('/region/create', data),
   updateRegion: (data = {}) => request.post('/region/update', data),
   deleteRegion: (params = {}) => request.delete('/region/delete', { params }),
-  importRegions: () => request.post('/region/import', {}, { timeout: 0 }),
-  clearRegions: () => request.post('/region/clear', {}, { timeout: 0 }),
-  exportRegions: (data = {}) => request.post('/region/export', data),
-  batchUpdateRegions: (data = {}) => request.post('/region/batch-update', data),
-  fillGeonames: (force = false, proxy = null) =>
-    request.post('/region/fill-geonames', { force_download: force, proxy }, { timeout: 0 }),
-  getGeonamesProgress: () => request.get('/region/fill-geonames/progress'),
-  // system-config
-  getDownloadConfig: () => request.get('/system-config/download'),
-  updateDownloadConfig: (data = {}) => request.post('/system-config/download', data),
-  testProxy: (proxy_url) => request.post('/system-config/test-proxy', { proxy_url }),
-  getRoadHighwayStyle: () => request.get('/system-config/road-highway-style'),
-  updateRoadHighwayStyle: (data = {}) => request.post('/system-config/road-highway-style', data),
-  resetRoadHighwayStyle: () => request.delete('/system-config/road-highway-style'),
-  // region-boundary
-  getBoundaryStatus: (region_id) => request.get('/region/region-boundary/status', { params: { region_id } }),
-  downloadBoundary: (data = {}) => request.post('/region/region-boundary/download', data, { timeout: 0 }),
-  uploadBoundary: (region_id, file) => {
+  getRegionBoundaries: (params = {}) => request.get('/region/boundaries', { params }),
+  getRegionRoadNetworks: (params = {}) => request.get('/region/road-networks', { params }),
+  downloadRegionBoundary: (data = {}) => request.post('/region/download-boundary', data, { timeout: 0 }),
+  deleteRegionBoundary: (params = {}) => request.delete('/region/boundary/delete', { params }),
+  downloadRegionRoadNetwork: (data = {}) => request.post('/region/download-road-network', data, { timeout: 0 }),
+  deleteRegionRoadNetwork: (params = {}) => request.delete('/region/road-network/delete', { params }),
+  setActiveBoundary: (data = {}) => request.post('/region/boundary/set-active', data),
+  setActiveRoadNetwork: (data = {}) => request.post('/region/road-network/set-active', data),
+  getActiveBoundary: (params = {}) => request.get('/region/boundary/active', { params }),
+  getActiveRoadNetwork: (params = {}) => request.get('/region/road-network/active', { params }),
+  getRegionCenter: (params = {}) => request.get('/region/center', { params }),
+  // vehicle
+  getVehicleList: (params = {}) => request.get('/vehicle/list', { params }),
+  getVehicleById: (params = {}) => request.get('/vehicle/get', { params }),
+  createVehicle: (data = {}) => request.post('/vehicle/create', data),
+  updateVehicle: (data = {}) => request.post('/vehicle/update', data),
+  deleteVehicle: (params = {}) => request.delete('/vehicle/delete', { params }),
+  // road-material
+  getRoadMaterialList: (params = {}) => request.get('/road-material/list', { params }),
+  getRoadMaterialById: (params = {}) => request.get('/road-material/get', { params }),
+  createRoadMaterial: (data = {}) => request.post('/road-material/create', data),
+  updateRoadMaterial: (data = {}) => request.post('/road-material/update', data),
+  deleteRoadMaterial: (params = {}) => request.delete('/road-material/delete', { params }),
+  // road-material upload
+  uploadRoadMaterial: (file, check_duplicate = false, onUploadProgress) => {
     const formData = new FormData()
     formData.append('file', file)
-    return request.post(`/region/region-boundary/upload?region_id=${region_id}`, formData, {
+    return request.post(`/road-material/upload?check_duplicate=${check_duplicate}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 0,
+      onUploadProgress,
     })
   },
-  deleteBoundary: (params = {}) => request.delete('/region/region-boundary/delete', { params }),
-  clearBoundaries: (params = {}) => request.delete('/region/region-boundary/clear', { params }),
-  downloadBoundaryFile: (params = {}) => request.get('/region/region-boundary/download-file', {
+  // road-material Export
+  exportRoadMaterialImages: (params = {}) => request.get('/road-material/export-images', {
     params, responseType: 'blob', timeout: 0,
   }),
-  // road-network
-  getRoadNetworkStatus: (region_id) => request.get('/region/road-network/status', { params: { region_id } }),
-  downloadRoadNetwork: (data = {}) => request.post('/region/road-network/download', data, { timeout: 0 }),
-  uploadRoadNetwork: (region_id, file) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    return request.post(`/region/road-network/upload?region_id=${region_id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 0,
-    })
-  },
-  deleteRoadNetwork: (params = {}) => request.delete('/region/road-network/delete', { params }),
-  clearRoadNetworks: (params = {}) => request.delete('/region/road-network/clear', { params }),
-  downloadRoadNetworkFile: (params = {}) => request.get('/region/road-network/download-file', {
-    params, responseType: 'blob', timeout: 0,
-  }),
+  // road-material Delete
+  batchDeleteRoadMaterials: (data = {}) => request.post('/road-material/batch-delete', data),
+  // road-material Batch move
+  moveRoadMaterialsToDirectory: (data = {}) => request.post('/road-material/move-to-directory', data),
+  // road-material Batch download
+  batchDownloadRoadMaterials: (data = {}) => request.post('/road-material/batch-download', data),
+  getBatchDownloadProgress: (params = {}) => request.get('/road-material/batch-download-progress', { params }),
   // ai-proxy
   getAIProxyList: (params = {}) => request.get('/ai-proxy/list', { params }),
   getAIProxyByName: (name) => request.get('/ai-proxy/get', { params: { name } }),
@@ -121,32 +127,20 @@ export default {
   getAIProxyUsers: () => request.get('/ai-proxy/users'),
   // workspace
   getWorkspaceList: (params = {}) => request.get('/workspace/list', { params }),
+  getWorkspaceById: (params = {}) => request.get('/workspace/get', { params }),
   createWorkspace: (data = {}) => request.post('/workspace/create', data),
   updateWorkspace: (data = {}) => request.post('/workspace/update', data),
   deleteWorkspace: (params = {}) => request.delete('/workspace/delete', { params }),
   getWorkspaceUsers: () => request.get('/workspace/users'),
   // workspace documents
   getDocumentList: (params = {}) => request.get('/workspace/document/list', { params }),
+  getDocumentById: (params = {}) => request.get('/workspace/document/get', { params }),
+  createDocument: (data = {}) => request.post('/workspace/document/create', data, { timeout: 0 }),
+  deleteDocument: (params = {}) => request.delete('/workspace/document/delete', { params }),
   uploadDocument: (workspace_id, file) => {
     const formData = new FormData()
     formData.append('file', file)
     return request.post(`/workspace/document/upload?workspace_id=${workspace_id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 0,
-    })
-  },
-  downloadDocument: (params = {}) => request.get('/workspace/document/download', { params, responseType: 'blob', timeout: 0 }),
-  deleteDocument: (params = {}) => request.delete('/workspace/document/delete', { params }),
-  batchDeleteDocuments: (data = {}) => request.post('/workspace/document/batch-delete', data),
-  clearDocuments: (params = {}) => request.delete('/workspace/document/clear', { params }),
-  aiAnalyzeDocuments: (data = {}) => request.post('/workspace/document/ai-analyze', data, { timeout: 0 }),
-  getDocumentContent: (params = {}) => request.get('/workspace/document/get-content', { params }),
-  updateDocumentContent: (data = {}) => request.post('/workspace/document/update-content', data),
-  batchExportDocuments: (data = {}) => request.post('/workspace/document/batch-export', data, { responseType: 'blob' }),
-  batchUploadDocuments: (workspace_id, files) => {
-    const formData = new FormData()
-    files.forEach((file) => formData.append('files', file))
-    return request.post(`/workspace/document/batch-upload?workspace_id=${workspace_id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 0,
     })
@@ -249,63 +243,20 @@ export default {
   setStaticFileBaseUrl: (data = {}) => request.put('/workspace/static-file/base-url', data),
   downloadStaticFile: (params = {}) => request.get('/workspace/static-file/download-file', { params, responseType: 'blob' }),
   getStaticFileImages: (params = {}) => request.get('/workspace/static-file/images', { params }),
-  getStaticFileCVOperations: () => request.get('/workspace/static-file/cv-operations'),
-  cvProcessStaticFiles: (data = {}) => request.post('/workspace/static-file/cv-process', data, { timeout: 0 }),
-  aiProcessStaticFiles: (data = {}) => request.post('/workspace/static-file/ai-process', data, { timeout: 0 }),
-  ocrExtractStaticFiles: (data = {}) => request.post('/workspace/static-file/ocr', data, { timeout: 0 }),
-  importStaticFilesFromMaterial: (data = {}) => request.post('/workspace/static-file/import-from-material', data, { timeout: 0 }),
-  getStaticFileMaterialRegions: () => request.get('/workspace/static-file/material/regions'),
-  getStaticFileMaterialsByRegion: (params = {}) => request.get('/workspace/static-file/material/list-by-region', { params }),
-  extractImagesFromDoc: (file) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    return request.post('/workspace/static-file/extract-images', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 0,
-    })
-  },
-  importExtractedImages: (data = {}) => request.post('/workspace/static-file/import-extracted', data, { timeout: 0 }),
-  // vehicle
-  getVehicleAccounts: () => request.get('/vehicle/accounts'),
-  getVehicleCarTypes: (params = {}) => request.get('/vehicle/car-types', { params }),
-  getVehicleCars: (params = {}) => request.get('/vehicle/cars', { params }),
-  getVehicleStatus: (params = {}) => request.get('/vehicle/status', { params }),
-  getVehicleDeviceInfo: (params = {}) => request.get('/vehicle/device-info', { params }),
-  getVehicleFullCheck: (params = {}) => request.get('/vehicle/full-check', { params }),
-  refreshVehicleStatus: (params = {}) => request.get('/vehicle/refresh', { params }),
-  getVehicleFlow: (params = {}) => request.get('/vehicle/flow', { params }),
-  // road-material
-  getMaterialList: (params = {}) => request.get('/region/road-material/list', { params }),
-  getMaterialById: (params = {}) => request.get('/region/road-material/get', { params }),
-  updateMaterial: (data = {}) => request.put('/region/road-material/update', data),
-  deleteMaterial: (params = {}) => request.delete('/region/road-material/delete', { params }),
-  uploadMaterial: (region_id, name, description, file, source = 'upload') => {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('name', name || '')
-    formData.append('description', description || '')
-    formData.append('source', source || 'upload')
-    return request.post(`/region/road-material/upload?region_id=${region_id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 0,
-    })
-  },
-  downloadMaterialFile: (params = {}) => request.get('/region/road-material/download-file', {
-    params, responseType: 'blob', timeout: 0,
-  }),
-  aiProcessMaterial: (data = {}) => request.post('/region/road-material/ai-process', data, { timeout: 0 }),
-  cvProcessMaterial: (data = {}) => request.post('/region/road-material/cv-process', data, { timeout: 0 }),
-  getCVOperations: () => request.get('/region/road-material/cv-operations'),
+  // system config
+  getSystemConfigList: (params = {}) => request.get('/system-config/list', { params }),
+  getSystemConfigByKey: (key) => request.get('/system-config/get', { params: { key } }),
+  setSystemConfig: (data = {}) => request.post('/system-config/set', data),
   // i18n
-  getI18nList: () => request.get('/i18n/list'),
-  updateI18n: (data = {}) => request.put('/i18n/update', data),
-  batchUpdateI18n: (data = {}) => request.put('/i18n/batch-update', data),
-  exportI18n: () => request.get('/i18n/export'),
-  importI18n: (data = {}) => request.post('/i18n/import', data),
-  aiGenerateI18n: (data = {}) => request.post('/i18n/ai-generate', data, { timeout: 0 }),
-
-  scanDetectI18n: () => fetch('/__i18n-scan').then(r => r.json()),  // 旧端点（依赖未安装的 npm 包，已废弃）
-  scanNewFieldsI18n: (params = {}) => request.get('/i18n/scan-new-fields', { params }),
+  getI18nList: (params = {}) => request.get('/i18n/list', { params }),
+  createI18n: (data = {}) => request.post('/i18n/create', data),
+  updateI18n: (data = {}) => request.post('/i18n/update', data),
+  getI18nById: (params = {}) => request.get('/i18n/get', { params }),
+  deleteI18n: (params = {}) => request.delete('/i18n/delete', { params }),
+  getI18nBaseLang: () => request.get('/i18n/base-lang'),
+  i18nApplyToVue: (data = {}) => request.post('/i18n/apply-to-vue', data),
+  i18nScanFiles: () => request.get('/i18n/scan-files'),
+  scanTranslateI18n: (data = {}) => request.post('/i18n/scan-translate', data, { timeout: 0 }),
   processScanI18n: (data = {}) => request.post('/i18n/process-scan', data, { timeout: 0 }),
   verifyI18nBuild: () => request.post('/i18n/verify-build', {}, { timeout: 0 }),
   gitRestoreI18n: (data = {}) => request.post('/i18n/git-restore', data),

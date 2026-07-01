@@ -1,0 +1,6 @@
+2026-06-27 05:29:03 - INFO - Will watch for changes in these directories: ['C:\\NextCloud\\Develop\\Codex\\vans_rsa']
+2026-06-27 05:29:03 - INFO - Uvicorn running on http://0.0.0.0:9999 (Press CTRL+C to quit)
+2026-06-27 05:29:03 - INFO - Started reloader process [22264] using WatchFiles
+2026-06-27 05:29:07 - INFO - Started server process [29556]
+2026-06-27 05:29:07 - INFO - Waiting for application startup.
+2026-06-27 05:29:07 - INFO - Application startup complete.

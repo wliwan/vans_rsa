@@ -46,6 +46,8 @@ def make_middlewares():
             methods=["GET", "POST", "PUT", "DELETE"],
             exclude_paths=[
                 "/api/v1/base/access_token",
+                "/api/v1/menu/import",
+                "/api/v1/menu/export",
                 "/api/v1/skill/export",
                 "/api/v1/workspace/sheet/upload",
                 "/api/v1/workspace/document/upload",

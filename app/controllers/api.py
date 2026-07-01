@@ -33,7 +33,7 @@ class ApiController(CRUDBase[Api, ApiCreate, ApiUpdate]):
                 method = list(route.methods)[0]
                 path = route.path_format
                 summary = route.summary
-                tags = list(route.tags)[0]
+                tags = list(route.tags)[0] if route.tags else "未分类"
                 api_obj = await Api.filter(method=method, path=path).first()
                 if api_obj:
                     await api_obj.update_from_dict(dict(method=method, path=path, summary=summary, tags=tags)).save()

@@ -1,0 +1,50 @@
+2026-06-27 05:29:07.606 | INFO     | app.controllers.system_config:init_defaults:63 - 初始化默认配置: download_proxy=
+2026-06-27 05:29:07.629 | INFO     | app.controllers.system_config:init_defaults:63 - 初始化默认配置: download_chunk_count=4
+2026-06-27 05:29:07.652 | INFO     | app.controllers.system_config:init_defaults:63 - 初始化默认配置: download_chunk_size_mb=50
+2026-06-27 05:29:07.675 | INFO     | app.controllers.system_config:init_defaults:63 - 初始化默认配置: download_max_retries=3
+2026-06-27 05:29:07.698 | INFO     | app.controllers.system_config:init_defaults:63 - 初始化默认配置: download_timeout_seconds=600
+2026-06-27 05:29:07.721 | INFO     | app.controllers.system_config:init_defaults:63 - 初始化默认配置: download_ssl_verify=true
+2026-06-27 05:29:07.744 | INFO     | app.controllers.system_config:init_defaults:63 - 初始化默认配置: road_highway_colors={"motorway": [230, 74, 25], "motorway_link": [230, 74, 25], "trunk": [216, 67, 21], "trunk_link": [216, 67, 21], "primary": [239, 108, 0], "primary_link": [239, 108, 0], "secondary": [249, 168, 37], "secondary_link": [249, 168, 37], "tertiary": [67, 160, 71], "tertiary_link": [67, 160, 71], "residential": [30, 136, 229], "living_street": [30, 136, 229], "unclassified": [158, 158, 158], "road": [158, 158, 158], "service": [117, 117, 117], "footway": [161, 136, 127], "cycleway": [102, 187, 106], "path": [141, 110, 99], "track": [121, 85, 72], "pedestrian": [255, 183, 77]}
+2026-06-27 05:29:07.767 | INFO     | app.controllers.system_config:init_defaults:63 - 初始化默认配置: road_highway_weights={"motorway": 1.3, "motorway_link": 1.0, "trunk": 1.2, "trunk_link": 1.0, "primary": 1.1, "primary_link": 0.9, "secondary": 1.0, "secondary_link": 0.8, "tertiary": 0.9, "tertiary_link": 0.7, "residential": 0.55, "living_street": 0.45, "unclassified": 0.7, "road": 0.7, "service": 0.5, "footway": 0.35, "cycleway": 0.4, "path": 0.35, "track": 0.4, "pedestrian": 0.5}
+2026-06-27 05:29:47 - INFO - 127.0.0.1:53100 - "POST /api/v1/base/access_token HTTP/1.1" 200 OK
+2026-06-27 05:29:47 - INFO - 127.0.0.1:53104 - "GET /api/v1/base/userinfo HTTP/1.1" 200 OK
+2026-06-27 05:29:47 - INFO - 127.0.0.1:53107 - "GET /api/v1/base/usermenu HTTP/1.1" 200 OK
+2026-06-27 05:29:47 - INFO - 127.0.0.1:53110 - "GET /api/v1/base/userapi HTTP/1.1" 200 OK
+2026-06-27 05:29:53 - INFO - 127.0.0.1:53138 - "GET /api/v1/pixel-account/list?page=1&page_size=10 HTTP/1.1" 200 OK
+2026-06-27 05:29:53 - INFO - 127.0.0.1:53139 - "GET /api/v1/user/list?page=1&page_size=9999 HTTP/1.1" 200 OK
+2026-06-27 05:29:58 - INFO - 127.0.0.1:53159 - "GET /docs HTTP/1.1" 200 OK
+2026-06-27 05:30:00 - INFO - 127.0.0.1:53164 - "GET /api/v1/menu/list HTTP/1.1" 200 OK
+2026-06-27 05:30:01 - INFO - 127.0.0.1:53165 - "GET /api/v1/menu/list HTTP/1.1" 200 OK
+2026-06-27 05:30:03 - INFO - 127.0.0.1:53171 - "GET /api/v1/menu/scan-views HTTP/1.1" 200 OK
+2026-06-27 05:30:53 - INFO - 127.0.0.1:53239 - "GET /api/v1/base/userinfo HTTP/1.1" 200 OK
+2026-06-27 05:30:53 - INFO - 127.0.0.1:53240 - "GET /api/v1/base/usermenu HTTP/1.1" 200 OK
+2026-06-27 05:30:53 - INFO - 127.0.0.1:53241 - "GET /api/v1/base/userapi HTTP/1.1" 200 OK
+2026-06-27 05:30:53 - INFO - 127.0.0.1:53256 - "GET /api/v1/menu/list HTTP/1.1" 200 OK
+2026-06-27 05:30:53 - INFO - 127.0.0.1:53258 - "GET /api/v1/menu/list HTTP/1.1" 200 OK
+2026-06-27 05:31:19 - INFO - 127.0.0.1:53288 - "GET /docs HTTP/1.1" 200 OK
+2026-06-27 05:31:40 - INFO - 127.0.0.1:53317 - "GET /api/v1/base/userinfo HTTP/1.1" 200 OK
+2026-06-27 05:31:41 - INFO - 127.0.0.1:53319 - "GET /api/v1/base/usermenu HTTP/1.1" 200 OK
+2026-06-27 05:31:41 - INFO - 127.0.0.1:53320 - "GET /api/v1/base/userapi HTTP/1.1" 200 OK
+2026-06-27 05:31:41 - INFO - 127.0.0.1:53326 - "GET /api/v1/menu/list HTTP/1.1" 200 OK
+2026-06-27 05:31:41 - INFO - 127.0.0.1:53327 - "GET /api/v1/menu/list HTTP/1.1" 200 OK
+2026-06-27 05:31:42 - INFO - 127.0.0.1:53336 - "GET /api/v1/api/list?page=1&page_size=10 HTTP/1.1" 200 OK
+2026-06-27 05:31:43 - INFO - 127.0.0.1:53340 - "GET /api/v1/i18n/list HTTP/1.1" 200 OK
+2026-06-27 05:31:44 - INFO - 127.0.0.1:53345 - "GET /api/v1/api/list?page=1&page_size=10 HTTP/1.1" 200 OK
+2026-06-27 05:32:24 - INFO - 127.0.0.1:53366 - "GET /api/v1/pixel-account/list?page=1&page_size=10 HTTP/1.1" 200 OK
+2026-06-27 05:32:25 - INFO - 127.0.0.1:53369 - "GET /api/v1/user/list?page=1&page_size=9999 HTTP/1.1" 200 OK
+2026-06-27 05:32:28 - INFO - 127.0.0.1:53376 - "GET /api/v1/pixel-account/list?page=1&page_size=10 HTTP/1.1" 200 OK
+2026-06-27 05:32:28 - INFO - 127.0.0.1:53379 - "GET /api/v1/user/list?page=1&page_size=9999 HTTP/1.1" 200 OK
+2026-06-27 05:32:34 - INFO - 127.0.0.1:53393 - "GET /api/v1/region/list?region_type=COUNTRY&page_size=500&is_active=true HTTP/1.1" 200 OK
+2026-06-27 05:32:36 - INFO - 127.0.0.1:53400 - "GET /api/v1/region/list?region_type=COUNTRY&page_size=500&is_active=true HTTP/1.1" 200 OK
+2026-06-27 05:32:42 - INFO - 127.0.0.1:53422 - "GET /api/v1/base/userinfo HTTP/1.1" 200 OK
+2026-06-27 05:32:42 - INFO - 127.0.0.1:53425 - "GET /api/v1/base/usermenu HTTP/1.1" 200 OK
+2026-06-27 05:32:42 - INFO - 127.0.0.1:53426 - "GET /api/v1/base/userapi HTTP/1.1" 200 OK
+2026-06-27 05:32:42 - INFO - 127.0.0.1:53428 - "GET /api/v1/region/list?region_type=COUNTRY&page_size=500&is_active=true HTTP/1.1" 200 OK
+2026-06-27 05:32:43 - INFO - 127.0.0.1:53431 - "GET /api/v1/region/list?region_type=COUNTRY&page_size=500&is_active=true HTTP/1.1" 200 OK
+2026-06-27 05:32:46 - INFO - 127.0.0.1:53438 - "GET /api/v1/region/list?region_type=COUNTRY&page_size=500&is_active=true HTTP/1.1" 200 OK
+2026-06-27 05:32:47 - INFO - 127.0.0.1:53444 - "GET /api/v1/region/list?region_type=COUNTRY&page_size=500&is_active=true HTTP/1.1" 200 OK
+2026-06-27 05:32:47 - INFO - 127.0.0.1:53448 - "GET /api/v1/region/list?region_type=COUNTRY&page_size=500&is_active=true HTTP/1.1" 200 OK
+2026-06-27 05:32:50 - INFO - 127.0.0.1:53457 - "GET /api/v1/region/list?region_type=COUNTRY&page_size=500&is_active=true HTTP/1.1" 200 OK
+2026-06-27 05:35:07.079 | INFO     | app.controllers.region:import_countries:259 - 导入完成: country=+249/~0, state=3590, city=1454, skip_state=0, skip_city=2
+2026-06-27 05:35:07.090 | INFO     | app.controllers.region:import_countries:276 - GeoNames 离线缓存缺失，跳过 STATE/CITY 中文名填充。如需填充，请运行: python -m app.utils.geonames_downloader
+2026-06-27 05:35:07 - INFO - 127.0.0.1:53459 - "POST /api/v1/region/import HTTP/1.1" 200 OK
