@@ -162,6 +162,180 @@ class DefectController:
 
         return {"created": created, "updated": updated, "total_api": total_api}
 
+    async def sync_stream(self, user_id: int, account_id: int, start_time: str, end_time: str):
+        """
+        流式同步病害数据：通过 SSE 推送分页进度。
+
+        异步生成器，每次 yield 一条 SSE 格式的字符串。
+        事件类型:
+          - start:   同步开始，含 total_pages / total_api
+          - progress: 每页完成后的进度
+          - done:    全部完成，含 created / updated
+          - error:   出错，含 message
+        """
+        import json as _json
+
+        def _sse(event: str, data: dict) -> str:
+            return f"event: {event}\ndata: {_json.dumps(data, ensure_ascii=False)}\n\n"
+
+        # 1. 获取账户信息
+        account = await PixelAccount.filter(id=account_id).first()
+        if not account:
+            yield _sse("error", {"message": f"像素账户不存在: id={account_id}"})
+            return
+
+        # 2. 获取 token
+        token = await get_pixel_token(
+            username=account.username,
+            password=account.password,
+            org=account.tenant_address,
+        )
+        if not token:
+            yield _sse("error", {"message": "像素平台 token 获取失败，请检查账户配置"})
+            return
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        }
+
+        limit = 5000
+        total_api = 0
+        total_pages = 0
+        created = 0
+        updated = 0
+        current_page = 0
+
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                page = 1
+                while True:
+                    payload = _json.dumps({
+                        "id": "",
+                        "regionId": [],
+                        "companyId": [],
+                        "roadName": [],
+                        "roadStakes": [],
+                        "riskName": [],
+                        "roadNameLike": "",
+                        "riskLevel": [],
+                        "riskStatus": [],
+                        "searchType": 0,
+                        "carType": [],
+                        "carIds": [],
+                        "startTime": start_time,
+                        "endTime": end_time,
+                        "isMesSend": "",
+                        "isUpload": "",
+                        "page": page,
+                        "limit": limit,
+                    })
+
+                    response = await client.post(DEFECT_API_URL, content=payload, headers=headers)
+                    if response.status_code != 200:
+                        yield _sse("error", {"message": f"病害数据 API 请求失败: status={response.status_code}"})
+                        return
+
+                    data = response.json()
+                    if data.get("statusCode") != 200:
+                        yield _sse("error", {"message": f"病害数据 API 返回错误: {data.get('message', 'unknown')}"})
+                        return
+
+                    records = data.get("data", {}).get("list", [])
+
+                    # 首页：计算总页数，发送 start 事件
+                    if page == 1:
+                        total_api = data.get("data", {}).get("total", 0)
+                        total_pages = (total_api + limit - 1) // limit if total_api else 0
+                        yield _sse("start", {
+                            "total_pages": total_pages,
+                            "total_api": total_api,
+                            "page_size": limit,
+                        })
+
+                    if not records:
+                        break
+
+                    # 处理当前页的记录
+                    for record in records:
+                        remote_id = record.get("id", "")
+                        existing = await Defect.filter(
+                            remote_id=remote_id,
+                            pixel_account_id=account_id,
+                        ).first()
+
+                        defect_data = {
+                            "remote_id": remote_id,
+                            "pixel_account_id": account_id,
+                            "longitude": record.get("longitude"),
+                            "latitude": record.get("latitude"),
+                            "longitude_gc": record.get("longitudeGc"),
+                            "latitude_gc": record.get("latitudeGc"),
+                            "track_image": record.get("trackImage"),
+                            "track_url": record.get("trackUrl"),
+                            "status": record.get("status"),
+                            "status_name": record.get("statusName"),
+                            "risk_type": record.get("riskType"),
+                            "risk_level": record.get("riskLevel"),
+                            "risk_level_name": record.get("riskLevelName"),
+                            "risk_name1": record.get("riskName1"),
+                            "risk_name2": record.get("riskName2"),
+                            "risk_name3": record.get("riskName3"),
+                            "risk_time": record.get("riskTime"),
+                            "city_code": record.get("cityCode"),
+                            "city_name": record.get("cityName"),
+                            "org_code": record.get("orgCode"),
+                            "road_name": record.get("roadName"),
+                            "data_from": record.get("dataFrom"),
+                            "data_from_name": record.get("dataFromName"),
+                            "region_name": record.get("regionName"),
+                            "town_name": record.get("townName"),
+                            "subd_name": record.get("subdName"),
+                            "reverse_name": record.get("reverseName"),
+                            "car_no": record.get("carNo"),
+                            "lane": record.get("lane"),
+                            "extra_data": record,
+                        }
+
+                        if existing:
+                            await existing.update_from_dict(defect_data).save()
+                            updated += 1
+                        else:
+                            await Defect.create(**defect_data)
+                            created += 1
+
+                    # 每页完成后发送进度事件
+                    current_page = page
+                    yield _sse("progress", {
+                        "page": current_page,
+                        "total_pages": total_pages,
+                        "total_api": total_api,
+                        "created": created,
+                        "updated": updated,
+                        "message": f"正在同步第 {current_page}/{total_pages} 页",
+                    })
+
+                    if total_api and page * limit >= total_api:
+                        break
+                    page += 1
+
+            # 全部完成
+            logger.info(
+                f"病害数据流式同步完成: account_id={account_id}, "
+                f"api_total={total_api}, created={created}, updated={updated}"
+            )
+            yield _sse("done", {
+                "created": created,
+                "updated": updated,
+                "total_api": total_api,
+                "total_pages": total_pages,
+                "message": f"同步完成：新增 {created} 条，更新 {updated} 条，API 共 {total_api} 条",
+            })
+
+        except Exception as e:
+            logger.error(f"病害数据流式同步异常: {e}")
+            yield _sse("error", {"message": str(e)})
+
     async def clear(self, user_id: int, account_id: int) -> int:
         """
         清除指定账户的所有病害数据。

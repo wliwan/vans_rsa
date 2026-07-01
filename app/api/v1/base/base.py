@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.controllers.user import user_controller
 from app.core.ctx import CTX_USER_ID
@@ -47,7 +47,9 @@ async def get_userinfo():
 
 
 @router.get("/usermenu", summary="查看用户菜单", dependencies=[DependAuth])
-async def get_user_menu():
+async def get_user_menu(
+    locale: str = Query("", description="语言代码，如en/tr/jp，为空时返回原始中文名"),
+):
     user_id = CTX_USER_ID.get()
     user_obj = await User.filter(id=user_id).first()
     menus: list[Menu] = []
@@ -71,6 +73,23 @@ async def get_user_menu():
             if menu.parent_id == parent_menu.id:
                 parent_menu_dict["children"].append(await menu.to_dict())
         res.append(parent_menu_dict)
+
+    # 国际化：如果指定了 locale，替换菜单名称
+    if locale:
+        from app.controllers.menu import menu_i18n_controller
+
+        async def _apply_i18n(node: dict):
+            translated = await menu_i18n_controller.get_translated_name(
+                node["id"], locale
+            )
+            if translated:
+                node["name"] = translated
+            for child in node.get("children", []):
+                await _apply_i18n(child)
+
+        for node in res:
+            await _apply_i18n(node)
+
     return Success(data=res)
 
 

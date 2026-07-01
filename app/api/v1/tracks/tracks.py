@@ -1,5 +1,6 @@
 """轨迹点数据 API 路由 — 车型/车辆查询、同步、清除、列表"""
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 
 from app.controllers.track import track_controller
 from app.core.ctx import CTX_USER_ID
@@ -52,6 +53,30 @@ async def sync_tracks(
         end_time=req.end_time.isoformat(),
     )
     return Success(data=result)
+
+
+@router.post("/sync-stream", summary="流式同步轨迹点数据（SSE 进度推送）")
+async def sync_tracks_stream(
+    req: TrackSyncRequest,
+    current_user=Depends(AuthControl.is_authed),
+):
+    """通过 SSE 流式同步轨迹点数据，实时推送处理进度"""
+    user_id = CTX_USER_ID.get()
+    return StreamingResponse(
+        track_controller.sync_stream(
+            user_id=user_id,
+            account_id=req.account_id,
+            car_id=req.car_id,
+            start_time=req.start_time.isoformat(),
+            end_time=req.end_time.isoformat(),
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/clear", summary="清除轨迹点数据")

@@ -1,18 +1,15 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import i18n from '~/i18n'
-import { h, onMounted, ref, reactive } from 'vue'
+import { h, onMounted, ref } from 'vue'
 import {
-
-
-
   NButton,
   NDatePicker,
+  NInput,
   NSelect,
   NSpace,
   NTag,
   NPopconfirm,
-  NInput,
   useMessage,
 } from 'naive-ui'
 import CommonPage from '@/components/page/CommonPage.vue'
@@ -20,6 +17,8 @@ import QueryBarItem from '@/components/query-bar/QueryBarItem.vue'
 import CrudTable from '@/components/table/CrudTable.vue'
 import TheIcon from '@/components/icon/TheIcon.vue'
 import api from '@/api'
+import { getToken } from '@/utils'
+import { useTaskProgressStore } from '@/store/modules/taskProgress'
 
 const { t } = useI18n()
 
@@ -27,6 +26,7 @@ defineOptions({ name: i18n.global.t('views.pixel.title_cn_32c6db68') })
 
 const message = useMessage()
 const $table = ref(null)
+const taskStore = useTaskProgressStore()
 
 // 账户列表
 const accountOptions = ref([])
@@ -35,7 +35,7 @@ const selectedAccount = ref(null)
 // 日期范围
 const dateRange = ref(null)
 
-// 同步状态
+// 同步状态（按钮 loading）
 const syncing = ref(false)
 
 // 筛选参数
@@ -97,7 +97,25 @@ function getData(params) {
   })
 }
 
-// 同步数据
+// ── SSE 流式同步（进度通过全局 TaskProgressPanel 展示） ──
+
+function parseSSELine(line, handlers) {
+  if (line.startsWith('event: ')) {
+    handlers._currentEvent = line.slice(7).trim()
+  } else if (line.startsWith('data: ')) {
+    const dataStr = line.slice(6)
+    try {
+      const data = JSON.parse(dataStr)
+      const eventType = handlers._currentEvent || 'message'
+      if (handlers[eventType]) {
+        handlers[eventType](data)
+      }
+    } catch (_) {
+      // 跳过无法解析的 data 行
+    }
+  }
+}
+
 async function handleSync() {
   if (!selectedAccount.value) {
     message.warning(t('views.pixel.message_cn_9ba8511a'))
@@ -108,29 +126,131 @@ async function handleSync() {
     return
   }
 
+  const [startTime, endTime] = dateRange.value
+  const formatDate = (d) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
+  // 启动全局任务进度
+  const taskId = taskStore.startTask('同步病害数据')
+  let taskRunning = true
   syncing.value = true
+
+  const baseURL = import.meta.env.VITE_BASE_API || ''
+  const url = `${baseURL}/defect/sync-stream`
+  const token = getToken()
+
+  let reader = null
   try {
-    const [startTime, endTime] = dateRange.value
-    const formatDate = (d) => {
-      const y = d.getFullYear()
-      const m = String(d.getMonth() + 1).padStart(2, '0')
-      const day = String(d.getDate()).padStart(2, '0')
-      return `${y}-${m}-${day}`
-    }
-    const res = await api.syncDefects({
-      account_id: selectedAccount.value,
-      start_time: formatDate(new Date(startTime)),
-      end_time: formatDate(new Date(endTime)),
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        token: token || '',
+      },
+      body: JSON.stringify({
+        account_id: selectedAccount.value,
+        start_time: formatDate(new Date(startTime)),
+        end_time: formatDate(new Date(endTime)),
+      }),
     })
-    const result = res.data
-    message.success(
-      `同步完成：新增 ${result.data?.created || 0} 条，更新 ${result.data?.updated || 0} 条，API 共 ${result.data?.total_api || 0} 条`
-    )
-    $table.value?.handleSearch()
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`HTTP ${response.status}: ${errorText}`)
+    }
+
+    reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    const handlers = { _currentEvent: '' }
+
+    handlers.start = (data) => {
+      const totalPages = data.total_pages || 0
+      const totalApi = data.total_api || 0
+      taskStore.updateProgress(taskId, {
+        progress: 0,
+        message: `共 ${totalApi.toLocaleString()} 条记录，分 ${totalPages} 页`,
+        phase: '连接成功',
+      })
+    }
+
+    handlers.progress = (data) => {
+      const page = data.page || 0
+      const totalPages = data.total_pages || 0
+      const created = data.created || 0
+      const updated = data.updated || 0
+      const pct = totalPages > 0 ? Math.round((page / totalPages) * 100) : 0
+      taskStore.updateProgress(taskId, {
+        progress: pct,
+        message: data.message || `第 ${page}/${totalPages} 页`,
+        phase: `新增 ${created} / 更新 ${updated}`,
+      })
+    }
+
+    handlers.done = (data) => {
+      taskRunning = false
+      taskStore.finishTask(taskId, data.message || '同步完成')
+      message.success(data.message || '同步完成')
+      $table.value?.handleSearch()
+    }
+
+    handlers.error = (data) => {
+      taskRunning = false
+      taskStore.failTask(taskId, {
+        message: data.message || '同步失败',
+        detail: data.message || '',
+      })
+      message.error(t('views.pixel.message_cn_a0f67c55') + (data.message || ''))
+    }
+
+    // 读取 SSE 流
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (line.trim() === '') {
+          handlers._currentEvent = ''
+        } else {
+          parseSSELine(line, handlers)
+        }
+      }
+    }
+
+    // 处理缓冲区剩余内容
+    if (buffer.trim()) {
+      parseSSELine(buffer, handlers)
+    }
+
+    // 流正常结束但未收到 done 事件
+    if (taskRunning) {
+      taskRunning = false
+      taskStore.finishTask(taskId, '同步完成')
+      message.success('同步完成')
+      $table.value?.handleSearch()
+    }
   } catch (e) {
-    message.error(t('views.pixel.message_cn_a0f67c55') + (e.response?.data?.msg || e.message))
+    if (taskRunning) {
+      taskRunning = false
+      taskStore.failTask(taskId, {
+        message: '同步请求失败',
+        detail: e.message || '',
+      })
+    }
+    message.error(t('views.pixel.message_cn_a0f67c55') + (e.message || ''))
   } finally {
     syncing.value = false
+    if (reader) {
+      try { reader.cancel() } catch (_) { /* ignore */ }
+    }
   }
 }
 

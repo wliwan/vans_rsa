@@ -289,18 +289,95 @@ class GeoNamesChineseDownloader:
             await client.aclose()
 
     def build_mapping(self, geonames_map: dict, regions: list) -> dict[str, str]:
+        """构建 region.code → zh_name 映射。
+
+        geonames_map 的 key 是 (country_alpha2, en_name)。
+        对于 STATE：parent 是 COUNTRY → parent.code 即 alpha-2。
+        对于 CITY：parent 是 STATE → 需回溯到 parent.parent.code（即 COUNTRY alpha-2）。
+
+        精确匹配失败时回退：名称标准化 → country 内模糊匹配 → 跨国家唯一匹配。
+        """
         result: dict[str, str] = {}
         matched = 0
+
+        # ── 预建 country_code → {normalized_en_name → zh_name} 索引 ──
+        country_index: dict[str, dict[str, str]] = {}
+        for (cc, en_name), zh in geonames_map.items():
+            norm = self._normalize_name(en_name)
+            idx = country_index.setdefault(cc, {})
+            if norm not in idx:
+                idx[norm] = zh
+
         for region in regions:
-            parent_cc = getattr(region.parent, "code", None) if hasattr(region, "parent") else None
-            if not parent_cc:
+            country_code = self._get_country_code(region)
+            if not country_code:
                 continue
-            zh = geonames_map.get((parent_cc, region.name))
+
+            # ── 1. 精确匹配 ──
+            zh = geonames_map.get((country_code, region.name))
             if zh:
                 result[region.code] = zh
                 matched += 1
-        logger.info(f"Region 桥接: {matched}/{len(regions)} 条 ({matched * 100 // max(len(regions), 1)}%)")
+                continue
+
+            # ── 2. 名称标准化后精确查找 ──
+            norm_name = self._normalize_name(region.name)
+            if norm_name != region.name:
+                zh = geonames_map.get((country_code, norm_name))
+                if zh:
+                    result[region.code] = zh
+                    matched += 1
+                    continue
+
+            # ── 3. country 内标准化模糊匹配 ──
+            idx = country_index.get(country_code)
+            if idx and norm_name in idx:
+                result[region.code] = idx[norm_name]
+                matched += 1
+                continue
+
+            # ── 4. 跨国家唯一匹配（名称全球唯一时兜底） ──
+            candidates = []
+            for cc, idx_cc in country_index.items():
+                if norm_name in idx_cc:
+                    candidates.append(idx_cc[norm_name])
+            if len(candidates) == 1:
+                result[region.code] = candidates[0]
+                matched += 1
+
+        logger.info(
+            f"Region 桥接: {matched}/{len(regions)} 条"
+            f" ({matched * 100 // max(len(regions), 1)}%)"
+        )
         return result
+
+    @staticmethod
+    def _get_country_code(region) -> str | None:
+        """获取 region 所属的 COUNTRY 级别 ISO alpha-2 代码。
+
+        STATE: parent 是 COUNTRY，取 parent.code。
+        CITY:  parent 是 STATE，取 parent.parent.code（即 COUNTRY）。
+        """
+        if not hasattr(region, "parent") or not region.parent:
+            return None
+        if region.region_type and str(region.region_type) == "CITY":
+            grandparent = getattr(region.parent, "parent", None)
+            return grandparent.code if grandparent else None
+        return region.parent.code
+
+    @staticmethod
+    def _normalize_name(name: str) -> str:
+        """标准化地名：去除变音符号、括号内容、多余空格，统一小写。"""
+        import re
+        import unicodedata
+        # 去除括号及其内容: "Foo (Bar)" → "Foo"
+        name = re.sub(r"\s*\([^)]*\)\s*", " ", name)
+        # Unicode NFKD 分解，过滤组合字符（é→e, ñ→n, ü→u）
+        nfkd = unicodedata.normalize("NFKD", name)
+        name = "".join(ch for ch in nfkd if not unicodedata.combining(ch))
+        # 合并空白，小写
+        name = re.sub(r"\s+", " ", name).strip().lower()
+        return name
 
     async def apply_mapping(self, regions: list, mapping: dict[str, str]) -> int:
         updated = 0

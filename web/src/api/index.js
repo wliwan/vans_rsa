@@ -3,7 +3,7 @@ import { request } from '@/utils'
 export default {
   login: (data) => request.post('/base/access_token', data, { noNeedToken: true }),
   getUserInfo: () => request.get('/base/userinfo'),
-  getUserMenu: () => request.get('/base/usermenu'),
+  getUserMenu: (params = {}) => request.get('/base/usermenu', { params }),
   getUserApi: () => request.get('/base/userapi'),
   // profile
   updatePassword: (data = {}) => request.post('/base/update_password', data),
@@ -30,6 +30,13 @@ export default {
   aiAnalyzeViews: (data = {}) => request.post('/menu/ai-analyze-views', data, { timeout: 0 }),
   batchSaveMenus: (data = {}) => request.post('/menu/batch-save', data),
   exportMenus: () => request.get('/menu/export', { responseType: 'blob' }),
+  // menu i18n
+  getMenuI18nList: (params = {}) => request.get('/menu/i18n/list', { params }),
+  saveMenuI18n: (data = {}) => request.post('/menu/i18n/save', data),
+  deleteMenuI18n: (params = {}) => request.delete('/menu/i18n/delete', { params }),
+  aiGenerateMenuI18n: (data = {}) => request.post('/menu/i18n/ai-generate', data, { timeout: 0 }),
+  exportMenuI18n: (params = {}) => request.get('/menu/i18n/export', { params }),
+  importMenuI18n: (data = {}) => request.post('/menu/i18n/import', data),
   importMenus: (file) => {
     const formData = new FormData()
     formData.append('file', file)
@@ -60,6 +67,7 @@ export default {
   getDefectAccounts: () => request.get('/defect/accounts'),
   getDefectList: (params = {}) => request.get('/defect/list', { params }),
   syncDefects: (data = {}) => request.post('/defect/sync', data, { timeout: 0 }),
+  syncDefectsStream: (data = {}) => request.post('/defect/sync-stream', data, { timeout: 0, responseType: 'stream' }),
   clearDefects: (data = {}) => request.post('/defect/clear', data),
   // tracks
   getTrackAccounts: () => request.get('/track/accounts'),
@@ -67,10 +75,11 @@ export default {
   getTrackCars: (params = {}) => request.get('/track/cars', { params }),
   getTrackList: (params = {}) => request.get('/track/list', { params }),
   syncTracks: (data = {}) => request.post('/track/sync', data, { timeout: 0 }),
+  syncTracksStream: (data = {}) => request.post('/track/sync-stream', data, { timeout: 0, responseType: 'stream' }),
   clearTracks: (data = {}) => request.post('/track/clear', data),
   // regions
   getRegionList: (params = {}) => request.get('/region/list', { params }),
-  getRegionById: (params = {}) => request.get('/region/get', { params }),
+  getRegionById: (regionId) => request.get('/region/get', { params: { region_id: regionId } }),
   createRegion: (data = {}) => request.post('/region/create', data),
   updateRegion: (data = {}) => request.post('/region/update', data),
   deleteRegion: (params = {}) => request.delete('/region/delete', { params }),
@@ -78,19 +87,39 @@ export default {
   getRegionRoadNetworks: (params = {}) => request.get('/region/road-networks', { params }),
   downloadRegionBoundary: (data = {}) => request.post('/region/download-boundary', data, { timeout: 0 }),
   deleteRegionBoundary: (params = {}) => request.delete('/region/boundary/delete', { params }),
-  downloadRegionRoadNetwork: (data = {}) => request.post('/region/download-road-network', data, { timeout: 0 }),
-  deleteRegionRoadNetwork: (params = {}) => request.delete('/region/road-network/delete', { params }),
+  downloadRegionRoadNetwork: (data = {}) => request.post('/region/road-network/download', data, { timeout: 0 }),
+  getRoadNetworkStatus: (regionId) => request.get('/region/road-network/status', { params: { region_id: regionId } }),
+  downloadRoadNetwork: (data = {}) => request.post('/region/road-network/download', data, { timeout: 0 }),
+  downloadRoadNetworkFile: (params = {}) => request.get('/region/road-network/download-file', { params, responseType: 'blob' }),
+  deleteRoadNetwork: (params = {}) => request.delete('/region/road-network/delete', { params }),
+  clearRoadNetworks: (params = {}) => request.delete('/region/road-network/clear', { params }),
   setActiveBoundary: (data = {}) => request.post('/region/boundary/set-active', data),
   setActiveRoadNetwork: (data = {}) => request.post('/region/road-network/set-active', data),
   getActiveBoundary: (params = {}) => request.get('/region/boundary/active', { params }),
   getActiveRoadNetwork: (params = {}) => request.get('/region/road-network/active', { params }),
   getRegionCenter: (params = {}) => request.get('/region/center', { params }),
+  getRegionChildren: (parentId) => request.get('/region/children', { params: { parent_id: parentId } }),
+  getRegionTree: () => request.get('/region/tree'),
+  importRegions: () => request.post('/region/import', {}, { timeout: 0 }),
+  clearRegions: () => request.post('/region/clear', {}, { timeout: 0 }),
+  exportRegions: (data = {}) => request.post('/region/export', data),
+  fillGeonames: (forceDownload = false, proxy = null) => request.post('/region/fill-geonames', { force_download: forceDownload, proxy }, { timeout: 0 }),
+  getGeonamesProgress: () => request.get('/region/fill-geonames/progress'),
+  batchUpdateRegions: (data = {}) => request.post('/region/batch-update', data),
   // vehicle
   getVehicleList: (params = {}) => request.get('/vehicle/list', { params }),
   getVehicleById: (params = {}) => request.get('/vehicle/get', { params }),
   createVehicle: (data = {}) => request.post('/vehicle/create', data),
   updateVehicle: (data = {}) => request.post('/vehicle/update', data),
   deleteVehicle: (params = {}) => request.delete('/vehicle/delete', { params }),
+  getVehicleAccounts: () => request.get('/vehicle/accounts'),
+  getVehicleCarTypes: (params = {}) => request.get('/vehicle/car-types', { params }),
+  getVehicleCars: (params = {}) => request.get('/vehicle/cars', { params }),
+  checkVehicleStatus: (params = {}) => request.get('/vehicle/status', { params }),
+  getVehicleDeviceInfo: (params = {}) => request.get('/vehicle/device-info', { params }),
+  fullCheckVehicle: (params = {}) => request.get('/vehicle/full-check', { params }),
+  refreshVehicleStatus: (params = {}) => request.get('/vehicle/refresh', { params }),
+  queryVehicleFlow: (params = {}) => request.get('/vehicle/flow', { params }),
   // road-material
   getRoadMaterialList: (params = {}) => request.get('/road-material/list', { params }),
   getRoadMaterialById: (params = {}) => request.get('/road-material/get', { params }),
@@ -147,6 +176,21 @@ export default {
   },
   createDocumentFromText: (data = {}) => request.post('/workspace/document/create-text', data),
   importDocumentFromSurvey: (data = {}) => request.post('/workspace/document/import-from-survey', data),
+  batchUploadDocuments: (workspace_id, files) => {
+    const formData = new FormData()
+    files.forEach((file) => formData.append('files', file))
+    return request.post(`/workspace/document/batch-upload?workspace_id=${workspace_id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
+    })
+  },
+  downloadDocument: (params = {}) => request.get('/workspace/document/download', { params, responseType: 'blob' }),
+  batchDeleteDocuments: (data = {}) => request.post('/workspace/document/batch-delete', data),
+  batchExportDocuments: (data = {}) => request.post('/workspace/document/batch-export', data, { responseType: 'blob' }),
+  clearDocuments: (params = {}) => request.delete('/workspace/document/clear', { params }),
+  aiAnalyzeDocuments: (data = {}) => request.post('/workspace/document/ai-analyze', data, { timeout: 0 }),
+  getDocumentContent: (params = {}) => request.get('/workspace/document/get-content', { params }),
+  updateDocumentContent: (data = {}) => request.post('/workspace/document/update-content', data),
   // workspace sheets
   uploadSheet: (workspace_id, file) => {
     const formData = new FormData()
@@ -171,6 +215,7 @@ export default {
   },
   csvImportSheet: (data = {}) => request.post('/workspace/sheet/csv-import', data),
   // reports
+  previewReportSources: (data = {}) => request.post("/report/preview-sources", data, { timeout: 0 }),
   getReportList: (params = {}) => request.get("/report/list", { params }),
   generateReport: (data = {}) => request.post("/report/generate", data, { timeout: 0 }),
   getReportGenerateProgress: (params = {}) => request.get("/report/generate-progress", { params }),
@@ -247,6 +292,12 @@ export default {
   getSystemConfigList: (params = {}) => request.get('/system-config/list', { params }),
   getSystemConfigByKey: (key) => request.get('/system-config/get', { params: { key } }),
   setSystemConfig: (data = {}) => request.post('/system-config/set', data),
+  getDownloadConfig: () => request.get('/system-config/download'),
+  updateDownloadConfig: (data = {}) => request.post('/system-config/download', data),
+  testProxy: (data = {}) => request.post('/system-config/test-proxy', data),
+  getRoadHighwayStyle: () => request.get('/system-config/road-highway-style'),
+  updateRoadHighwayStyle: (data = {}) => request.post('/system-config/road-highway-style', data),
+  resetRoadHighwayStyle: () => request.delete('/system-config/road-highway-style'),
   // i18n
   getI18nList: (params = {}) => request.get('/i18n/list', { params }),
   createI18n: (data = {}) => request.post('/i18n/create', data),
@@ -262,6 +313,10 @@ export default {
   gitRestoreI18n: (data = {}) => request.post('/i18n/git-restore', data),
   gitModifiedFilesI18n: () => request.get('/i18n/git-modified-files'),
   batchDeleteI18n: (data = {}) => request.post('/i18n/batch-delete', data),
+  batchUpdateI18n: (data = {}) => request.put('/i18n/batch-update', data),
+  exportI18n: () => request.get('/i18n/export'),
+  importI18n: (data = {}) => request.post('/i18n/import', data),
+  aiGenerateI18n: (data = {}) => request.post('/i18n/ai-generate', data, { timeout: 0 }),
   // skills
   getSkillList: (params = {}) => request.get('/skill/list', { params }),
   getSkillById: (params = {}) => request.get('/skill/get', { params }),
@@ -302,5 +357,22 @@ export default {
   getSurveyRisk: (params = {}) => request.get('/survey/risk', { params }),
   getSurveyCreateProgress: (params = {}) => request.get('/survey/create-progress', { params }),
   getSurveyCreateResult: (params = {}) => request.get('/survey/create-result', { params }),
+  // deploy - 热更新
+  updateFrontend: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post('/deploy/update-frontend', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
+    })
+  },
+  updateBackend: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post('/deploy/update-backend', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
+    })
+  },
 }
   // 标签

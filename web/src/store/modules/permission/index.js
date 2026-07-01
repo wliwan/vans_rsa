@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { basicRoutes, vueModules } from '@/router/routes'
 import Layout from '@/layout/index.vue'
 import api from '@/api'
+import { lStorage } from '@/utils'
 
 // * 后端路由相关函数
 // 根据后端传来数据构建出前端路由
@@ -77,7 +78,9 @@ export const usePermissionStore = defineStore('permission', {
   },
   actions: {
     async generateRoutes() {
-      const res = await api.getUserMenu() // 调用接口获取后端传来的菜单路由
+      const locale = lStorage.get('locale') || ''
+      const params = locale ? { locale } : {}
+      const res = await api.getUserMenu(params) // 调用接口获取后端传来的菜单路由
       this.accessRoutes = buildRoutes(res.data) // 处理成前端路由格式
       return this.accessRoutes
     },

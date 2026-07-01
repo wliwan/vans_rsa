@@ -85,3 +85,34 @@ class MenuAIAnalyzeResponse(BaseModel):
 class MenuBatchSaveRequest(BaseModel):
     """批量保存菜单：递归结构，服务端先清空旧菜单再重建"""
     menu_tree: list[AIMenuNode] = Field(..., description="完整菜单树")
+
+
+# --- 菜单国际化 ---
+
+
+class MenuI18nEntry(BaseModel):
+    """单条菜单国际化条目"""
+    id: Optional[int] = Field(None, description="记录ID")
+    menu_id: int = Field(..., description="菜单ID")
+    locale: str = Field(..., description="语言代码")
+    name: str = Field(..., description="翻译后的菜单名称")
+
+
+class MenuI18nSaveRequest(BaseModel):
+    """保存/更新单条菜单翻译"""
+    menu_id: int = Field(..., description="菜单ID")
+    locale: str = Field(..., description="语言代码")
+    name: str = Field(..., description="翻译后的菜单名称")
+
+
+class MenuI18nAIGenerateRequest(BaseModel):
+    """AI 翻译菜单名称请求"""
+    proxy_name: str = Field(..., description="AI代理名称")
+    target_locales: list[str] = Field(..., description="目标语言代码列表，如 ['en','tr','jp']")
+    mode: str = Field("incremental", description="翻译模式: full=全量替换, incremental=增量补充")
+
+
+class MenuI18nImportRequest(BaseModel):
+    """导入菜单国际化数据"""
+    locale: str = Field(..., description="语言代码")
+    entries: list[dict] = Field(..., description="翻译条目列表，每项含 menu_id/name")

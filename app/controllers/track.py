@@ -144,6 +144,134 @@ class TrackController:
 
         return {"created": created, "updated": updated, "total_api": total_api}
 
+    async def sync_stream(self, user_id: int, account_id: int, car_id: str, start_time: str, end_time: str):
+        """
+        流式同步轨迹点数据：通过 SSE 推送批次进度。
+
+        异步生成器，每次 yield 一条 SSE 格式的字符串。
+        事件类型:
+          - start:    同步开始，含 total_api
+          - progress: 每批次处理后的进度
+          - done:     全部完成
+          - error:    出错
+        """
+        import json as _json
+
+        def _sse(event: str, data: dict) -> str:
+            return f"event: {event}\ndata: {_json.dumps(data, ensure_ascii=False)}\n\n"
+
+        try:
+            token = await self._get_token(account_id)
+        except ValueError as e:
+            yield _sse("error", {"message": str(e)})
+            return
+
+        params = {
+            "carId": car_id,
+            "startCrtTime": f"{start_time} 00:00:00",
+            "endCrtTime": f"{end_time} 23:59:59",
+        }
+        headers = {"Authorization": f"Bearer {token}"}
+
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                response = await client.get(TRACK_API_URL, params=params, headers=headers)
+
+            if response.status_code != 200:
+                yield _sse("error", {"message": f"轨迹数据 API 请求失败: status={response.status_code}"})
+                return
+
+            data = response.json()
+            if data.get("statusCode") != 200:
+                yield _sse("error", {"message": f"轨迹数据 API 返回错误: {data.get('message', 'unknown')}"})
+                return
+
+            records = data.get("data", [])
+            total_api = len(records)
+
+            yield _sse("start", {"total_api": total_api})
+
+            if total_api == 0:
+                yield _sse("done", {
+                    "created": 0,
+                    "updated": 0,
+                    "total_api": 0,
+                    "message": "无新数据需要同步",
+                })
+                return
+
+            created = 0
+            updated = 0
+            batch_size = 500
+            processed = 0
+
+            for record in records:
+                remote_id = record.get("id", "")
+                existing = await Track.filter(
+                    remote_id=remote_id,
+                    pixel_account_id=account_id,
+                ).first()
+
+                track_data = {
+                    "remote_id": remote_id,
+                    "pixel_account_id": account_id,
+                    "car_id": record.get("carId", car_id),
+                    "road_name": record.get("roadName"),
+                    "car_type": record.get("carType"),
+                    "longitude": record.get("longitude"),
+                    "latitude": record.get("latitude"),
+                    "flag": record.get("flag"),
+                    "track_time": record.get("trackTime"),
+                    "extra_data": record,
+                }
+
+                if existing:
+                    await existing.update_from_dict(track_data).save()
+                    updated += 1
+                else:
+                    await Track.create(**track_data)
+                    created += 1
+
+                processed += 1
+
+                # 每处理一批发送进度
+                if processed % batch_size == 0:
+                    pct = round((processed / total_api) * 100) if total_api > 0 else 0
+                    yield _sse("progress", {
+                        "processed": processed,
+                        "total": total_api,
+                        "created": created,
+                        "updated": updated,
+                        "progress_pct": pct,
+                        "message": f"已处理 {processed}/{total_api} 条",
+                    })
+
+            # 最后一批可能不满 batch_size，发送最终进度
+            if processed % batch_size != 0:
+                yield _sse("progress", {
+                    "processed": processed,
+                    "total": total_api,
+                    "created": created,
+                    "updated": updated,
+                    "progress_pct": 100,
+                    "message": f"已处理 {processed}/{total_api} 条",
+                })
+
+            logger.info(
+                f"轨迹数据流式同步完成: account_id={account_id}, car_id={car_id}, "
+                f"api_total={total_api}, created={created}, updated={updated}"
+            )
+            yield _sse("done", {
+                "created": created,
+                "updated": updated,
+                "total_api": total_api,
+                "message": f"同步完成：新增 {created} 条，更新 {updated} 条，API 共 {total_api} 条",
+            })
+
+        except Exception as e:
+            logger.error(f"轨迹数据流式同步异常: {e}")
+            yield _sse("error", {"message": str(e)})
+
     async def clear(self, user_id: int, account_id: int, car_id: str = "") -> int:
         """清除指定账户（或指定车辆）的轨迹点数据"""
         q = Q(pixel_account_id=account_id)

@@ -62,6 +62,15 @@ export const useAppStore = defineStore('app', {
       this.locale = newLocale
       locale.value = newLocale
       lStorage.set('locale', newLocale)
+      // 语言切换后重新加载菜单（以获取翻译后的菜单名）
+      try {
+        import('@/store/modules/permission').then(({ usePermissionStore }) => {
+          const permissionStore = usePermissionStore()
+          permissionStore.generateRoutes()
+        })
+      } catch (e) {
+        console.error('语言切换后重新加载菜单失败:', e)
+      }
     },
   },
 })

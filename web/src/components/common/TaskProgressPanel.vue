@@ -1,12 +1,30 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
-import { computed } from 'vue'
-import { NButton, NProgress, NScrollbar, NTag } from 'naive-ui'
+import { computed, ref } from 'vue'
+import { NButton, NProgress, NScrollbar, NTag, useMessage } from 'naive-ui'
 import { useTaskProgressStore } from '@/store/modules/taskProgress'
 import { storeToRefs } from 'pinia'
 import TheIcon from '@/components/icon/TheIcon.vue'
 
 const { t } = useI18n()
+const msg = useMessage()
+const copiedTaskId = ref(null)
+
+function copyErrorDetail(task) {
+  const text = task.detail || task.message || ''
+  if (!text) return
+  navigator.clipboard.writeText(text).then(() => {
+    copiedTaskId.value = task.id
+    msg.success('错误信息已复制')
+    setTimeout(() => {
+      if (copiedTaskId.value === task.id) {
+        copiedTaskId.value = null
+      }
+    }, 2000)
+  }).catch(() => {
+    msg.error('复制失败，请手动复制')
+  })
+}
 
 const store = useTaskProgressStore()
 const { tasks, collapsed } = storeToRefs(store)
@@ -150,10 +168,21 @@ function onRetry(task) {
                   <!-- 消息 -->
                   <span v-if="task.message" class="task-msg">{{ task.message }}</span>
 
-                  <!-- 错误详情 -->
-                  <div v-if="task.status === 'error' && task.detail" class="task-error-detail">
+                  <!-- 错误详情（点击复制） -->
+                  <div
+                    v-if="task.status === 'error' && task.detail"
+                    class="task-error-detail"
+                    :class="{ 'task-error-detail-copied': copiedTaskId === task.id }"
+                    @click="copyErrorDetail(task)"
+                    title="点击复制错误信息"
+                  >
                     <TheIcon icon="material-symbols:info-outline" :size="12" class="error-icon" />
-                    <span class="error-text" :title="task.detail">{{ task.detail }}</span>
+                    <span class="error-text">{{ task.detail }}</span>
+                    <TheIcon
+                      :icon="copiedTaskId === task.id ? 'material-symbols:check' : 'material-symbols:content-copy'"
+                      :size="12"
+                      class="copy-icon"
+                    />
                   </div>
                 </div>
 
@@ -432,6 +461,16 @@ function onRetry(task) {
   border-radius: 6px;
   background: #fef2f2;
   border: 1px solid #fee2e2;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.task-error-detail:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+.task-error-detail-copied {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
 }
 
 .error-icon {
@@ -440,7 +479,25 @@ function onRetry(task) {
   color: #ef4444;
 }
 
+.copy-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  margin-left: 2px;
+  color: #ef4444;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.task-error-detail:hover .copy-icon {
+  opacity: 0.7;
+}
+.task-error-detail-copied .copy-icon {
+  color: #10b981;
+  opacity: 1;
+}
+
 .error-text {
+  flex: 1;
+  min-width: 0;
   font-size: 11px;
   color: #dc2626;
   overflow: hidden;
@@ -688,6 +745,20 @@ function onRetry(task) {
 :root.dark .task-error-detail {
   background: rgba(239, 68, 68, 0.1);
   border-color: rgba(239, 68, 68, 0.2);
+}
+:root.dark .task-error-detail:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+:root.dark .task-error-detail-copied {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+:root.dark .copy-icon {
+  color: #fca5a5;
+}
+:root.dark .task-error-detail-copied .copy-icon {
+  color: #34d399;
 }
 :root.dark .error-text {
   color: #fca5a5;

@@ -406,3 +406,12 @@ class StaticFile(BaseModel, TimestampMixin):
         table = "static_file"
 
 
+class MenuI18n(BaseModel, TimestampMixin):
+    """菜单国际化翻译"""
+    menu = fields.ForeignKeyField("models.Menu", related_name="i18n_translations", description="关联菜单", index=True)
+    locale = fields.CharField(max_length=10, description="语言代码(如en/tr/jp)", index=True)
+    name = fields.CharField(max_length=20, description="翻译后的菜单名称")
+
+    class Meta:
+        table = "menu_i18n"
+        unique_together = [("menu_id", "locale")]

@@ -1,6 +1,7 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import i18n from '~/i18n'
+import MenuI18nModal from './MenuI18nModal.vue'
 import { h, onMounted, ref, resolveDirective, withDirectives, computed, nextTick } from 'vue'
 import {
   NButton,
@@ -314,15 +315,60 @@ function findNodeByKey(nodes, key) {
   return null
 }
 
-// 给菜单树节点分配唯一 key
+// 给菜单树节点分配唯一 key，并设置默认勾选
 let _keyCounter = 0
 function assignKeys(nodes, parentPath = '') {
   for (const node of nodes) {
     node._key = `node_${++_keyCounter}`
     node._parent = parentPath
+    node._checked = true
     if (node.children && node.children.length > 0) {
       assignKeys(node.children, node._key)
     }
+  }
+}
+
+// 收集树中所有节点的 key
+function collectAllKeys(nodes) {
+  const keys = []
+  for (const node of nodes) {
+    keys.push(node._key)
+    if (node.children && node.children.length > 0) {
+      keys.push(...collectAllKeys(node.children))
+    }
+  }
+  return keys
+}
+
+// 根据 checkedKeys 过滤菜单树，只保留勾选的节点
+function filterTreeByKeys(nodes, checkedSet) {
+  const result = []
+  for (const node of nodes) {
+    if (!checkedSet.has(node._key)) continue
+    const filtered = { ...node }
+    if (node.children && node.children.length > 0) {
+      const filteredChildren = filterTreeByKeys(node.children, checkedSet)
+      if (filteredChildren.length > 0) {
+        filtered.children = filteredChildren
+      } else {
+        delete filtered.children
+      }
+    }
+    result.push(filtered)
+  }
+  return result
+}
+
+// 勾选状态
+const checkedKeys = ref([])
+const allKeysCount = computed(() => menuTreeData.value.length ? collectAllKeys(menuTreeData.value).length : 0)
+const checkedCount = computed(() => checkedKeys.value.length)
+
+function handleCheckAll() {
+  if (checkedKeys.value.length === allKeysCount.value) {
+    checkedKeys.value = []
+  } else {
+    checkedKeys.value = collectAllKeys(menuTreeData.value)
   }
 }
 
@@ -397,13 +443,14 @@ async function handleAIAnalyze() {
     })
     const menuTree = res.data?.menu_tree || []
 
-    // 分配唯一 key
+    // 分配唯一 key，默认全选
     _keyCounter = 0
     assignKeys(menuTree)
     menuTreeData.value = menuTree
+    checkedKeys.value = collectAllKeys(menuTree)
 
     aiStep.value = 'result'
-    message.success('AI分析完成，请在右侧面板检查和调整菜单')
+    message.success('AI分析完成，勾选需要导入的菜单后点提交')
   } catch (e) {
     message.error('AI分析失败: ' + (e.message || '未知错误'))
   } finally {
@@ -415,6 +462,7 @@ async function handleAIAnalyze() {
 function handleReAnalyze() {
   aiStep.value = 'config'
   menuTreeData.value = []
+  checkedKeys.value = []
   selectedMenuKey.value = null
   editingNode.value = null
 }
@@ -426,9 +474,16 @@ async function handleAISubmit() {
     return
   }
 
-  // 先清理 _key 和 _parent 等前端字段
+  // 先按勾选过滤，再清理前端字段
+  const checkedSet = new Set(checkedKeys.value)
+  const filteredTree = filterTreeByKeys(menuTreeData.value, checkedSet)
+  if (filteredTree.length === 0) {
+    message.warning('请至少勾选一个菜单项')
+    return
+  }
+
   function cleanNode(node) {
-    const { _key, _parent, children, ...rest } = node
+    const { _key, _parent, _checked, children, ...rest } = node
     const cleaned = { ...rest }
     if (children && children.length > 0) {
       cleaned.children = children.map(cleanNode)
@@ -436,7 +491,7 @@ async function handleAISubmit() {
     return cleaned
   }
 
-  const cleanedTree = menuTreeData.value.map(cleanNode)
+  const cleanedTree = filteredTree.map(cleanNode)
 
   aiSaving.value = true
   try {
@@ -450,6 +505,36 @@ async function handleAISubmit() {
     message.error('保存失败: ' + (e.message || '未知错误'))
   } finally {
     aiSaving.value = false
+  }
+}
+
+// 复制视图路径
+async function copyViewPath(path) {
+  try {
+    await navigator.clipboard.writeText(path)
+    message.success(`已复制: ${path}`)
+  } catch {
+    // 降级方案
+    const textarea = document.createElement('textarea')
+    textarea.value = path
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    message.success(`已复制: ${path}`)
+  }
+}
+
+function getViewNodeProps({ option }) {
+  return {
+    onClick: (e) => {
+      e.stopPropagation()
+      copyViewPath(option.path)
+    },
+    style: { cursor: 'pointer' },
+    title: '点击复制路径',
   }
 }
 
@@ -485,6 +570,8 @@ function handleImportClick() {
   importFileRef.value?.click()
 }
 
+const showI18nModal = ref(false)
+
 // 导入菜单 JSON 文件
 async function handleImportFile(e) {
   const file = e.target?.files?.[0]
@@ -513,6 +600,9 @@ async function handleImportFile(e) {
         </NButton>
         <NButton secondary @click="handleAIScanViews">
           <TheIcon icon="material-symbols:auto-awesome" :size="18" class="mr-5" />AI智能视图
+        </NButton>
+        <NButton secondary @click="showI18nModal = true">
+          <TheIcon icon="material-symbols:translate" :size="18" class="mr-5" />国际化管理
         </NButton>
         <NButton secondary @click="handleExport">
           <TheIcon icon="material-symbols:download" :size="18" class="mr-5" />导出
@@ -682,6 +772,7 @@ async function handleImportFile(e) {
               label-field="path"
               key-field="path"
               :default-expand-all="true"
+              :node-props="getViewNodeProps"
               block-line
               style="max-height: 320px; overflow: auto; border: 1px solid var(--n-border-color); border-radius: 4px; padding: 8px"
             />
@@ -689,12 +780,16 @@ async function handleImportFile(e) {
 
           <!-- ========= 结果阶段 ========= -->
           <template v-if="aiStep === 'result' && menuTreeData.length > 0">
-            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px">
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px; flex-wrap: wrap">
               <NButton size="small" secondary @click="handleReAnalyze">
                 <TheIcon icon="material-symbols:arrow-back" :size="14" class="mr-4" />返回重配
               </NButton>
+              <NButton size="small" secondary @click="handleCheckAll">
+                {{ checkedCount === allKeysCount ? '取消全选' : '全选' }}
+                ({{ checkedCount }}/{{ allKeysCount }})
+              </NButton>
               <span style="color: var(--n-text-color-3); font-size: 13px">
-                AI 已生成菜单，点击左侧节点在右侧编辑详情，调整完成后点「提交保存」
+                AI 已生成菜单，勾选需要导入的项，然后点「提交保存」
               </span>
             </div>
 
@@ -702,16 +797,20 @@ async function handleImportFile(e) {
 
             <!-- 双面板：树 + 编辑表单 -->
             <div style="display: flex; gap: 12px; flex: 1; min-height: 420px; max-height: 55vh; overflow: hidden">
-              <!-- 左侧：菜单树 -->
+              <!-- 左侧：菜单树（可勾选） -->
               <div style="width: 380px; flex-shrink: 0; overflow: auto; border: 1px solid var(--n-border-color); border-radius: 4px; padding: 8px">
                 <NTree
                   :data="treeDataComputed"
                   :selected-keys="selectedMenuKey ? [selectedMenuKey] : []"
+                  :checked-keys="checkedKeys"
                   :default-expand-all="true"
                   block-line
                   selectable
+                  checkable
+                  cascade
                   style="height: 100%"
                   @update:selected-keys="onMenuNodeSelect"
+                  @update:checked-keys="(keys) => checkedKeys = keys"
                 />
               </div>
 
@@ -781,5 +880,8 @@ async function handleImportFile(e) {
         </NSpace>
       </template>
     </NModal>
+
+    <!-- 菜单国际化管理弹窗 -->
+    <MenuI18nModal v-model:visible="showI18nModal" />
   </CommonPage>
 </template>
