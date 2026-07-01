@@ -252,7 +252,7 @@ python scripts/scaffold.py --name category --cn 分类 --fields "name:str:50:名
 
 ---
 
-## 强制规则汇总（30 条）
+## 强制规则汇总（32 条）
 
 1. 控制器继承 `CRUDBase`，路由加 `summary` 中文描述
 2. 列表页用 `CrudTable`，禁止手写 `NDataTable` + 分页
@@ -285,6 +285,7 @@ python scripts/scaffold.py --name category --cn 分类 --fields "name:str:50:名
 29. Tab 内容区滚动：flex 列链每层 `display:flex;flex-direction:column` + `min-height:0` + `overflow:hidden`
 30. Survey AI 调用用 openai SDK + `asyncio.to_thread()`
 31. **所有 AI 调用必须从 AIProxy 读取 `max_tokens` 参数**，禁止硬编码。AIProxy 模型已内置 `max_tokens` 字段（默认 16384），新 AI 功能通过 `proxy.max_tokens or 16384` 获取
+32. **前端调用后端分页接口 `page_size` 不能超过路由参数限制**。后端分页路由的 `page_size` 通常有 `Query(..., le=100)` 约束，前端传参必须 ≤ 该值。开发时先检查对应路由定义，禁止随意放大
 
 ---
 
@@ -314,6 +315,7 @@ python scripts/scaffold.py --name category --cn 分类 --fields "name:str:50:名
 | CodeMirror 高度 0 | `.CodeMirror` 不自动填充 | `cmInstance.getWrapperElement().style.height='100%'` + CSS `!important` |
 | `CrudTable` checkbox 无法选中 | `row-key` 传了函数 | 传属性名字符串 |
 | AI 生成内容截断/拼接错误 | `max_tokens` 硬编码 8192 过小 | 从 AIProxy 读取 `max_tokens`，默认 16384 |
+| 分页接口报 `less_than_equal` 422 | `page_size` 超过路由 `Query(le=100)` 限制 | 检查后端路由参数定义，前端 `page_size` ≤ 该值 |
 
 ---
 

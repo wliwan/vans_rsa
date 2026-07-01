@@ -49,7 +49,7 @@ const uploadUrl = computed(() =>
   `${import.meta.env.VITE_BASE_API}/region/region-boundary/upload?region_id=${selectedNode.value?.id || ''}`
 )
 const uploadHeaders = computed(() => ({
-  Authorization: `Bearer ${getToken() || ''}`,
+  token: getToken() || '',
 }))
 
 const typeColorMap = { COUNTRY: '#2080f0', STATE: '#18a058', CITY: '#f0a020' }

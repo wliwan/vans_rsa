@@ -41,3 +41,9 @@ async def RequestValidationHandle(_: Request, exc: RequestValidationError) -> JS
 async def ResponseValidationHandle(_: Request, exc: ResponseValidationError) -> JSONResponse:
     content = dict(code=500, msg=f"ResponseValidationError, {exc}")
     return JSONResponse(content=content, status_code=500)
+
+
+async def ValueErrorHandle(_: Request, exc: ValueError) -> JSONResponse:
+    """业务逻辑抛出的 ValueError → HTTP 400，避免 500"""
+    content = dict(code=400, msg=str(exc), data=None)
+    return JSONResponse(content=content, status_code=400)

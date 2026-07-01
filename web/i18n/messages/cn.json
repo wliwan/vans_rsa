@@ -392,7 +392,10 @@
           "templateDeleted": "模板已删除",
           "templateLoaded": "已加载模板：{name}",
           "templateSaved": "模板已保存",
-          "unknownError": "未知错误"
+          "unknownError": "未知错误",
+          "extractBoundarySuccess": "边界提取成功，已生成 GPKG 文件并添加到目标区域",
+          "extractBoundaryFail": "边界提取失败：{error}",
+          "extractBoundaryTask": "路网边界提取"
         },
         "selectors": {
           "country": "选择国家 →",
@@ -495,6 +498,29 @@
           },
           "stats": {
             "label": "统计详情"
+          },
+          "boundary": {
+            "label": "边界提取",
+            "description": "从路网节点提取行政边界多边形，生成 GPKG 边界文件",
+            "method": "提取算法",
+            "methodConvex": "凸包（最小凸多边形）",
+            "methodConcave": "凹包（贴合路网轮廓）",
+            "alpha": "Alpha 参数",
+            "alphaDesc": "仅凹包有效，值越大边界越精细（推荐 1.5-3.0）",
+            "targetRegion": "目标行政区域",
+            "targetRegionDesc": "提取的GPKG边界文件将添加到该区域的边界文件列表中",
+            "extractBtn": "提取边界",
+            "extracting": "提取中...",
+            "extractSuccess": "边界提取成功，已生成 GPKG 文件",
+            "extractFail": "边界提取失败",
+            "stats": "提取统计",
+            "nodeCount": "路网节点数",
+            "hullPointCount": "边界顶点数",
+            "fileSize": "输出文件大小",
+            "bbox": "边界范围",
+            "methodLabel": "算法",
+            "noNetworkSelected": "请先选择路网文件",
+            "noRegionSelected": "请先选择目标区域"
           }
         },
         "basemap": "底图",

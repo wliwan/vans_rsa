@@ -21,6 +21,7 @@ from app.core.exceptions import (
     RequestValidationHandle,
     ResponseValidationError,
     ResponseValidationHandle,
+    ValueErrorHandle,
 )
 from app.log import logger
 from app.models.admin import Api, Menu, Role
@@ -87,6 +88,7 @@ def register_exceptions(app: FastAPI):
     app.add_exception_handler(IntegrityError, IntegrityHandle)
     app.add_exception_handler(RequestValidationError, RequestValidationHandle)
     app.add_exception_handler(ResponseValidationError, ResponseValidationHandle)
+    app.add_exception_handler(ValueError, ValueErrorHandle)
 
 def register_routers(app: FastAPI, prefix: str = "/api"):
     app.include_router(api_router, prefix=prefix)

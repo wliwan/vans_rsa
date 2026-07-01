@@ -152,6 +152,56 @@ const filterLoading = ref(false)
 const segmentLength = ref(1000)
 const segmentLoading = ref(false)
 
+// ── 边界提取 ──
+const boundaryMethod = ref('concave')
+const boundaryAlpha = ref(2.0)
+const boundaryLoading = ref(false)
+const boundaryResult = ref(null)
+const boundaryMethodOptions = [
+  { label: 'Convex Hull（凸包）', value: 'convex' },
+  { label: 'Concave Hull（凹包 / Alpha Shape）', value: 'concave' },
+]
+
+function formatFileSize(bytes) {
+  if (bytes == null) return '-'
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+async function onExtractBoundary() {
+  if (!selectedNetwork.value || !selectedRegion.value) {
+    message.warning(t('views.network.roadNetworkWorkbench.tabs.boundary.noNetworkSelected'))
+    return
+  }
+  boundaryLoading.value = true
+  boundaryResult.value = null
+  const taskStore = useTaskProgressStore()
+  const taskId = taskStore.startTask(t('views.network.roadNetworkWorkbench.messages.extractBoundaryTask'))
+  try {
+    const res = await api.extractBoundary({
+      network_id: selectedNetwork.value,
+      region_id: selectedRegion.value,
+      method: boundaryMethod.value,
+      alpha: boundaryAlpha.value,
+    })
+    const data = res.data || {}
+    boundaryResult.value = {
+      ...data.stats,
+      file_size: data.file_size,
+      boundary_id: data.boundary_id,
+    }
+    taskStore.finishTask(taskId, t('views.network.roadNetworkWorkbench.messages.extractBoundarySuccess'))
+    message.success(t('views.network.roadNetworkWorkbench.messages.extractBoundarySuccess'))
+  } catch (e) {
+    const errMsg = e?.response?.data?.msg || e?.message || t('views.network.label_cn_65e200d3')
+    taskStore.failTask(taskId, { message: t('views.network.roadNetworkWorkbench.messages.extractBoundaryFail', { error: errMsg }), detail: errMsg })
+    message.error(errMsg)
+  } finally {
+    boundaryLoading.value = false
+  }
+}
+
 // ── 路网渲染配置 ──
 const styleColors = ref({})
 const styleWeights = ref({})
@@ -1470,6 +1520,50 @@ async function runAIProcess() {
                 </template>
               </NModal>
             </NTabPane>
+            <NTabPane name="boundary" :tab="t('views.network.roadNetworkWorkbench.tabs.boundary.label')">
+              <NSpace vertical>
+                <div class="boundary-desc">{{ t('views.network.roadNetworkWorkbench.tabs.boundary.description') }}</div>
+                <!-- 算法选择 -->
+                <NSelect
+                  v-model:value="boundaryMethod"
+                  :options="boundaryMethodOptions"
+                  :placeholder="t('views.network.roadNetworkWorkbench.tabs.boundary.method')"
+                  style="width:100%"
+                />
+                <!-- Alpha 参数（仅凹包显示） -->
+                <NSpace v-if="boundaryMethod === 'concave'" align="center">
+                  <span style="font-size:13px;color:#666">{{ t('views.network.roadNetworkWorkbench.tabs.boundary.alpha') }}</span>
+                  <NInputNumber
+                    v-model:value="boundaryAlpha"
+                    :min="0.5"
+                    :max="10"
+                    :step="0.1"
+                    style="width:120px"
+                  />
+                </NSpace>
+                <div style="font-size:12px;color:#999">{{ t('views.network.roadNetworkWorkbench.tabs.boundary.alphaDesc') }}</div>
+                <!-- 执行按钮 -->
+                <NButton
+                  type="primary"
+                  :loading="boundaryLoading"
+                  :disabled="!selectedNetwork || !selectedRegion"
+                  @click="onExtractBoundary"
+                  style="width:120px"
+                >
+                  {{ boundaryLoading ? t('views.network.roadNetworkWorkbench.tabs.boundary.extracting') : t('views.network.roadNetworkWorkbench.tabs.boundary.extractBtn') }}
+                </NButton>
+                <!-- 提取结果统计 -->
+                <NCard v-if="boundaryResult" size="small" :title="t('views.network.roadNetworkWorkbench.tabs.boundary.stats')" style="margin-top:8px">
+                  <NSpace vertical :size="4">
+                    <div><strong>{{ t('views.network.roadNetworkWorkbench.tabs.boundary.methodLabel') }}：</strong>{{ boundaryMethod === 'convex' ? t('views.network.roadNetworkWorkbench.tabs.boundary.methodConvex') : t('views.network.roadNetworkWorkbench.tabs.boundary.methodConcave') }}</div>
+                    <div><strong>{{ t('views.network.roadNetworkWorkbench.tabs.boundary.nodeCount') }}：</strong>{{ boundaryResult.node_count }}</div>
+                    <div><strong>{{ t('views.network.roadNetworkWorkbench.tabs.boundary.hullPointCount') }}：</strong>{{ boundaryResult.hull_point_count }}</div>
+                    <div><strong>{{ t('views.network.roadNetworkWorkbench.tabs.boundary.fileSize') }}：</strong>{{ formatFileSize(boundaryResult.file_size) }}</div>
+                    <div v-if="boundaryResult.bbox"><strong>{{ t('views.network.roadNetworkWorkbench.tabs.boundary.bbox') }}：</strong>[{{ boundaryResult.bbox.map(v => v.toFixed(4)).join(', ') }}]</div>
+                  </NSpace>
+                </NCard>
+              </NSpace>
+            </NTabPane>
             <NTabPane name="controls" :tab="t('views.network.label_cn_e1b2f870')">
               <NSpace vertical>
                 <div style="font-size:13px;color:#666;margin-bottom:4px">显示/隐藏地图控件</div>
@@ -1678,7 +1772,8 @@ async function runAIProcess() {
   gap: 12px;
 }
 
-.style-desc {
+.style-desc,
+.boundary-desc {
   font-size: 13px;
   color: #909399;
   line-height: 1.5;

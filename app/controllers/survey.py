@@ -689,6 +689,27 @@ class SurveyController(CRUDBase[Survey, SurveyCreate, SurveyUpdate]):
             })
         return total, data
 
+    async def get_submission(self, submission_id: int) -> Optional[dict]:
+        """获取单个提交记录的完整数据（含问卷名称等信息）"""
+        sub = await SurveySubmission.filter(id=submission_id).first()
+        if not sub:
+            return None
+        survey = await sub.survey.first()
+        return {
+            "id": sub.id,
+            "survey_id": sub.survey_id,
+            "survey_name": survey.name if survey else None,
+            "submitter_name": sub.submitter_name,
+            "submitter_info": sub.submitter_info,
+            "title": sub.title,
+            "content": sub.content,
+            "word_count": sub.word_count,
+            "raw_data": sub.raw_data,
+            "save_type": sub.save_type,
+            "created_at": sub.created_at.isoformat() if sub.created_at else None,
+            "updated_at": sub.updated_at.isoformat() if sub.updated_at else None,
+        }
+
     async def delete_submission(self, submission_id: int) -> bool:
         sub = await SurveySubmission.filter(id=submission_id).first()
         if not sub:

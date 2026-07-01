@@ -443,6 +443,241 @@ class RoadNetworkAnalyzer:
         return sorted(types)
 
     # ═══════════════════════════════════════════
+    # 边界提取
+    # ═══════════════════════════════════════════
+
+    @classmethod
+    def extract_boundary_nodes(cls, file_path: str) -> list:
+        """
+        从路网图中提取所有节点的 (lon, lat) 坐标列表。
+
+        返回: [(lon1, lat1), (lon2, lat2), ...]
+        """
+        G = cls._load_graph(file_path)
+        points = []
+        for n, attrs in G.nodes(data=True):
+            y = attrs.get("y", attrs.get("lat"))
+            x = attrs.get("x", attrs.get("lon"))
+            if x is not None and y is not None:
+                points.append((float(x), float(y)))
+        if not points:
+            raise ValueError("路网文件中无可提取的节点坐标")
+        return points
+
+    @staticmethod
+    def compute_convex_hull(points: list) -> list:
+        """
+        计算点集的凸包（Convex Hull），返回组成凸包边界的点序列 (lon, lat)。
+
+        使用 Graham Scan 算法。凸包是最小的凸多边形包含所有点。
+        """
+        if len(points) < 3:
+            # 少于3个点直接返回
+            return points
+
+        pts = [(p[0], p[1]) for p in points]  # (lon, lat)
+
+        def cross(o, a, b):
+            return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+        # 找到最左下角的点
+        pts = sorted(set(pts))
+        if len(pts) <= 1:
+            return pts
+
+        lower = []
+        for p in pts:
+            while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+                lower.pop()
+            lower.append(p)
+
+        upper = []
+        for p in reversed(pts):
+            while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+                upper.pop()
+            upper.append(p)
+
+        # 去掉首尾重复点
+        hull = lower[:-1] + upper[:-1]
+        return hull
+
+    @staticmethod
+    def compute_concave_hull(points: list, alpha: float = 2.0) -> list:
+        """
+        计算点集的凹包（Concave Hull / Alpha Shape）。
+
+        使用 Alpha Shape 算法：
+        - alpha 越小，凹包越贴近实际点集形态
+        - alpha 越大，凹包越趋近凸包
+        - alpha 推荐值 1.5-3.0，默认 2.0
+
+        返回: [(lon1, lat1), (lon2, lat2), ...] 边界多边形点序列
+        """
+        import math
+
+        if len(points) < 3:
+            return points
+
+        pts = [(p[0], p[1]) for p in points]
+
+        # 使用 Delaunay 三角剖分 + Alpha Shape 筛选
+        try:
+            from scipy.spatial import Delaunay
+            import numpy as np
+        except ImportError:
+            # 如果没有 scipy，回退到凸包
+            return RoadNetworkAnalyzer.compute_convex_hull(points)
+
+        coords = np.array(pts)
+        tri = Delaunay(coords)
+
+        # 计算每条边的长度
+        edge_set = set()
+        for simplex in tri.simplices:
+            for i in range(3):
+                a, b = simplex[i], simplex[(i + 1) % 3]
+                if a > b:
+                    a, b = b, a
+                edge = (a, b)
+                if edge not in edge_set:
+                    edge_set.add(edge)
+
+        # Alpha shape: 保留边长 < alpha_circumference 的边
+        # 对于经纬度坐标，alpha 单位为"度"（~111km/度）
+        # 默认 alpha=2.0 约等于 222km 范围内的点可连接
+        alpha_sq = alpha * alpha
+
+        # 构建邻接表
+        adjacency = {}
+        for a, b in edge_set:
+            pa, pb = coords[a], coords[b]
+            dist_sq = (pa[0] - pb[0]) ** 2 + (pa[1] - pb[1]) ** 2
+            if dist_sq <= alpha_sq:
+                adjacency.setdefault(a, []).append(b)
+                adjacency.setdefault(b, []).append(a)
+
+        if not adjacency:
+            # 没有边符合，回退到凸包
+            return RoadNetworkAnalyzer.compute_convex_hull(points)
+
+        # 从最左边的点出发，沿边界行走
+        start = int(np.argmin(coords[:, 0]))
+        boundary = []
+        visited_edges = set()
+        current = start
+
+        while True:
+            boundary.append((float(coords[current][0]), float(coords[current][1])))
+            neighbors = adjacency.get(current, [])
+
+            if not neighbors:
+                break
+
+            # 找最逆时针的下一个邻居
+            if len(boundary) >= 2:
+                prev = boundary[-2]
+                cur = boundary[-1]
+                prev_angle = math.atan2(cur[1] - prev[1], cur[0] - prev[0])
+
+                best_neighbor = None
+                best_angle = -float('inf')
+                for nb in neighbors:
+                    if (current, nb) in visited_edges:
+                        continue
+                    nb_pt = (float(coords[nb][0]), float(coords[nb][1]))
+                    angle = math.atan2(nb_pt[1] - cur[1], nb_pt[0] - cur[0])
+                    # 计算从 prev_angle 到 angle 的逆时针转角
+                    diff = (angle - prev_angle) % (2 * math.pi)
+                    if diff > best_angle:
+                        best_angle = diff
+                        best_neighbor = nb
+
+                if best_neighbor is None:
+                    break
+                next_node = best_neighbor
+            else:
+                next_node = neighbors[0]
+
+            visited_edges.add((current, next_node))
+            current = next_node
+
+            if current == start:
+                boundary.append((float(coords[start][0]), float(coords[start][1])))
+                break
+            if len(boundary) > len(points) * 2:
+                # 防止死循环
+                break
+
+        # 如果凹包顶点太少，回退到凸包
+        if len(boundary) < 3:
+            return RoadNetworkAnalyzer.compute_convex_hull(points)
+
+        return boundary
+
+    @classmethod
+    def generate_boundary_gpkg(
+        cls,
+        file_path: str,
+        output_path: str,
+        method: str = "concave",
+        alpha: float = 2.0,
+    ) -> dict:
+        """
+        从路网文件提取边界并生成 GPKG 文件。
+
+        参数:
+            file_path: 路网文件路径
+            output_path: 输出 GPKG 文件路径
+            method: 算法 (convex / concave)
+            alpha: 凹包 alpha 参数
+
+        返回: dict with node_count, hull_point_count, method, bbox
+        """
+        import geopandas as gpd
+        from shapely.geometry import Polygon
+
+        # 1. 提取所有节点
+        points = cls.extract_boundary_nodes(file_path)
+
+        # 2. 计算边界多边形
+        if method == "convex":
+            hull_points = cls.compute_convex_hull(points)
+        else:
+            hull_points = cls.compute_concave_hull(points, alpha)
+
+        # 确保多边形闭合（GeoJSON 规范）
+        if hull_points and hull_points[0] != hull_points[-1]:
+            hull_points.append(hull_points[0])
+
+        # 3. 构建 Shapely Polygon（注意 GeoJSON 顺序是 lon,lat）
+        polygon = Polygon(hull_points)
+        if not polygon.is_valid:
+            polygon = polygon.buffer(0)  # 修复自相交
+
+        # 4. 保存为 GPKG
+        bbox = polygon.bounds  # (minx, miny, maxx, maxy)
+        gdf = gpd.GeoDataFrame(
+            {
+                "name": [os.path.splitext(os.path.basename(file_path))[0]],
+                "method": [method],
+                "alpha": [alpha if method == "concave" else None],
+                "node_count": [len(points)],
+                "hull_point_count": [len(hull_points) - 1],  # 不含闭合点
+                "geometry": [polygon],
+            },
+            crs="EPSG:4326",
+        )
+        gdf.to_file(output_path, layer="boundary", driver="GPKG")
+
+        return {
+            "node_count": len(points),
+            "hull_point_count": len(hull_points) - 1,
+            "method": method,
+            "alpha": alpha if method == "concave" else None,
+            "bbox": list(bbox),
+        }
+
+    # ═══════════════════════════════════════════
     # 等级筛选
     # ═══════════════════════════════════════════
 

@@ -152,6 +152,7 @@ export default {
     })
   },
   createDocumentFromText: (data = {}) => request.post('/workspace/document/create-text', data),
+  importDocumentFromSurvey: (data = {}) => request.post('/workspace/document/import-from-survey', data),
   // workspace sheets
   uploadSheet: (workspace_id, file) => {
     const formData = new FormData()
@@ -332,6 +333,8 @@ export default {
   importRoadFields: (data = {}) => request.post('/region/road-network/fields/import', data, { timeout: 0 }),
   batchUpdateRoadFields: (data = {}) => request.post('/region/road-network/fields/batch-update', data, { timeout: 0 }),
   aiProcessRoadFields: (data = {}) => request.post('/region/road-network/fields/ai-process', data, { timeout: 0 }),
+  // boundary extract
+  extractBoundary: (data = {}) => request.post('/region/road-network/extract-boundary', data, { timeout: 0 }),
   // filter templates
   getFilterTemplates: () => request.get('/region/road-network/filter-templates'),
   createFilterTemplate: (data = {}) => request.post('/region/road-network/filter-templates/create', data),

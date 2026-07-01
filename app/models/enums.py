@@ -29,6 +29,7 @@ class BoundaryType(StrEnum):
     GEOJSON = "GEOJSON"
     KML = "KML"
     SHP = "SHP"
+    GPKG = "GPKG"
 
 
 class BoundaryStatus(StrEnum):

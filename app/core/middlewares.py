@@ -180,13 +180,22 @@ class HttpAuditLogMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         start_time: datetime = datetime.now()
-        # 排除路径跳过请求体解析，避免 multipart 上传等场景的编码错误
-        if not self._is_excluded(request):
-            await self.before_request(request)
+        try:
+            # 排除路径跳过请求体解析，避免 multipart 上传等场景的编码错误
+            if not self._is_excluded(request):
+                await self.before_request(request)
+        except Exception:
+            pass  # 请求体解析失败不应阻断业务
+
         response = await call_next(request)
         end_time: datetime = datetime.now()
         process_time = int((end_time.timestamp() - start_time.timestamp()) * 1000)
-        await self.after_request(request, response, process_time)
+
+        try:
+            await self.after_request(request, response, process_time)
+        except Exception:
+            pass  # 审计日志写入失败不应影响响应
+
         return response
 
     def _is_excluded(self, request: Request) -> bool:

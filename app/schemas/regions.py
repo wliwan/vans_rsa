@@ -81,6 +81,14 @@ class BoundaryUploadRequest(BaseModel):
     region_id: int = Field(..., description="区域ID")
 
 
+class BoundaryExtractRequest(BaseModel):
+    """从路网提取行政边界"""
+    network_id: int = Field(..., description="路网文件ID")
+    region_id: int = Field(..., description="目标区域ID")
+    method: str = Field("concave", description="边界提取算法: convex | concave")
+    alpha: Optional[float] = Field(2.0, description="凹包 alpha 参数（仅 concave 有效，值越大边界越精细）")
+
+
 class BoundaryOut(BaseModel):
     """边界文件输出"""
     id: int

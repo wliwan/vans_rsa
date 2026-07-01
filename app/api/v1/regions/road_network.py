@@ -14,7 +14,7 @@ from app.controllers.system_config import system_config_controller
 from app.log import logger
 from app.utils.http_utils import make_download_response
 from app.schemas.base import Success, SuccessExtra
-from app.schemas.regions import FilterTemplateCreate, RoadNetworkDownloadRequest
+from app.schemas.regions import BoundaryExtractRequest, FilterTemplateCreate, RoadNetworkDownloadRequest
 
 router = APIRouter()
 
@@ -104,6 +104,23 @@ async def segment_network(req: SegmentRequest):
         req.network_id, req.segment_length, req.save_to_region
     )
     return Success(data=data, msg="分段完成")
+
+
+@router.post("/extract-boundary", summary="从路网提取行政边界")
+async def extract_boundary(req: BoundaryExtractRequest):
+    """从路网文件中提取关键边界节点并连接形成行政边界区域，生成 GPKG 边界文件
+
+    支持的算法：
+    - convex: 凸包算法，生成最小凸多边形
+    - concave: 凹包算法（Alpha Shape），能够贴合路网实际轮廓
+
+    alpha 参数仅 concave 有效，推荐值 1.5-3.0，默认 2.0。
+    值越大边界越精细，但可能引入内部孔洞。
+    """
+    data = await region_controller.extract_boundary_from_road_network(
+        req.network_id, req.region_id, req.method, req.alpha
+    )
+    return Success(data=data, msg="边界提取成功")
 
 
 # ── 瓦片服务（独立 router，无需鉴权） ──

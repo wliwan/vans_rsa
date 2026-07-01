@@ -13,7 +13,7 @@ from app.controllers.workspace import workspace_controller
 from app.core.ctx import CTX_USER_ID
 from app.models.admin import Document
 from app.schemas.base import Fail, Success, SuccessExtra
-from app.schemas.documents import DocumentAIAnalyze, DocumentBatchDelete, DocumentBatchExport, DocumentCreateText, DocumentUpdateContent
+from app.schemas.documents import DocumentAIAnalyze, DocumentBatchDelete, DocumentBatchExport, DocumentCreateText, DocumentImportFromSurvey, DocumentUpdateContent
 from app.utils.http_utils import make_download_response
 
 logger = logging.getLogger(__name__)
@@ -179,3 +179,16 @@ async def update_document_content(body: DocumentUpdateContent):
     if doc is None:
         return Fail(code=404, msg="文档不存在")
     return Success(data=await doc.to_dict(), msg="保存成功")
+
+
+@router.post("/import-from-survey", summary="从问卷导入文档")
+async def import_from_survey(body: DocumentImportFromSurvey):
+    """将问卷提交记录（JSON）转换为 Markdown 文档，保存到指定工作区的原始文档列表"""
+    try:
+        doc = await document_controller.import_from_survey(body.workspace_id, body.submission_id)
+        return Success(data=await doc.to_dict(), msg="导入成功")
+    except ValueError as e:
+        return Fail(code=400, msg=str(e))
+    except Exception as e:
+        logger.error(f"从问卷导入文档失败: {e}")
+        return Fail(code=500, msg="导入失败")

@@ -435,11 +435,11 @@ class RegionController(CRUDBase[Region, RegionCreate, RegionUpdate]):
         )
 
         try:
-            # 调用 GADM 下载器
+            # 调用 GADM 下载器（大国家/省级数据可能较慢，超时设为 5 分钟）
             geojson_data, source_url = await GADMDownloader.download(
                 iso_alpha3=iso_alpha3,
                 region_type=region.region_type,
-                timeout=120.0,
+                timeout=300.0,
             )
 
             # 保存到文件
@@ -885,6 +885,102 @@ class RegionController(CRUDBase[Region, RegionCreate, RegionUpdate]):
             if span * 0.7 > tile_span:
                 return {"center": {"lat": round(center_lat, 4), "lon": round(center_lon, 4)}, "zoom": z}
         return {"center": {"lat": round(center_lat, 4), "lon": round(center_lon, 4)}, "zoom": 18}
+
+    async def extract_boundary_from_road_network(
+        self, network_id: int, region_id: int, method: str = "concave", alpha: float = 2.0
+    ) -> dict:
+        """从路网文件中提取行政边界节点，生成 GPKG 边界文件并关联到区域
+
+        参数:
+            network_id: 路网文件ID
+            region_id: 目标区域ID（边界文件关联的区域）
+            method: 算法 (convex / concave)
+            alpha: 凹包 alpha 参数（仅 concave 有效）
+
+        返回: dict with boundary_id, file_name, gpkg_path, stats
+        """
+        import asyncio
+        import functools
+        import time
+
+        from app.utils.road_network_analyzer import RoadNetworkAnalyzer
+
+        # 1. 验证路网文件
+        network = await RoadNetwork.filter(id=network_id).first()
+        if not network or not network.file_path:
+            raise ValueError("路网文件不存在")
+        if not os.path.exists(network.file_path):
+            raise ValueError(f"路网文件已丢失: {network.file_path}")
+
+        # 2. 验证区域存在
+        region = await Region.filter(id=region_id).first()
+        if not region:
+            raise ValueError("目标区域不存在")
+
+        # 3. 创建边界文件记录（处理中状态）
+        source_stem = os.path.splitext(network.file_name)[0]
+        method_tag = "hull" if method == "convex" else f"alpha{alpha}"
+        file_name = f"{source_stem}_boundary_{method_tag}.gpkg"
+
+        boundary = await RegionBoundary.create(
+            region_id=region_id,
+            file_name=file_name,
+            file_type=BoundaryType.GPKG,
+            file_path="",
+            download_status=BoundaryStatus.DOWNLOADING,
+        )
+
+        try:
+            # 4. 在线程池中执行同步的边界提取（耗时操作）
+            upload_dir = os.path.join(settings.BASE_DIR, "uploads", "boundaries")
+            os.makedirs(upload_dir, exist_ok=True)
+
+            saved_name = f"extract_{region_id}_{int(time.time())}_{method_tag}.gpkg"
+            output_path = os.path.join(upload_dir, saved_name)
+
+            loop = asyncio.get_running_loop()
+            stats = await loop.run_in_executor(
+                None,
+                functools.partial(
+                    RoadNetworkAnalyzer.generate_boundary_gpkg,
+                    file_path=network.file_path,
+                    output_path=output_path,
+                    method=method,
+                    alpha=alpha,
+                ),
+            )
+
+            # 5. 更新记录为成功
+            file_size = os.path.getsize(output_path)
+            boundary.file_path = output_path
+            boundary.file_name = file_name
+            boundary.file_size = file_size
+            boundary.srid = "EPSG:4326"
+            boundary.download_status = BoundaryStatus.SUCCESS
+            await boundary.save()
+
+            logger.info(
+                f"路网边界提取成功: network_id={network_id}, region_id={region_id}, "
+                f"method={method}, alpha={alpha}, "
+                f"nodes={stats['node_count']}, hull_points={stats['hull_point_count']}, "
+                f"file_size={file_size}"
+            )
+
+            return {
+                "boundary_id": boundary.id,
+                "file_name": boundary.file_name,
+                "file_type": boundary.file_type,
+                "file_size": file_size,
+                "download_status": "SUCCESS",
+                "stats": stats,
+            }
+
+        except Exception as e:
+            logger.error(f"路网边界提取失败 network_id={network_id}: {e}")
+            boundary.download_status = BoundaryStatus.FAILED
+            boundary.error_message = str(e)[:500]
+            await boundary.save()
+            raise ValueError(f"边界提取失败: {e}")
 
     async def analyze_road_network(self, network_id: int) -> dict:
         """获取路网信息（统计 + GeoJSON），优先读取 stats_json 缓存。后台预热图缓存"""

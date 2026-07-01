@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
+import { computed, ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   NButton, NModal, NSpace, NSelect, NPopconfirm,
@@ -48,6 +48,95 @@ const docEditorContainer = ref(null)
 let docVditorInstance = null
 
 const batchDocUploadRef = ref(null)
+
+// ── 从问卷导入 ──
+const showSurveyImportModal = ref(false)
+const surveyImportList = ref([])
+const surveyImportLoading = ref(false)
+const surveyImportSearch = ref('')
+const selectedImportSurvey = ref(null)
+const surveyImportSubmissions = ref([])
+const surveyImportSubLoading = ref(false)
+const selectedImportSubmissionIds = ref([])
+const surveyImportBusy = ref(false)
+
+const filteredSurveyImportList = computed(() => {
+  if (!surveyImportSearch.value) return surveyImportList.value
+  const kw = surveyImportSearch.value.toLowerCase()
+  return surveyImportList.value.filter(s => (s.name || '').toLowerCase().includes(kw))
+})
+
+async function openSurveyImportModal() {
+  if (!selectedWs.value) { message.warning('请先选择工作区'); return }
+  surveyImportList.value = []
+  surveyImportSearch.value = ''
+  selectedImportSurvey.value = null
+  surveyImportSubmissions.value = []
+  selectedImportSubmissionIds.value = []
+  showSurveyImportModal.value = true
+  surveyImportLoading.value = true
+  try {
+    const res = await api.getSurveyList({ page_size: 100 })
+    surveyImportList.value = res.data || []
+  } catch (e) {
+    message.error('获取问卷列表失败')
+  }
+  surveyImportLoading.value = false
+}
+
+async function onSelectImportSurvey(survey) {
+  selectedImportSurvey.value = survey
+  surveyImportSubmissions.value = []
+  selectedImportSubmissionIds.value = []
+  surveyImportSubLoading.value = true
+  try {
+    const res = await api.getSurveySubmissions({
+      survey_id: survey.id,
+      page_size: 100,
+      save_type: 'submit',
+    })
+    surveyImportSubmissions.value = res.data || []
+  } catch (e) {
+    surveyImportSubmissions.value = []
+  }
+  surveyImportSubLoading.value = false
+}
+
+function toggleImportSubmissionSelect(id) {
+  const idx = selectedImportSubmissionIds.value.indexOf(id)
+  if (idx >= 0) selectedImportSubmissionIds.value.splice(idx, 1)
+  else selectedImportSubmissionIds.value.push(id)
+}
+
+function toggleAllImportSubmissions() {
+  if (selectedImportSubmissionIds.value.length === surveyImportSubmissions.value.length && surveyImportSubmissions.value.length > 0) {
+    selectedImportSubmissionIds.value = []
+  } else {
+    selectedImportSubmissionIds.value = surveyImportSubmissions.value.map(s => s.id)
+  }
+}
+
+async function handleSurveyImport() {
+  if (!selectedImportSubmissionIds.value.length) {
+    message.warning('请选择要导入的提交记录')
+    return
+  }
+  surveyImportBusy.value = true
+  let successCount = 0
+  let failCount = 0
+  for (const sid of selectedImportSubmissionIds.value) {
+    try {
+      await api.importDocumentFromSurvey({ workspace_id: selectedWs.value.id, submission_id: sid })
+      successCount++
+    } catch (e) {
+      failCount++
+    }
+  }
+  surveyImportBusy.value = false
+  showSurveyImportModal.value = false
+  message.success(`导入完成：成功 ${successCount} 条` + (failCount > 0 ? `，失败 ${failCount} 条` : ''))
+  await loadOriginalDocuments()
+}
 
 // ── 文档 CRUD ──
 async function loadOriginalDocuments() {
@@ -400,6 +489,9 @@ defineExpose({ loadOriginalDocuments, loadAnalysisDocuments })
                     <NButton size="small" @click="openDocTextModal">
                       <TheIcon icon="material-symbols:edit-note" :size="16" class="mr-1" />文本导入
                     </NButton>
+                    <NButton size="small" @click="openSurveyImportModal">
+                      <TheIcon icon="material-symbols:assignment" :size="16" class="mr-1" />从问卷导入
+                    </NButton>
                   </div>
                   <NUpload ref="batchDocUploadRef" :show-file-list="false" :default-upload="false" accept=".txt,.md,.pdf,.docx,.ppt,.pptx,.xlsx,.xls,.csv" multiple @change="handleBatchDocUpload">
                     <NUploadDragger
@@ -706,6 +798,75 @@ defineExpose({ loadOriginalDocuments, loadAnalysisDocuments })
       <NSpace justify="end">
         <NButton @click="showDocTextModal = false">取消</NButton>
         <NButton type="primary" :loading="loading" @click="handleDocTextSubmit">导入</NButton>
+      </NSpace>
+    </template>
+  </NModal>
+
+<!-- 从问卷导入弹窗 -->
+  <NModal v-model:show="showSurveyImportModal" title="从问卷导入文档" preset="card" style="width: 800px">
+    <div :class="{ 'mobile-stack': isMobileCollapsed }" style="display:flex; gap:12px; min-height:380px; max-height:60vh;">
+      <!-- 左侧：问卷列表 -->
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="font-size:14px; font-weight:600; margin-bottom:8px;">选择问卷</div>
+        <NInput v-model:value="surveyImportSearch" placeholder="搜索问卷..." clearable size="small" style="margin-bottom:8px" />
+        <NSpin :show="surveyImportLoading" style="flex:1; min-height:0; overflow:auto;">
+          <div v-if="filteredSurveyImportList.length">
+            <div
+              v-for="s in filteredSurveyImportList" :key="s.id"
+              style="padding:8px 10px; cursor:pointer; border-radius:6px; margin-bottom:4px; border:1px solid transparent;"
+              :style="{ background: selectedImportSurvey?.id === s.id ? 'var(--primary-color-suppl, #e8f0fe)' : 'transparent', borderColor: selectedImportSurvey?.id === s.id ? 'var(--primary-color, #3b82f6)' : '#eee' }"
+              @click="onSelectImportSurvey(s)"
+            >
+              <div style="font-size:13px; font-weight:500;">{{ s.name }}</div>
+              <div style="font-size:11px; color:#999; margin-top:2px;">{{ s.created_at?.substring(0, 10) || '-' }}</div>
+            </div>
+          </div>
+          <div v-else style="text-align:center; color:#999; padding-top:40px;">
+            {{ surveyImportLoading ? '加载中...' : '暂无问卷' }}
+          </div>
+        </NSpin>
+      </div>
+      <!-- 右侧：提交记录列表 -->
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <span style="font-size:14px; font-weight:600;">
+            {{ selectedImportSurvey ? '提交记录 (' + surveyImportSubmissions.length + ')' : '请选择问卷' }}
+          </span>
+          <NCheckbox
+            v-if="surveyImportSubmissions.length"
+            size="small"
+            :checked="selectedImportSubmissionIds.length === surveyImportSubmissions.length"
+            :indeterminate="selectedImportSubmissionIds.length > 0 && selectedImportSubmissionIds.length < surveyImportSubmissions.length"
+            @update:checked="toggleAllImportSubmissions"
+          />
+        </div>
+        <NSpin :show="surveyImportSubLoading" style="flex:1; min-height:0; overflow:auto;">
+          <div v-if="surveyImportSubmissions.length">
+            <div
+              v-for="sub in surveyImportSubmissions" :key="sub.id"
+              style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-bottom:1px solid #f0f0f0; cursor:pointer;"
+              :style="{ background: selectedImportSubmissionIds.includes(sub.id) ? '#f0f7ff' : 'transparent' }"
+              @click="toggleImportSubmissionSelect(sub.id)"
+            >
+              <NCheckbox :checked="selectedImportSubmissionIds.includes(sub.id)" size="small" />
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:12px; font-weight:500;">{{ sub.title || '无标题' }}</div>
+                <div style="font-size:11px; color:#999;">{{ sub.submitter_name || '匿名' }} · {{ sub.word_count }}字 · {{ sub.created_at?.replace('T', ' ').substring(0, 16) || '-' }}</div>
+              </div>
+            </div>
+          </div>
+          <div v-else style="text-align:center; color:#999; padding-top:40px;">
+            {{ selectedImportSurvey ? (surveyImportSubLoading ? '加载中...' : '暂无提交记录') : '← 请先在左侧选择问卷' }}
+          </div>
+        </NSpin>
+      </div>
+    </div>
+    <template #footer>
+      <NSpace justify="end">
+        <NButton @click="showSurveyImportModal = false">取消</NButton>
+        <NButton type="primary" :disabled="!selectedImportSubmissionIds.length" :loading="surveyImportBusy" @click="handleSurveyImport">
+          导入选中 ({{ selectedImportSubmissionIds.length }})
+        </NButton>
       </NSpace>
     </template>
   </NModal>

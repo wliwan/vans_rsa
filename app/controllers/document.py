@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from fastapi import UploadFile
 
-from app.models.admin import AIProxy, Document, Skill, Workspace
+from app.models.admin import AIProxy, Document, Skill, SurveySubmission, Workspace
 from app.utils.doc_to_md import file_to_markdown
 
 logger = logging.getLogger(__name__)
@@ -205,6 +205,76 @@ class DocumentController:
             prompt=prompt,
         )
         return analysis_doc
+
+    # ── 从问卷导入 ──
+
+    @staticmethod
+    async def import_from_survey(workspace_id: int, submission_id: int) -> Document:
+        """将问卷提交记录转换为 Markdown 文档并保存到工作区"""
+        sub = await SurveySubmission.filter(id=submission_id).first()
+        if not sub:
+            raise ValueError("提交记录不存在")
+
+        # 获取关联问卷名称
+        survey = await sub.survey.first()
+        survey_name = survey.name if survey else "未知问卷"
+
+        # 构建 Markdown 内容
+        md_lines = []
+        md_lines.append(f"# 问卷提交记录: {sub.title or '无标题'}")
+        md_lines.append("")
+        md_lines.append(f"- **问卷名称**: {survey_name}")
+        md_lines.append(f"- **提交者**: {sub.submitter_name or '匿名'}")
+        md_lines.append(f"- **提交时间**: {sub.created_at.isoformat() if sub.created_at else '-'}")
+        md_lines.append(f"- **保存类型**: {'正式提交' if sub.save_type == 'submit' else '草稿保存'}")
+        md_lines.append(f"- **总字数**: {sub.word_count}")
+        md_lines.append("")
+        md_lines.append("---")
+        md_lines.append("")
+        md_lines.append("## 提交字段")
+        md_lines.append("")
+
+        # 将 raw_data 转换为表格
+        raw = sub.raw_data or {}
+        if raw:
+            md_lines.append("| 字段名 | 值 |")
+            md_lines.append("|--------|-----|")
+            for key, value in raw.items():
+                val_str = str(value).replace("|", "\\|").replace("\n", "<br>")
+                if len(val_str) > 500:
+                    val_str = val_str[:500] + "..."
+                md_lines.append(f"| {key} | {val_str} |")
+            md_lines.append("")
+        else:
+            # 如果没有 raw_data，尝试解析 content（JSON 文本）
+            md_lines.append("（无结构化字段数据，以下为原始 JSON 内容）")
+            md_lines.append("")
+            md_lines.append("```json")
+            md_lines.append(sub.content or "{}")
+            md_lines.append("```")
+
+        md_content = "\n".join(md_lines)
+
+        # 生成安全的文件名
+        safe_title = (sub.title or "无标题").replace("/", "_").replace("\\", "_")[:50]
+        doc_name = f"{survey_name}_{safe_title}_{submission_id}.md"
+
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        unique_name = f"{uuid.uuid4().hex}_{doc_name}"
+        file_path = os.path.join(UPLOAD_DIR, unique_name)
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(md_content)
+
+        doc = await Document.create(
+            workspace_id=workspace_id,
+            name=doc_name,
+            file_path=file_path,
+            file_size=os.path.getsize(file_path),
+            char_count=len(md_content),
+            source_type="original",
+        )
+        return doc
 
 
 document_controller = DocumentController()

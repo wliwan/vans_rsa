@@ -392,7 +392,10 @@
           "templateDeleted": "Template deleted",
           "templateLoaded": "Template loaded: {name}",
           "templateSaved": "Template saved",
-          "unknownError": "Unknown error"
+          "unknownError": "Unknown error",
+          "extractBoundarySuccess": "Boundary extracted and GPKG file added to the target region",
+          "extractBoundaryFail": "Boundary extraction failed: {error}",
+          "extractBoundaryTask": "Road Network Boundary Extraction"
         },
         "selectors": {
           "country": "Select country →",
@@ -495,6 +498,29 @@
           },
           "stats": {
             "label": "Stats Details"
+          },
+          "boundary": {
+            "label": "Boundary Extract",
+            "description": "Extract administrative boundary polygon from road network nodes and generate GPKG file",
+            "method": "Algorithm",
+            "methodConvex": "Convex Hull (minimum convex polygon)",
+            "methodConcave": "Concave Hull (fits road network contour)",
+            "alpha": "Alpha",
+            "alphaDesc": "Only for concave hull; larger value = finer boundary (recommend 1.5-3.0)",
+            "targetRegion": "Target Region",
+            "targetRegionDesc": "The generated GPKG file will be added to this region's boundary file list",
+            "extractBtn": "Extract Boundary",
+            "extracting": "Extracting...",
+            "extractSuccess": "Boundary extracted successfully, GPKG file generated",
+            "extractFail": "Boundary extraction failed",
+            "stats": "Extraction Stats",
+            "nodeCount": "Road Nodes",
+            "hullPointCount": "Boundary Vertices",
+            "fileSize": "Output File Size",
+            "bbox": "Bounding Box",
+            "methodLabel": "Algorithm",
+            "noNetworkSelected": "Please select a road network file first",
+            "noRegionSelected": "Please select a target region first"
           }
         },
         "basemap": "Basemap",

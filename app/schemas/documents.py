@@ -29,3 +29,8 @@ class DocumentUpdateContent(BaseModel):
 
 class DocumentBatchExport(BaseModel):
     document_ids: List[int] = Field(..., description="要导出的文档ID列表")
+
+
+class DocumentImportFromSurvey(BaseModel):
+    workspace_id: int = Field(..., description="目标工作区ID")
+    submission_id: int = Field(..., description="问卷提交记录ID")

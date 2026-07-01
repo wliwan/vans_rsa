@@ -25,24 +25,13 @@ class GADMDownloadError(Exception):
     """GADM 下载异常"""
 
 
-def _get_proxy() -> str | None:
-    """从系统配置读取代理"""
+async def _get_proxy() -> str | None:
+    """从系统配置读取代理（异步读取，避免事件循环冲突）"""
     try:
         from app.controllers.system_config import system_config_controller
-        import asyncio
-        loop = asyncio.get_running_loop()
-        if loop.is_running():
-            # 在事件循环中异步读取
-            import concurrent.futures
-            async def _read():
-                return await system_config_controller.get_value("download_proxy", "")
-            try:
-                return loop.run_until_complete(_read())
-            except RuntimeError:
-                return None
+        return await system_config_controller.get_value("download_proxy", "")
     except Exception:
-        pass
-    return None
+        return None
 
 
 class GADMDownloader:
@@ -88,7 +77,7 @@ class GADMDownloader:
         logger.info(f"GADM 下载: url={url}")
 
         try:
-            proxy = _get_proxy()
+            proxy = await _get_proxy()
             client_kwargs = {"timeout": timeout}
             if proxy:
                 client_kwargs["proxy"] = proxy
@@ -107,8 +96,10 @@ class GADMDownloader:
                 f"ISO3={iso_alpha3}, level={level}"
             ) from e
         except httpx.RequestError as e:
+            # httpx 异常 str() 可能为空（如 ConnectError 无底层详情）
+            detail = str(e) or type(e).__name__
             raise GADMDownloadError(
-                f"GADM 网络请求失败: {e}"
+                f"GADM 网络请求失败: {detail}（请检查网络连接或代理设置）"
             ) from e
         except json.JSONDecodeError as e:
             raise GADMDownloadError(
@@ -131,7 +122,7 @@ class GADMDownloader:
         """检查 GADM 是否提供该国家/级别的数据"""
         url = cls._build_url(iso_alpha3, level)
         try:
-            proxy = _get_proxy()
+            proxy = await _get_proxy()
             client_kwargs = {"timeout": 15.0}
             if proxy:
                 client_kwargs["proxy"] = proxy

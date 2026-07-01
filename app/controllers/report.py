@@ -112,7 +112,7 @@ class ReportService:
 
     @classmethod
     def _short_link(cls, token: str) -> str:
-        base = CTX_BASE_URL.get() or settings.PUBLIC_BASE_URL
+        base = settings.PUBLIC_BASE_URL or CTX_BASE_URL.get()
         base = base.rstrip("/") if base else ""
         return f"{base}/api/sf/{token}"
 
